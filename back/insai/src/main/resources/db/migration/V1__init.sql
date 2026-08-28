@@ -1,0 +1,2 @@
+-- InsuranceAI baseline migration.
+-- 도메인 테이블(auth / collab / form / document)은 기능별로 V2, V3... 에 추가한다.
