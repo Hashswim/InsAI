@@ -38,6 +38,8 @@ dependencies {
 
 	// --- Security (임시 permitAll, 이후 게이트웨이 JWT 검증 연동) ---
 	implementation 'org.springframework.boot:spring-boot-starter-security'
+	// RS256 JWT 발급/검증 + JWKS (Nimbus JOSE)
+	implementation 'org.springframework.security:spring-security-oauth2-jose'
 
 	// --- Ops ---
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
@@ -51,7 +53,10 @@ dependencies {
 
 	// --- Test ---
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
 	testRuntimeOnly 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
