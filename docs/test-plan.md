@@ -253,13 +253,12 @@
 |---|---|
 | common | 스켈레톤 존재, 전용 테스트 미작성 |
 | **auth** | ✅ GREEN (44/44) — domain·application·infra·web·persistence·통합 |
-| **collab** | ✅ GREEN — domain · application(8 서비스) · web(`CaseController` 8 엔드포인트) · persistence · 통합 |
-| form | 미착수 |
+| **collab** | ✅ GREEN — domain · application · web · persistence · 통합 (+ `MarkDocumentRequestSubmittedService` form 연동점) |
+| **form** | ✅ GREEN — domain(FormTemplate/FormField/FormSubmission) · application(Create/Get/SaveDraft/Submit/GetSubmission + AiStructurePort 스텁) · web(2 컨트롤러) · persistence · 통합. 제출 성립 시 collab 케이스 DOCS_SUBMITTED 전이 |
 | document | 미착수 |
-| ai | 미착수 |
+| ai | 미착수 (form 의 AiStructurePort 는 규칙 기반 스텁) |
 
 ### 다음 순서
-1. form (+ ai.structure 포트 목) RED → GREEN
-2. document
-3. ai (FakeLlmClient 계약)
-4. 전체 통합 시나리오 재확인 (form 제출 → collab 상태전이 연동)
+1. document (파일 저장 - Presigned URL, OCR 텍스트)
+2. ai (LLM 오케스트레이션 - FakeLlmClient 계약, form 의 AiStructurePort 를 실제 구현으로 교체)
+3. review-summary (사정사 요약/하이라이트/누락)
