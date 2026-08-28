@@ -53,12 +53,13 @@ dependencies {
 
 	// --- Test ---
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.springframework.security:spring-security-test'
-	testImplementation 'org.testcontainers:junit-jupiter'
-	testImplementation 'org.testcontainers:postgresql'
 	testRuntimeOnly 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	// TODO: Testcontainers(postgresql) — Docker Desktop 호환 문제 해소 후 재도입.
+	//   testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	//   testImplementation 'org.testcontainers:junit-jupiter'
+	//   testImplementation 'org.testcontainers:postgresql'
 }
 
 tasks.named('test') {

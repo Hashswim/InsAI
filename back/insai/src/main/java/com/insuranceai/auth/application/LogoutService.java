@@ -13,6 +13,8 @@ public class LogoutService {
 
 	/** 리프레시 토큰을 폐기한다. 이미 없으면 조용히 성공(멱등). */
 	public void logout(String refreshToken) {
-		throw new UnsupportedOperationException("TODO: implement LogoutService.logout");
+		if (refreshToken != null && !refreshToken.isBlank()) {
+			refreshTokenStore.delete(refreshToken);
+		}
 	}
 }

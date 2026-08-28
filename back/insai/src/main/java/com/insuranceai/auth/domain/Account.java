@@ -1,17 +1,21 @@
 package com.insuranceai.auth.domain;
 
+import com.insuranceai.common.error.BusinessException;
+import com.insuranceai.common.error.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
@@ -20,11 +24,13 @@ import java.util.UUID;
 /**
  * 계정 애그리게이트 루트.
  *
- * 불변식(테스트로 강제):
+ * 불변식:
  * - email 은 소문자·trim 으로 정규화되어 저장된다
  * - 평문 비밀번호는 보관하지 않는다 (passwordHash 만)
- * - role 미지정 시 CLAIMANT, 상태 ACTIVE
+ * - role 미지정 시 CLAIMANT / ACTIVE
  * - role = ADJUSTER 는 PENDING 으로 생성되어 관리자 승인 후 ACTIVE
+ *
+ * 식별자는 애플리케이션이 생성한다(UUID). Persistable 로 신규 여부를 알려 persist 경로를 태운다.
  */
 @Entity
 @Table(
@@ -32,10 +38,9 @@ import java.util.UUID;
 		uniqueConstraints = @UniqueConstraint(name = "uk_accounts_email", columnNames = "email")
 )
 @EntityListeners(AuditingEntityListener.class)
-public class Account {
+public class Account implements Persistable<UUID> {
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
 	@Column(nullable = false, unique = true)
@@ -62,34 +67,76 @@ public class Account {
 	@LastModifiedDate
 	private Instant updatedAt;
 
+	@Transient
+	private boolean isNew = false;
+
 	protected Account() {
 	}
 
 	public static Account create(String email, String passwordHash, String name, Role role) {
-		throw new UnsupportedOperationException("TODO: implement Account.create");
+		Account account = new Account();
+		account.id = UUID.randomUUID();
+		account.email = normalizeEmail(email);
+		account.passwordHash = requireText(passwordHash, "비밀번호 해시");
+		account.name = requireText(name, "이름");
+		account.role = role == null ? Role.CLAIMANT : role;
+		account.status = account.role == Role.ADJUSTER ? AccountStatus.PENDING : AccountStatus.ACTIVE;
+		account.isNew = true;
+		return account;
 	}
 
 	/** PENDING -> ACTIVE */
 	public void activate() {
-		throw new UnsupportedOperationException("TODO: implement Account.activate");
+		if (status != AccountStatus.PENDING) {
+			throw new BusinessException(ErrorCode.CONFLICT, "승인 대기 상태가 아닙니다.");
+		}
+		this.status = AccountStatus.ACTIVE;
 	}
 
-	/** ACTIVE -> SUSPENDED */
+	/** -> SUSPENDED */
 	public void suspend() {
-		throw new UnsupportedOperationException("TODO: implement Account.suspend");
+		this.status = AccountStatus.SUSPENDED;
 	}
 
 	public void changePassword(String newPasswordHash) {
-		throw new UnsupportedOperationException("TODO: implement Account.changePassword");
+		this.passwordHash = requireText(newPasswordHash, "비밀번호 해시");
 	}
 
-	/** PENDING/SUSPENDED 이면 BusinessException(FORBIDDEN) */
+	/** ACTIVE 가 아니면 BusinessException(FORBIDDEN) */
 	public void verifyActive() {
-		throw new UnsupportedOperationException("TODO: implement Account.verifyActive");
+		if (status != AccountStatus.ACTIVE) {
+			throw new BusinessException(ErrorCode.FORBIDDEN, "로그인할 수 없는 계정 상태입니다.");
+		}
 	}
 
+	private static String normalizeEmail(String email) {
+		if (email == null || email.isBlank()) {
+			throw new BusinessException(ErrorCode.INVALID_INPUT, "이메일은 필수입니다.");
+		}
+		return email.trim().toLowerCase();
+	}
+
+	private static String requireText(String value, String field) {
+		if (value == null || value.isBlank()) {
+			throw new BusinessException(ErrorCode.INVALID_INPUT, field + "은(는) 필수입니다.");
+		}
+		return value.trim();
+	}
+
+	@PostLoad
+	@PostPersist
+	void markNotNew() {
+		this.isNew = false;
+	}
+
+	@Override
 	public UUID getId() {
 		return id;
+	}
+
+	@Override
+	public boolean isNew() {
+		return isNew;
 	}
 
 	public String getEmail() {

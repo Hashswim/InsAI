@@ -1,7 +1,9 @@
 package com.insuranceai.auth.api;
 
+import com.insuranceai.auth.application.LoginCommand;
 import com.insuranceai.auth.application.LoginService;
 import com.insuranceai.auth.application.LogoutService;
+import com.insuranceai.auth.application.SignupCommand;
 import com.insuranceai.auth.application.SignupService;
 import com.insuranceai.auth.application.TokenRefreshService;
 import com.insuranceai.common.web.ApiResponse;
@@ -35,21 +37,26 @@ public class AuthController {
 	@PostMapping("/signup")
 	@ResponseStatus(HttpStatus.CREATED)
 	public ApiResponse<Void> signup(@Valid @RequestBody SignupRequest request) {
-		throw new UnsupportedOperationException("TODO: implement AuthController.signup");
+		signupService.signup(new SignupCommand(
+				request.email(), request.password(), request.name(), request.role()));
+		return ApiResponse.ok();
 	}
 
 	@PostMapping("/login")
 	public ApiResponse<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-		throw new UnsupportedOperationException("TODO: implement AuthController.login");
+		return ApiResponse.ok(TokenResponse.from(
+				loginService.login(new LoginCommand(request.email(), request.password()))));
 	}
 
 	@PostMapping("/refresh")
 	public ApiResponse<TokenResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-		throw new UnsupportedOperationException("TODO: implement AuthController.refresh");
+		return ApiResponse.ok(TokenResponse.from(
+				tokenRefreshService.refresh(request.refreshToken())));
 	}
 
 	@PostMapping("/logout")
 	public ApiResponse<Void> logout(@Valid @RequestBody RefreshRequest request) {
-		throw new UnsupportedOperationException("TODO: implement AuthController.logout");
+		logoutService.logout(request.refreshToken());
+		return ApiResponse.ok();
 	}
 }
