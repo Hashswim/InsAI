@@ -10,8 +10,12 @@
 | **Domain 단위** | JUnit5 + AssertJ (Spring 없음) | Entity·VO·Enum·도메인 규칙 | 가장 빠름, 가장 많이 |
 | **Application 단위** | JUnit5 + Mockito | UseCase 서비스 오케스트레이션·예외 경로 | 포트는 목(mock) |
 | **Web 슬라이스** | `@WebMvcTest` + MockMvc | 컨트롤러·검증·응답 형태·에러 엔벨로프·상태코드 | 서비스는 `@MockitoBean` |
-| **Persistence 슬라이스** | `@DataJpaTest` + Testcontainers PostgreSQL | Repository 쿼리·제약·매핑 | `it` 프로파일 |
-| **통합** | `@SpringBootTest(RANDOM_PORT)` + Testcontainers | HTTP 진입 → DB 까지 전 계층 플로우 | `it` 프로파일 |
+| **Persistence 슬라이스** | `@DataJpaTest` + H2(PostgreSQL 호환) | Repository 쿼리·제약·매핑 | `test` 프로파일, `AbstractJpaTest` |
+| **통합** | `@SpringBootTest(MOCK)` + MockMvc + H2 | HTTP 진입 → DB 까지 전 계층 플로우 | `test` 프로파일, `AbstractIntegrationTest` |
+
+> DB 참고: 이 머신의 Docker Desktop 과 Testcontainers 가 통신되지 않아(`/info` 400) Persistence/통합
+> 테스트를 H2(PostgreSQL 호환 모드)로 돌린다. Testcontainers 재도입은 `build.gradle` / `AbstractJpaTest`
+> / `AbstractIntegrationTest` 의 TODO 로 보존.
 
 규약
 - 클래스명: 단위 `XxxTest`, 통합 `XxxIntegrationTest`, JPA 슬라이스 `XxxJpaTest`
@@ -243,12 +247,21 @@
 
 ---
 
-## 진행 순서
+## 진행 현황
 
-1. common (엔벨로프·예외 매핑) — 이미 스켈레톤 존재, 테스트만
-2. **auth** ← 현재 여기부터 RED 작성
-3. collab
-4. form (+ ai.structure 포트 목)
-5. document
-6. ai (FakeLlmClient 계약)
-7. 통합 시나리오 재확인
+| 도메인 | 상태 |
+|---|---|
+| common | 스켈레톤 존재, 전용 테스트 미작성 |
+| **auth** | ✅ GREEN (44/44) — domain·application·infra·web·persistence·통합 |
+| **collab** | 🔴 RED — domain(Case/DocumentRequest/Decision) + application(7 서비스) 37개 RED. web·persistence·통합 RED 미작성 |
+| form | 미착수 |
+| document | 미착수 |
+| ai | 미착수 |
+
+### 다음 순서
+1. collab GREEN (domain 규칙 → 서비스)
+2. collab web(`CaseController`) + persistence + 통합 RED → GREEN
+3. form (+ ai.structure 포트 목) RED → GREEN
+4. document
+5. ai (FakeLlmClient 계약)
+6. 통합 시나리오 재확인
