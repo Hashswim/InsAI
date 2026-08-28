@@ -1,6 +1,9 @@
 package com.insuranceai.collab.application;
 
+import com.insuranceai.collab.domain.DocumentRequest;
 import com.insuranceai.collab.domain.DocumentRequestRepository;
+import com.insuranceai.common.error.BusinessException;
+import com.insuranceai.common.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,11 +20,15 @@ public class UpdateDocumentRequestStatusService {
 
 	/**
 	 * @param reason REJECT 일 때 필수 (공백이면 INVALID_INPUT)
-	 * @throws com.insuranceai.common.error.BusinessException NOT_FOUND - 없는 요청,
-	 *         INVALID_INPUT - reject 사유 누락
 	 */
 	@Transactional
 	public void updateStatus(UUID documentRequestId, DocumentRequestAction action, String reason) {
-		throw new UnsupportedOperationException("TODO: UpdateDocumentRequestStatusService.updateStatus");
+		DocumentRequest request = documentRequests.findById(documentRequestId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "서류 요청을 찾을 수 없습니다."));
+
+		switch (action) {
+			case ACCEPT -> request.accept();
+			case REJECT -> request.reject(reason);
+		}
 	}
 }

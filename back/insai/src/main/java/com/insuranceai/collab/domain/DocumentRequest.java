@@ -1,6 +1,8 @@
 package com.insuranceai.collab.domain;
 
 import com.insuranceai.common.domain.BaseEntity;
+import com.insuranceai.common.error.BusinessException;
+import com.insuranceai.common.error.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -8,6 +10,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -45,20 +48,45 @@ public class DocumentRequest extends BaseEntity {
 
 	public static DocumentRequest create(UUID caseId, UUID requestedBy, UUID templateId,
 	                                     String title, LocalDate dueDate) {
-		throw new UnsupportedOperationException("TODO: DocumentRequest.create");
+		DocumentRequest request = new DocumentRequest();
+		request.assignId();
+		request.caseId = Objects.requireNonNull(caseId, "caseId");
+		request.requestedBy = Objects.requireNonNull(requestedBy, "requestedBy");
+		request.templateId = Objects.requireNonNull(templateId, "templateId");
+		request.title = requireText(title, "제목");
+		request.dueDate = dueDate;
+		request.status = DocumentRequestStatus.PENDING;
+		return request;
 	}
 
 	public void markSubmitted() {
-		throw new UnsupportedOperationException("TODO: DocumentRequest.markSubmitted");
+		if (status != DocumentRequestStatus.PENDING && status != DocumentRequestStatus.REJECTED) {
+			throw conflict();
+		}
+		this.status = DocumentRequestStatus.SUBMITTED;
+		this.rejectionReason = null;
 	}
 
 	public void accept() {
-		throw new UnsupportedOperationException("TODO: DocumentRequest.accept");
+		requireSubmitted();
+		this.status = DocumentRequestStatus.ACCEPTED;
 	}
 
 	/** reason 이 공백이면 BusinessException(INVALID_INPUT) */
 	public void reject(String reason) {
-		throw new UnsupportedOperationException("TODO: DocumentRequest.reject");
+		requireSubmitted();
+		this.rejectionReason = requireText(reason, "반려 사유");
+		this.status = DocumentRequestStatus.REJECTED;
+	}
+
+	private void requireSubmitted() {
+		if (status != DocumentRequestStatus.SUBMITTED) {
+			throw conflict();
+		}
+	}
+
+	private BusinessException conflict() {
+		return new BusinessException(ErrorCode.CONFLICT, "현재 상태(" + status + ")에서 처리할 수 없습니다.");
 	}
 
 	public UUID getCaseId() {

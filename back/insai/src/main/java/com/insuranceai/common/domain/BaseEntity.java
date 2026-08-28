@@ -1,5 +1,7 @@
 package com.insuranceai.common.domain;
 
+import com.insuranceai.common.error.BusinessException;
+import com.insuranceai.common.error.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.Id;
@@ -42,6 +44,14 @@ public abstract class BaseEntity implements Persistable<UUID> {
 	protected final void assignId() {
 		this.id = UUID.randomUUID();
 		this.isNew = true;
+	}
+
+	/** 공백/누락이면 BusinessException(INVALID_INPUT), 아니면 trim 한 값을 돌려준다. */
+	protected static String requireText(String value, String fieldLabel) {
+		if (value == null || value.isBlank()) {
+			throw new BusinessException(ErrorCode.INVALID_INPUT, fieldLabel + "은(는) 필수입니다.");
+		}
+		return value.trim();
 	}
 
 	@PostLoad

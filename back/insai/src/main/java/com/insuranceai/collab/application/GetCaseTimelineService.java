@@ -19,6 +19,8 @@ public class GetCaseTimelineService {
 	/** 케이스의 활동 이벤트를 시간 오름차순으로 반환한다. */
 	@Transactional(readOnly = true)
 	public List<TimelineEntry> timeline(UUID caseId) {
-		throw new UnsupportedOperationException("TODO: GetCaseTimelineService.timeline");
+		return timeline.findByCaseIdOrderByCreatedAtAsc(caseId).stream()
+				.map(event -> new TimelineEntry(event.getType(), event.getActorId(), event.getCreatedAt()))
+				.toList();
 	}
 }

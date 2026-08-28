@@ -8,6 +8,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -37,7 +38,14 @@ public class Message extends BaseEntity {
 	}
 
 	public static Message of(UUID caseId, UUID senderId, Role senderRole, String body) {
-		throw new UnsupportedOperationException("TODO: Message.of");
+		Message message = new Message();
+		message.assignId();
+		message.caseId = Objects.requireNonNull(caseId, "caseId");
+		message.senderId = Objects.requireNonNull(senderId, "senderId");
+		message.senderRole = Objects.requireNonNull(senderRole, "senderRole");
+		message.body = requireText(body, "내용");
+		message.aiMediated = false;
+		return message;
 	}
 
 	public UUID getCaseId() {

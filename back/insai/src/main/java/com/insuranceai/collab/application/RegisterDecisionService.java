@@ -1,8 +1,14 @@
 package com.insuranceai.collab.application;
 
+import com.insuranceai.collab.domain.Case;
 import com.insuranceai.collab.domain.CaseRepository;
+import com.insuranceai.collab.domain.Decision;
 import com.insuranceai.collab.domain.DecisionRepository;
+import com.insuranceai.collab.domain.TimelineEvent;
 import com.insuranceai.collab.domain.TimelineEventRepository;
+import com.insuranceai.collab.domain.TimelineEventType;
+import com.insuranceai.common.error.BusinessException;
+import com.insuranceai.common.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +34,23 @@ public class RegisterDecisionService {
 	 * 성공 시 케이스 상태를 DECISION_MADE 로 전이한다.
 	 *
 	 * @return 생성된 Decision id
-	 * @throws com.insuranceai.common.error.BusinessException NOT_FOUND - 없는 케이스,
-	 *         FORBIDDEN - 배정 사정사가 아님, CONFLICT - UNDER_REVIEW 아님
 	 */
 	@Transactional
 	public UUID register(RegisterDecisionCommand command) {
-		throw new UnsupportedOperationException("TODO: RegisterDecisionService.register");
+		Case caseAggregate = cases.findById(command.caseId())
+				.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "케이스를 찾을 수 없습니다."));
+
+		if (!command.adjusterId().equals(caseAggregate.getAdjusterId())) {
+			throw new BusinessException(ErrorCode.FORBIDDEN, "배정된 손해사정사만 결과를 등록할 수 있습니다.");
+		}
+		caseAggregate.recordDecision();
+
+		Decision saved = decisions.save(Decision.of(
+				caseAggregate.getId(), command.adjusterId(), command.rawText()));
+		cases.save(caseAggregate);
+		timeline.save(TimelineEvent.of(
+				caseAggregate.getId(), TimelineEventType.DECISION_MADE, command.adjusterId()));
+
+		return saved.getId();
 	}
 }

@@ -1,7 +1,12 @@
 package com.insuranceai.collab.application;
 
+import com.insuranceai.collab.domain.Case;
 import com.insuranceai.collab.domain.CaseRepository;
+import com.insuranceai.collab.domain.TimelineEvent;
 import com.insuranceai.collab.domain.TimelineEventRepository;
+import com.insuranceai.collab.domain.TimelineEventType;
+import com.insuranceai.common.error.BusinessException;
+import com.insuranceai.common.error.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +23,12 @@ public class AssignAdjusterService {
 		this.timeline = timeline;
 	}
 
-	/**
-	 * @throws com.insuranceai.common.error.BusinessException NOT_FOUND - 없는 케이스,
-	 *         CONFLICT - 이미 사정사가 배정됨
-	 */
 	@Transactional
 	public void assign(UUID caseId, UUID adjusterId) {
-		throw new UnsupportedOperationException("TODO: AssignAdjusterService.assign");
+		Case caseAggregate = cases.findById(caseId)
+				.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "케이스를 찾을 수 없습니다."));
+		caseAggregate.assignAdjuster(adjusterId);
+		cases.save(caseAggregate);
+		timeline.save(TimelineEvent.of(caseAggregate.getId(), TimelineEventType.ADJUSTER_ASSIGNED, adjusterId));
 	}
 }

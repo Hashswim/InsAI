@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -31,11 +32,16 @@ public class Decision extends BaseEntity {
 
 	/** rawText 가 공백이면 BusinessException(INVALID_INPUT) */
 	public static Decision of(UUID caseId, UUID adjusterId, String rawText) {
-		throw new UnsupportedOperationException("TODO: Decision.of");
+		Decision decision = new Decision();
+		decision.assignId();
+		decision.caseId = Objects.requireNonNull(caseId, "caseId");
+		decision.adjusterId = Objects.requireNonNull(adjusterId, "adjusterId");
+		decision.rawText = requireText(rawText, "사정 결과 원문");
+		return decision;
 	}
 
 	public void applyPlainText(String plainText) {
-		throw new UnsupportedOperationException("TODO: Decision.applyPlainText");
+		this.plainText = plainText;
 	}
 
 	public UUID getCaseId() {

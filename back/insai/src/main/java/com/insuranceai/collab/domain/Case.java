@@ -1,12 +1,15 @@
 package com.insuranceai.collab.domain;
 
 import com.insuranceai.common.domain.BaseEntity;
+import com.insuranceai.common.error.BusinessException;
+import com.insuranceai.common.error.ErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -36,36 +39,65 @@ public class Case extends BaseEntity {
 	}
 
 	public static Case open(UUID claimantId, String title) {
-		throw new UnsupportedOperationException("TODO: Case.open");
+		Case c = new Case();
+		c.assignId();
+		c.claimantId = Objects.requireNonNull(claimantId, "claimantId");
+		c.title = requireText(title, "제목");
+		c.status = CaseStatus.OPEN;
+		return c;
 	}
 
 	public void assignAdjuster(UUID adjusterId) {
-		throw new UnsupportedOperationException("TODO: Case.assignAdjuster");
+		if (this.adjusterId != null) {
+			throw new BusinessException(ErrorCode.CONFLICT, "이미 손해사정사가 배정되었습니다.");
+		}
+		this.adjusterId = Objects.requireNonNull(adjusterId, "adjusterId");
 	}
 
 	public void markDocsRequested() {
-		throw new UnsupportedOperationException("TODO: Case.markDocsRequested");
+		if (status != CaseStatus.OPEN && status != CaseStatus.DOCS_SUBMITTED && status != CaseStatus.UNDER_REVIEW) {
+			throw conflict("서류를 요청");
+		}
+		this.status = CaseStatus.DOCS_REQUESTED;
 	}
 
 	public void markDocsSubmitted() {
-		throw new UnsupportedOperationException("TODO: Case.markDocsSubmitted");
+		requireStatus(CaseStatus.DOCS_REQUESTED, "서류 제출을 반영");
+		this.status = CaseStatus.DOCS_SUBMITTED;
 	}
 
 	public void startReview() {
-		throw new UnsupportedOperationException("TODO: Case.startReview");
+		requireStatus(CaseStatus.DOCS_SUBMITTED, "검토를 시작");
+		this.status = CaseStatus.UNDER_REVIEW;
 	}
 
 	public void recordDecision() {
-		throw new UnsupportedOperationException("TODO: Case.recordDecision");
+		requireStatus(CaseStatus.UNDER_REVIEW, "사정 결과를 등록");
+		this.status = CaseStatus.DECISION_MADE;
 	}
 
 	public void close() {
-		throw new UnsupportedOperationException("TODO: Case.close");
+		requireStatus(CaseStatus.DECISION_MADE, "케이스를 종료");
+		this.status = CaseStatus.CLOSED;
 	}
 
 	/** userId 가 청구인도 배정 사정사도 아니면 BusinessException(FORBIDDEN) */
 	public void requireParticipant(UUID userId) {
-		throw new UnsupportedOperationException("TODO: Case.requireParticipant");
+		if (userId != null && (userId.equals(claimantId) || userId.equals(adjusterId))) {
+			return;
+		}
+		throw new BusinessException(ErrorCode.FORBIDDEN, "이 케이스의 참여자가 아닙니다.");
+	}
+
+	private void requireStatus(CaseStatus expected, String action) {
+		if (this.status != expected) {
+			throw conflict(action);
+		}
+	}
+
+	private BusinessException conflict(String action) {
+		return new BusinessException(ErrorCode.CONFLICT,
+				"현재 상태(" + status + ")에서는 " + action + "할 수 없습니다.");
 	}
 
 	public UUID getClaimantId() {
