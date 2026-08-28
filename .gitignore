@@ -1,0 +1,48 @@
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- IDE ----
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+*.swp
+
+# ---- Java / Gradle (back/) ----
+**/build/
+**/.gradle/
+!**/gradle/wrapper/gradle-wrapper.jar
+**/out/
+**/bin/
+*.class
+*.log
+*.jar
+!**/gradle-wrapper.jar
+!**/maven-wrapper.jar
+
+# ---- Node / Vue (front/) ----
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.vite/
+**/coverage/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Env / secrets ----
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+application-local.yml
+application-secret*.yml
+
+# ---- Docker ----
+**/.docker-data/
