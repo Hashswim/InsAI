@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: insai
       POSTGRES_PASSWORD: insai
     ports:
-      - "5432:5432"
+      - "5433:5432"   # 호스트 5432 는 로컬 Postgres 가 쓰는 경우가 있어 5433 로 매핑
     volumes:
       - insai-pg:/var/lib/postgresql/data
     healthcheck:
