@@ -253,14 +253,13 @@
 |---|---|
 | common | 스켈레톤 존재, 전용 테스트 미작성 |
 | **auth** | ✅ GREEN (44/44) — domain·application·infra·web·persistence·통합 |
-| **collab** | 🟡 domain(Case/DocumentRequest/Decision) + application(7 서비스) 37개 GREEN. web(`CaseController`)·persistence·통합 미착수 |
+| **collab** | ✅ GREEN — domain · application(8 서비스) · web(`CaseController` 8 엔드포인트) · persistence · 통합 |
 | form | 미착수 |
 | document | 미착수 |
 | ai | 미착수 |
 
 ### 다음 순서
-1. collab web(`CaseController`) + persistence + 통합 RED → GREEN
-2. form (+ ai.structure 포트 목) RED → GREEN
-3. document
-4. ai (FakeLlmClient 계약)
-5. 통합 시나리오 재확인
+1. form (+ ai.structure 포트 목) RED → GREEN
+2. document
+3. ai (FakeLlmClient 계약)
+4. 전체 통합 시나리오 재확인 (form 제출 → collab 상태전이 연동)
