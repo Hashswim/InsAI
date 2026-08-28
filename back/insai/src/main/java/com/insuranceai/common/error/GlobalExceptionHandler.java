@@ -4,10 +4,13 @@ import com.insuranceai.common.web.ApiResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.stream.Collectors;
 
@@ -30,6 +33,16 @@ public class GlobalExceptionHandler {
 				.collect(Collectors.joining(", "));
 		return ResponseEntity.status(ErrorCode.INVALID_INPUT.status())
 				.body(ApiResponse.fail(ErrorCode.INVALID_INPUT.name(), detail));
+	}
+
+	@ExceptionHandler({
+			MissingRequestHeaderException.class,
+			MethodArgumentTypeMismatchException.class,
+			HttpMessageNotReadableException.class
+	})
+	public ResponseEntity<ApiResponse<Void>> handleMalformedRequest(Exception e) {
+		return ResponseEntity.status(ErrorCode.INVALID_INPUT.status())
+				.body(ApiResponse.fail(ErrorCode.INVALID_INPUT.name(), ErrorCode.INVALID_INPUT.defaultMessage()));
 	}
 
 	@ExceptionHandler(Exception.class)
