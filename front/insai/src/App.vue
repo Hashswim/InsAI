@@ -1,11 +1,13 @@
-<script setup></script>
+<script setup>
+import { useAuthStore } from '@/stores/auth'
+import AppHeader from '@/components/AppHeader.vue'
+
+const auth = useAuthStore()
+</script>
 
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <AppHeader v-if="auth.isAuthenticated" />
+  <main class="page">
+    <RouterView />
+  </main>
 </template>
-
-<style scoped></style>
