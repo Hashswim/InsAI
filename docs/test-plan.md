@@ -254,8 +254,9 @@
 | common | 스켈레톤 존재, 전용 테스트 미작성 |
 | **auth** | ✅ GREEN (44/44) — domain·application·infra·web·persistence·통합 |
 | **collab** | ✅ GREEN — domain · application · web · persistence · 통합 (+ `MarkDocumentRequestSubmittedService` form 연동점) |
-| **form** | ✅ GREEN — domain(FormTemplate/FormField/FormSubmission) · application(Create/Get/SaveDraft/Submit/GetSubmission + AiStructurePort 스텁) · web(2 컨트롤러) · persistence · 통합. 제출 성립 시 collab 케이스 DOCS_SUBMITTED 전이 |
-| document | 미착수 |
+| **form** | ✅ GREEN — domain · application · web · persistence · 통합. 제출 성립 시 collab DOCS_SUBMITTED 전이 |
+| **form.catalog (생명보험)** | ✅ GREEN — 청구 서류 15종 FormTemplate 정의(공통 4 + 사망/장해/진단/입원·수술), 유형별 요구 서류 매트릭스, 부팅 시 멱등 시드, `GET /catalog/life/*` |
+| document | 착수(StoredFile 스케치) → 생명보험 카탈로그 우선 처리로 보류, 재개 예정 |
 | ai | 미착수 (form 의 AiStructurePort 는 규칙 기반 스텁) |
 
 ### 다음 순서
