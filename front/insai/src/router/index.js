@@ -2,17 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const routes = [
-  { path: '/', redirect: '/cases' },
   {
-    path: '/login',
-    name: 'login',
-    component: () => import('@/views/LoginView.vue'),
-    meta: { public: true },
-  },
-  {
-    path: '/signup',
-    name: 'signup',
-    component: () => import('@/views/SignupView.vue'),
+    path: '/',
+    name: 'landing',
+    component: () => import('@/views/LandingView.vue'),
     meta: { public: true },
   },
   { path: '/cases', name: 'cases', component: () => import('@/views/CasesView.vue') },
@@ -29,7 +22,7 @@ const routes = [
     component: () => import('@/views/SubmitFormView.vue'),
     props: true,
   },
-  { path: '/:pathMatch(.*)*', redirect: '/cases' },
+  { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
 
 const router = createRouter({
@@ -40,9 +33,9 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (!to.meta.public && !auth.isAuthenticated) {
-    return { name: 'login', query: { redirect: to.fullPath } }
+    return { name: 'landing' }
   }
-  if (to.meta.public && auth.isAuthenticated) {
+  if (to.name === 'landing' && auth.isAuthenticated) {
     return { name: 'cases' }
   }
 })

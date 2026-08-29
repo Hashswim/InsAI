@@ -9,7 +9,7 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '손해사정사', ADMIN: '
 
 async function onLogout() {
   await auth.logout()
-  router.push({ name: 'login' })
+  router.push({ name: 'landing' })
 }
 </script>
 
@@ -22,7 +22,7 @@ async function onLogout() {
         {{ (auth.roles[0] && roleLabel[auth.roles[0]]) || '사용자' }}
       </span>
       <span class="small muted">{{ auth.user?.id?.slice(0, 8) }}</span>
-      <button class="btn ghost sm" @click="onLogout">로그아웃</button>
+      <button class="btn ghost sm" @click="onLogout">나가기</button>
     </div>
   </header>
 </template>

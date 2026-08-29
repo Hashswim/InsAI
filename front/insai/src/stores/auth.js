@@ -23,6 +23,14 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value
   }
 
+  // 역할 버튼으로 바로 입장 (dev 데모)
+  async function demoLogin(role) {
+    const tokens = await authApi.demoLogin(role)
+    session.set(tokens)
+    rev.value++
+    return user.value
+  }
+
   async function signup(payload) {
     await authApi.signup(payload)
   }
@@ -37,5 +45,5 @@ export const useAuthStore = defineStore('auth', () => {
     rev.value++
   }
 
-  return { user, isAuthenticated, roles, isAdjuster, isClaimant, login, signup, logout }
+  return { user, isAuthenticated, roles, isAdjuster, isClaimant, login, demoLogin, signup, logout }
 })
