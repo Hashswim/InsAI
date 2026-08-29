@@ -12,6 +12,7 @@ import com.insuranceai.collab.application.PostMessageCommand;
 import com.insuranceai.collab.application.PostMessageService;
 import com.insuranceai.collab.application.RegisterDecisionCommand;
 import com.insuranceai.collab.application.RegisterDecisionService;
+import com.insuranceai.collab.application.StartReviewService;
 import com.insuranceai.collab.application.TimelineEntry;
 import com.insuranceai.collab.application.UpdateDocumentRequestStatusService;
 import com.insuranceai.common.web.ApiResponse;
@@ -42,6 +43,7 @@ public class CaseController {
 	private final UpdateDocumentRequestStatusService updateDocumentRequestStatusService;
 	private final PostMessageService postMessageService;
 	private final RegisterDecisionService registerDecisionService;
+	private final StartReviewService startReviewService;
 	private final GetCaseTimelineService getCaseTimelineService;
 
 	public CaseController(OpenCaseService openCaseService,
@@ -51,6 +53,7 @@ public class CaseController {
 	                      UpdateDocumentRequestStatusService updateDocumentRequestStatusService,
 	                      PostMessageService postMessageService,
 	                      RegisterDecisionService registerDecisionService,
+	                      StartReviewService startReviewService,
 	                      GetCaseTimelineService getCaseTimelineService) {
 		this.openCaseService = openCaseService;
 		this.assignAdjusterService = assignAdjusterService;
@@ -59,6 +62,7 @@ public class CaseController {
 		this.updateDocumentRequestStatusService = updateDocumentRequestStatusService;
 		this.postMessageService = postMessageService;
 		this.registerDecisionService = registerDecisionService;
+		this.startReviewService = startReviewService;
 		this.getCaseTimelineService = getCaseTimelineService;
 	}
 
@@ -113,6 +117,14 @@ public class CaseController {
 		UUID id = postMessageService.post(new PostMessageCommand(
 				caseId, userId, request.senderRole(), request.body()));
 		return ApiResponse.ok(new CollabResponses.MessageCreated(id));
+	}
+
+	@PostMapping("/cases/{caseId}/review")
+	public ApiResponse<Void> startReview(
+			@PathVariable UUID caseId,
+			@RequestHeader("X-User-Id") UUID userId) {
+		startReviewService.startReview(caseId, userId);
+		return ApiResponse.ok();
 	}
 
 	@PostMapping("/cases/{caseId}/decisions")

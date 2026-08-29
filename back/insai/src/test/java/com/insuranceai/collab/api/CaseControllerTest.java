@@ -9,6 +9,7 @@ import com.insuranceai.collab.application.ListCaseDocumentRequestsService;
 import com.insuranceai.collab.application.OpenCaseService;
 import com.insuranceai.collab.application.PostMessageService;
 import com.insuranceai.collab.application.RegisterDecisionService;
+import com.insuranceai.collab.application.StartReviewService;
 import com.insuranceai.collab.application.TimelineEntry;
 import com.insuranceai.collab.application.UpdateDocumentRequestStatusService;
 import com.insuranceai.collab.domain.TimelineEventType;
@@ -52,6 +53,7 @@ class CaseControllerTest {
 	@MockitoBean UpdateDocumentRequestStatusService updateDocumentRequestStatusService;
 	@MockitoBean PostMessageService postMessageService;
 	@MockitoBean RegisterDecisionService registerDecisionService;
+	@MockitoBean StartReviewService startReviewService;
 	@MockitoBean GetCaseTimelineService getCaseTimelineService;
 
 	private static final String USER = "11111111-1111-1111-1111-111111111111";
@@ -182,6 +184,13 @@ class CaseControllerTest {
 						.contentType(MediaType.APPLICATION_JSON).content("""
 						{"senderRole":"CLAIMANT","body":"   "}"""))
 				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	@DisplayName("POST /cases/{id}/review -> 200")
+	void startReview() throws Exception {
+		mvc.perform(post("/cases/{id}/review", CASE).header("X-User-Id", USER))
+				.andExpect(status().isOk());
 	}
 
 	@Test

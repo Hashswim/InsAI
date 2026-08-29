@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -67,5 +68,12 @@ public class FormSubmissionController {
 	@GetMapping("/{submissionId}")
 	public ApiResponse<FormSubmissionView> get(@PathVariable UUID submissionId) {
 		return ApiResponse.ok(getSubmissionService.get(submissionId));
+	}
+
+	/** GET /submissions?documentRequestId=... — 서류 요청에 대한 제출물 */
+	@GetMapping(params = "documentRequestId")
+	public ApiResponse<FormSubmissionView> getByDocumentRequest(
+			@RequestParam UUID documentRequestId) {
+		return ApiResponse.ok(getSubmissionService.getByDocumentRequestId(documentRequestId));
 	}
 }

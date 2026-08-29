@@ -24,4 +24,12 @@ public class GetSubmissionService {
 				.map(FormSubmissionView::from)
 				.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "제출물을 찾을 수 없습니다."));
 	}
+
+	/** 서류 요청에 대한 제출물. @throws BusinessException NOT_FOUND - 아직 제출 안 됨 */
+	@Transactional(readOnly = true)
+	public FormSubmissionView getByDocumentRequestId(UUID documentRequestId) {
+		return submissions.findByDocumentRequestId(documentRequestId)
+				.map(FormSubmissionView::from)
+				.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "아직 제출된 내용이 없습니다."));
+	}
 }

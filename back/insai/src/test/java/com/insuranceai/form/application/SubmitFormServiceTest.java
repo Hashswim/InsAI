@@ -102,6 +102,20 @@ class SubmitFormServiceTest {
 	}
 
 	@Test
+	@DisplayName("getByDocumentRequestId: 제출물이 있으면 뷰, 없으면 NOT_FOUND")
+	void getByDocumentRequestId() {
+		com.insuranceai.form.application.GetSubmissionService getService =
+				new com.insuranceai.form.application.GetSubmissionService(submissions);
+		FormSubmission existing = FormSubmission.create(docReq, caseId, template.getId(), by);
+		given(submissions.findByDocumentRequestId(docReq)).willReturn(Optional.of(existing));
+
+		assertThat(getService.getByDocumentRequestId(docReq).status()).isEqualTo("DRAFT");
+		assertThatThrownBy(() -> getService.getByDocumentRequestId(UUID.randomUUID()))
+				.isInstanceOf(BusinessException.class)
+				.extracting("errorCode").isEqualTo(ErrorCode.NOT_FOUND);
+	}
+
+	@Test
 	@DisplayName("기존 제출물이 있으면 이어서 재제출(version 증가)")
 	void resubmitsExisting() {
 		FormSubmission existing = FormSubmission.create(docReq, caseId, template.getId(), by);

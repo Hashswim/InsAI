@@ -1,8 +1,11 @@
 package com.insuranceai.collab.api;
 
+import com.insuranceai.auth.domain.Role;
 import com.insuranceai.collab.application.CaseView;
 import com.insuranceai.collab.application.GetCaseService;
+import com.insuranceai.collab.application.ListCaseMessagesService;
 import com.insuranceai.collab.application.ListCasesService;
+import com.insuranceai.collab.application.MessageView;
 import com.insuranceai.common.config.SecurityConfig;
 import com.insuranceai.common.error.BusinessException;
 import com.insuranceai.common.error.ErrorCode;
@@ -33,6 +36,7 @@ class CaseQueryControllerTest {
 
 	@MockitoBean ListCasesService listCasesService;
 	@MockitoBean GetCaseService getCaseService;
+	@MockitoBean ListCaseMessagesService listCaseMessagesService;
 
 	private static final String USER = "11111111-1111-1111-1111-111111111111";
 	private static final String CASE = "22222222-2222-2222-2222-222222222222";
@@ -77,5 +81,18 @@ class CaseQueryControllerTest {
 
 		mvc.perform(get("/cases/{id}", CASE))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@DisplayName("GET /cases/{id}/messages -> 200 목록")
+	void listMessages() throws Exception {
+		given(listCaseMessagesService.list(any())).willReturn(List.of(new MessageView(
+				UUID.fromString(CASE), UUID.fromString(USER), Role.CLAIMANT,
+				"서류 올렸습니다", false, Instant.now())));
+
+		mvc.perform(get("/cases/{id}/messages", CASE))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data[0].body").value("서류 올렸습니다"))
+				.andExpect(jsonPath("$.data[0].senderRole").value("CLAIMANT"));
 	}
 }
