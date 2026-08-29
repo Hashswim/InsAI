@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,5 +43,11 @@ public class FormTemplateController {
 	@GetMapping("/{templateId}")
 	public ApiResponse<FormTemplateView> get(@PathVariable UUID templateId) {
 		return ApiResponse.ok(getTemplateService.get(templateId));
+	}
+
+	/** GET /templates?code=life.death-certificate — code 의 최신 버전 조회 */
+	@GetMapping(params = "code")
+	public ApiResponse<FormTemplateView> getByCode(@RequestParam String code) {
+		return ApiResponse.ok(getTemplateService.getByCode(code));
 	}
 }

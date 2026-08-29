@@ -23,6 +23,18 @@ public class GetTemplateService {
 	public FormTemplateView get(UUID templateId) {
 		FormTemplate template = templates.findById(templateId)
 				.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "템플릿을 찾을 수 없습니다."));
+		return toView(template);
+	}
+
+	/** code 의 최신 version 템플릿. @throws BusinessException NOT_FOUND */
+	@Transactional(readOnly = true)
+	public FormTemplateView getByCode(String code) {
+		FormTemplate template = templates.findTopByCodeOrderByVersionDesc(code)
+				.orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "템플릿을 찾을 수 없습니다: " + code));
+		return toView(template);
+	}
+
+	private FormTemplateView toView(FormTemplate template) {
 		return new FormTemplateView(
 				template.getId(), template.getCode(), template.getName(),
 				template.getVersion(), template.getFields());

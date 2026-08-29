@@ -98,4 +98,26 @@ class FormTemplateControllerTest {
 
 		mvc.perform(get("/templates/{id}", ID)).andExpect(status().isNotFound());
 	}
+
+	@Test
+	@DisplayName("GET /templates?code= -> 200")
+	void getByCode() throws Exception {
+		given(getTemplateService.getByCode("life.death-certificate")).willReturn(new FormTemplateView(
+				UUID.fromString(ID), "life.death-certificate", "사망진단서(시체검안서)", 1,
+				List.of(new FormField("deceasedName", "사망자 성명", FieldType.TEXT, true, null, null, null, null))));
+
+		mvc.perform(get("/templates").param("code", "life.death-certificate"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.code").value("life.death-certificate"))
+				.andExpect(jsonPath("$.data.fields[0].key").value("deceasedName"));
+	}
+
+	@Test
+	@DisplayName("GET /templates?code= 없음 -> 404")
+	void getByCodeNotFound() throws Exception {
+		given(getTemplateService.getByCode(any())).willThrow(new BusinessException(ErrorCode.NOT_FOUND));
+
+		mvc.perform(get("/templates").param("code", "life.nope"))
+				.andExpect(status().isNotFound());
+	}
 }

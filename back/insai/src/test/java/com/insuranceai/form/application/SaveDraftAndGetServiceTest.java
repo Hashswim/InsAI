@@ -93,6 +93,19 @@ class SaveDraftAndGetServiceTest {
 	}
 
 	@Test
+	@DisplayName("getByCode: code 의 최신 버전을 반환, 없으면 NOT_FOUND")
+	void getByCode() {
+		given(templates.findTopByCodeOrderByVersionDesc("medical-cert"))
+				.willReturn(Optional.of(FormFixtures.template()));
+		given(templates.findTopByCodeOrderByVersionDesc("nope")).willReturn(Optional.empty());
+
+		assertThat(getTemplateService.getByCode("medical-cert").code()).isEqualTo("medical-cert");
+		assertThatThrownBy(() -> getTemplateService.getByCode("nope"))
+				.isInstanceOf(BusinessException.class)
+				.extracting("errorCode").isEqualTo(ErrorCode.NOT_FOUND);
+	}
+
+	@Test
 	@DisplayName("getSubmission: 없으면 NOT_FOUND")
 	void submissionNotFound() {
 		given(submissions.findById(any())).willReturn(Optional.empty());
