@@ -30,7 +30,7 @@ class ListCaseDocumentRequestsServiceTest {
 	void mapsToViews() {
 		UUID caseId = UUID.randomUUID();
 		DocumentRequest request = CollabFixtures.submittedDocRequest();
-		given(documentRequests.findByCaseId(caseId)).willReturn(List.of(request));
+		given(documentRequests.findByCaseIdOrderByCreatedAtAsc(caseId)).willReturn(List.of(request));
 
 		List<DocumentRequestView> views = service.list(caseId);
 

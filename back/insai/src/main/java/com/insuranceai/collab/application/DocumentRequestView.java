@@ -1,5 +1,8 @@
 package com.insuranceai.collab.application;
 
+import com.insuranceai.collab.domain.DocumentRequest;
+
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
@@ -13,6 +16,13 @@ public record DocumentRequestView(
 		String title,
 		String status,
 		LocalDate dueDate,
-		String rejectionReason
+		String rejectionReason,
+		Instant createdAt
 ) {
+
+	public static DocumentRequestView from(DocumentRequest r) {
+		return new DocumentRequestView(
+				r.getId(), r.getCaseId(), r.getTemplateId(), r.getTitle(),
+				r.getStatus().name(), r.getDueDate(), r.getRejectionReason(), r.getCreatedAt());
+	}
 }

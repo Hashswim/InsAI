@@ -9,5 +9,7 @@ public interface DocumentRequestRepository extends JpaRepository<DocumentRequest
 
 	List<DocumentRequest> findByCaseId(UUID caseId);
 
+	List<DocumentRequest> findByCaseIdOrderByCreatedAtAsc(UUID caseId);
+
 	List<DocumentRequest> findByCaseIdAndStatus(UUID caseId, DocumentRequestStatus status);
 }

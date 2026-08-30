@@ -18,15 +18,8 @@ public class ListCaseDocumentRequestsService {
 
 	@Transactional(readOnly = true)
 	public List<DocumentRequestView> list(UUID caseId) {
-		return documentRequests.findByCaseId(caseId).stream()
-				.map(request -> new DocumentRequestView(
-						request.getId(),
-						request.getCaseId(),
-						request.getTemplateId(),
-						request.getTitle(),
-						request.getStatus().name(),
-						request.getDueDate(),
-						request.getRejectionReason()))
+		return documentRequests.findByCaseIdOrderByCreatedAtAsc(caseId).stream()
+				.map(DocumentRequestView::from)
 				.toList();
 	}
 }

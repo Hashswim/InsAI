@@ -135,7 +135,7 @@ class CaseControllerTest {
 	void listDocumentRequests() throws Exception {
 		given(listCaseDocumentRequestsService.list(any())).willReturn(List.of(
 				new DocumentRequestView(UUID.fromString(USER), UUID.fromString(CASE), UUID.fromString(CASE),
-						"진단서", "PENDING", null, null)));
+						"진단서", "PENDING", null, null, java.time.Instant.now())));
 
 		mvc.perform(get("/cases/{id}/document-requests", CASE))
 				.andExpect(status().isOk())
