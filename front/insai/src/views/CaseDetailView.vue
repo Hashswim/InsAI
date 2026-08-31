@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import * as casesApi from '@/api/cases'
 import * as formsApi from '@/api/forms'
 import { claimTypes, requiredDocuments } from '@/api/catalog'
+import { claimTypeLabel } from '@/lib/claimType'
 import { isRead, markRead } from '@/lib/readState'
 import StatusBadge from '@/components/StatusBadge.vue'
 import CaseTimeline from '@/components/CaseTimeline.vue'
@@ -247,14 +248,19 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
         <div class="main stack">
           <div class="card stack" style="gap: 8px">
             <div class="between">
-              <StatusBadge :status="caseData.status" />
+              <div class="row" style="gap: 6px">
+                <span class="chip on" style="cursor: default">{{ claimTypeLabel(caseData.claimType) }}</span>
+                <StatusBadge :status="caseData.status" />
+              </div>
               <span v-if="myRole" class="badge b-muted">{{ roleLabel[myRole] }}</span>
             </div>
             <h1>{{ caseData.title }}</h1>
-            <div class="row small muted">
+            <div class="row small muted" style="flex-wrap: wrap">
               <span>개설 {{ fmtDate(caseData.createdAt) }}</span>
               <span>·</span>
-              <span>사정사 {{ caseData.adjusterId ? '배정됨' : '미배정' }}</span>
+              <span>청구인 {{ caseData.claimantName || '—' }}</span>
+              <span>·</span>
+              <span>담당 손해사정사 {{ caseData.adjusterName || '미배정' }}</span>
             </div>
             <button v-if="canTakeCase" class="btn sm" @click="takeCase">이 청구 배정받기</button>
           </div>

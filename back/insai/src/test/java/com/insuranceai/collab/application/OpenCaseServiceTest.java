@@ -38,7 +38,8 @@ class OpenCaseServiceTest {
 	void opensCase() {
 		given(cases.save(any(Case.class))).willAnswer(inv -> inv.getArgument(0));
 
-		UUID id = service.open(new OpenCaseCommand(UUID.randomUUID(), "자동차 사고 청구"));
+		UUID id = service.open(new OpenCaseCommand(
+				UUID.randomUUID(), "자동차 사고 청구", com.insuranceai.collab.domain.ClaimType.DEATH));
 
 		assertThat(id).isNotNull();
 

@@ -71,7 +71,7 @@ public class CaseController {
 	public ApiResponse<CollabResponses.CaseCreated> openCase(
 			@RequestHeader("X-User-Id") UUID userId,
 			@Valid @RequestBody OpenCaseRequest request) {
-		UUID caseId = openCaseService.open(new OpenCaseCommand(userId, request.title()));
+		UUID caseId = openCaseService.open(new OpenCaseCommand(userId, request.title(), request.claimType()));
 		return ApiResponse.ok(new CollabResponses.CaseCreated(caseId));
 	}
 

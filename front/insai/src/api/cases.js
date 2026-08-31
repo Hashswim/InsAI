@@ -3,7 +3,7 @@ import api from './client'
 export const listCases = (unassigned = false) =>
   api.get('/cases', { params: unassigned ? { unassigned: true } : {} })
 export const getCase = (id) => api.get(`/cases/${id}`)
-export const openCase = (title) => api.post('/cases', { title })
+export const openCase = (title, claimType) => api.post('/cases', { title, claimType })
 export const assignAdjuster = (id, adjusterId) => api.patch(`/cases/${id}/assign`, { adjusterId })
 export const startReview = (id) => api.post(`/cases/${id}/review`)
 

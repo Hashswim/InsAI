@@ -9,7 +9,7 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '손해사정사', ADMIN: '
 
 async function onLogout() {
   await auth.logout()
-  router.push({ name: 'landing' })
+  router.push({ name: 'home' })
 }
 </script>
 

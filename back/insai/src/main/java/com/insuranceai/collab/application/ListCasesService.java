@@ -16,9 +16,11 @@ import java.util.UUID;
 public class ListCasesService {
 
 	private final CaseRepository cases;
+	private final ParticipantNames names;
 
-	public ListCasesService(CaseRepository cases) {
+	public ListCasesService(CaseRepository cases, ParticipantNames names) {
 		this.cases = cases;
+		this.names = names;
 	}
 
 	/** 내가 청구인이거나 배정 사정사인 케이스 (최신순). */
@@ -30,7 +32,7 @@ public class ListCasesService {
 		return merged.values().stream()
 				.sorted(Comparator.comparing(Case::getCreatedAt,
 						Comparator.nullsLast(Comparator.reverseOrder())))
-				.map(CaseView::from)
+				.map(this::toView)
 				.toList();
 	}
 
@@ -39,7 +41,11 @@ public class ListCasesService {
 	public List<CaseView> unassigned() {
 		return cases.findByStatus(CaseStatus.OPEN).stream()
 				.filter(c -> c.getAdjusterId() == null)
-				.map(CaseView::from)
+				.map(this::toView)
 				.toList();
+	}
+
+	private CaseView toView(Case c) {
+		return CaseView.from(c, names.nameOf(c.getClaimantId()), names.nameOf(c.getAdjusterId()));
 	}
 }

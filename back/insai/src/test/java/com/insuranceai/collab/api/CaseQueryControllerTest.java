@@ -45,8 +45,8 @@ class CaseQueryControllerTest {
 	@DisplayName("GET /cases -> 200 목록")
 	void listCases() throws Exception {
 		given(listCasesService.forUser(any())).willReturn(List.of(new CaseView(
-				UUID.fromString(CASE), "자동차 사고", "OPEN",
-				UUID.fromString(USER), null, Instant.now())));
+				UUID.fromString(CASE), "자동차 사고", "OPEN", "DEATH", "사망보험금",
+				UUID.fromString(USER), "홍길동", null, null, Instant.now())));
 
 		mvc.perform(get("/cases").header("X-User-Id", USER))
 				.andExpect(status().isOk())
@@ -65,8 +65,8 @@ class CaseQueryControllerTest {
 	@DisplayName("GET /cases/{id} -> 200 상세")
 	void getCase() throws Exception {
 		given(getCaseService.get(any())).willReturn(new CaseView(
-				UUID.fromString(CASE), "자동차 사고", "DOCS_REQUESTED",
-				UUID.fromString(USER), null, Instant.now()));
+				UUID.fromString(CASE), "자동차 사고", "DOCS_REQUESTED", "DEATH", "사망보험금",
+				UUID.fromString(USER), "홍길동", null, null, Instant.now()));
 
 		mvc.perform(get("/cases/{id}", CASE))
 				.andExpect(status().isOk())

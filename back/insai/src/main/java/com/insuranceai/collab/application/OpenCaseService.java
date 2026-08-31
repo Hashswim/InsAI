@@ -24,7 +24,7 @@ public class OpenCaseService {
 	/** @return 생성된 케이스 id. CASE_OPENED 타임라인 이벤트를 함께 기록한다. */
 	@Transactional
 	public UUID open(OpenCaseCommand command) {
-		Case created = cases.save(Case.open(command.claimantId(), command.title()));
+		Case created = cases.save(Case.open(command.claimantId(), command.title(), command.claimType()));
 		timeline.save(TimelineEvent.of(created.getId(), TimelineEventType.CASE_OPENED, command.claimantId()));
 		return created.getId();
 	}

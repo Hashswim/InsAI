@@ -4,8 +4,20 @@ import { useAuthStore } from '@/stores/auth'
 const routes = [
   {
     path: '/',
-    name: 'landing',
-    component: () => import('@/views/LandingView.vue'),
+    name: 'home',
+    component: () => import('@/views/HomeView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/LoginView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/signup',
+    name: 'signup',
+    component: () => import('@/views/SignupView.vue'),
     meta: { public: true },
   },
   { path: '/cases', name: 'cases', component: () => import('@/views/CasesView.vue') },
@@ -33,9 +45,9 @@ const router = createRouter({
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (!to.meta.public && !auth.isAuthenticated) {
-    return { name: 'landing' }
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
-  if (to.name === 'landing' && auth.isAuthenticated) {
+  if (['login', 'signup'].includes(to.name) && auth.isAuthenticated) {
     return { name: 'cases' }
   }
 })

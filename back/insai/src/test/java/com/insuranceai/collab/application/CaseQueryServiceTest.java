@@ -27,6 +27,9 @@ class CaseQueryServiceTest {
 	@Mock
 	CaseRepository cases;
 
+	@Mock
+	ParticipantNames names;
+
 	@InjectMocks
 	ListCasesService listCasesService;
 

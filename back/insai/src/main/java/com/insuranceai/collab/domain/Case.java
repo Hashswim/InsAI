@@ -35,14 +35,23 @@ public class Case extends BaseEntity {
 	@Column(nullable = false, length = 20)
 	private CaseStatus status;
 
+	@Enumerated(EnumType.STRING)
+	@Column(length = 30)
+	private ClaimType claimType;
+
 	protected Case() {
 	}
 
 	public static Case open(UUID claimantId, String title) {
+		return open(claimantId, title, ClaimType.OTHER);
+	}
+
+	public static Case open(UUID claimantId, String title, ClaimType claimType) {
 		Case c = new Case();
 		c.assignId();
 		c.claimantId = Objects.requireNonNull(claimantId, "claimantId");
 		c.title = requireText(title, "제목");
+		c.claimType = claimType == null ? ClaimType.OTHER : claimType;
 		c.status = CaseStatus.OPEN;
 		return c;
 	}
@@ -114,5 +123,9 @@ public class Case extends BaseEntity {
 
 	public CaseStatus getStatus() {
 		return status;
+	}
+
+	public ClaimType getClaimType() {
+		return claimType;
 	}
 }
