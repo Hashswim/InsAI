@@ -3,7 +3,7 @@ import { session } from './session'
 
 const BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 
-const api = axios.create({ baseURL: BASE })
+const api = axios.create({ baseURL: BASE, timeout: 15000 })
 
 // 요청: Bearer 토큰 + X-User-Id 주입
 api.interceptors.request.use((config) => {

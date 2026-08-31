@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { CLAIM_TYPES } from '@/lib/claimType'
@@ -12,13 +12,15 @@ const err = ref('')
 const role = ref('CLAIMANT')
 
 async function go(selectedRole, to) {
+  if (loading.value) return // 중복 클릭만 차단 (버튼 전체를 잠그지 않음)
   err.value = ''
   loading.value = `${selectedRole}:${to}`
   try {
     if (!auth.isAuthenticated) await auth.demoLogin(selectedRole)
     router.push({ name: to })
   } catch (e) {
-    err.value = e.message || '입장에 실패했습니다.'
+    console.error('[home] demo entry failed', e)
+    err.value = e.message || '입장에 실패했습니다. 잠시 후 다시 시도해 주세요.'
   } finally {
     loading.value = ''
   }
@@ -62,10 +64,17 @@ const faqs = [
   ['내 보험 정보는 어디서 오나요?', '지금은 데모 데이터입니다. 정식 버전에서는 보험사 연동 또는 직접 등록으로 채워집니다.'],
 ]
 const openFaq = ref(0)
+
+// HMR/재진입 시 이전 상태가 남아 버튼이 잠기는 것 방지
+onMounted(() => {
+  loading.value = ''
+})
 </script>
 
 <template>
   <div class="lp">
+    <div v-if="err" class="lp-toast">{{ err }}</div>
+
     <!-- 상단 바 -->
     <header class="lp-bar">
       <div class="lp-bar-in">
@@ -77,7 +86,7 @@ const openFaq = ref(0)
         </nav>
         <div class="grow" />
         <RouterLink v-if="!auth.isAuthenticated" to="/login" class="lp-login">로그인</RouterLink>
-        <button class="btn" :disabled="loading" @click="go('CLAIMANT', 'cases')">시작하기</button>
+        <button class="btn" @click="go('CLAIMANT', 'cases')">시작하기</button>
       </div>
     </header>
 
@@ -92,11 +101,11 @@ const openFaq = ref(0)
             그 사이를 AI가 중개해 옮겨 적고, 빠진 곳을 짚고, 결정을 쉬운 말로 풀어 줍니다.
           </p>
           <div class="lp-hero-actions">
-            <button class="btn lg" :disabled="loading" @click="go('CLAIMANT', 'policies')">
+            <button class="btn lg" @click="go('CLAIMANT', 'policies')">
               🛡️ 내 보험 조회하기
             </button>
-            <button class="btn lg ghost" :disabled="loading" @click="scrollTo('start')">
-              둘러보기
+            <button class="btn lg ghost" @click="scrollTo('how')">
+              어떻게 진행되나요
             </button>
           </div>
         </div>
@@ -113,18 +122,12 @@ const openFaq = ref(0)
               <b>손해사정사</b><span class="small muted">청구를 검토·사정합니다</span>
             </button>
           </div>
-          <button class="btn block lg" :disabled="loading" @click="startByRole">
+          <button class="btn block lg" @click="startByRole">
             {{ loading.startsWith(role) ? '입장 중…' : (role === 'ADJUSTER' ? '손해사정사로 입장' : '청구인으로 입장') }}
           </button>
-          <button
-            v-if="role === 'CLAIMANT'"
-            class="btn block ghost"
-            :disabled="loading"
-            @click="go('CLAIMANT', 'policies')"
-          >
+          <button v-if="role === 'CLAIMANT'" class="btn block ghost" @click="go('CLAIMANT', 'policies')">
             먼저 내 보험부터 보기
           </button>
-          <div v-if="err" class="alert err" style="margin-top: 4px">{{ err }}</div>
         </div>
       </div>
     </section>
@@ -216,10 +219,10 @@ const openFaq = ref(0)
         <h2>지금 바로 둘러보세요</h2>
         <p class="small">데모 계정으로 두 역할을 모두 체험할 수 있습니다.</p>
         <div class="lp-cta-btns">
-          <button class="btn lg" :disabled="loading" @click="go('CLAIMANT', 'cases')">
+          <button class="btn lg" @click="go('CLAIMANT', 'cases')">
             {{ loading === 'CLAIMANT:cases' ? '입장 중…' : '🧾 청구인으로 시작' }}
           </button>
-          <button class="btn lg ghost" :disabled="loading" @click="go('ADJUSTER', 'cases')">
+          <button class="btn lg ghost" @click="go('ADJUSTER', 'cases')">
             {{ loading === 'ADJUSTER:cases' ? '입장 중…' : '🔎 손해사정사로 시작' }}
           </button>
         </div>
@@ -236,9 +239,9 @@ const openFaq = ref(0)
 
     <!-- 모바일 하단 고정 바 -->
     <div class="lp-dock">
-      <button :disabled="loading" @click="go('CLAIMANT', 'policies')">내 보험</button>
-      <button :disabled="loading" @click="go('CLAIMANT', 'cases')">청구인 시작</button>
-      <button class="prim" :disabled="loading" @click="go('ADJUSTER', 'cases')">사정사 시작</button>
+      <button @click="go('CLAIMANT', 'policies')">내 보험</button>
+      <button @click="go('CLAIMANT', 'cases')">청구인 시작</button>
+      <button class="prim" @click="go('ADJUSTER', 'cases')">사정사 시작</button>
     </div>
   </div>
 </template>
@@ -246,6 +249,20 @@ const openFaq = ref(0)
 <style scoped>
 .lp {
   color: var(--ink);
+}
+.lp-toast {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: var(--danger);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 .lp-inner {
   max-width: 1000px;
@@ -346,12 +363,12 @@ const openFaq = ref(0)
   font-size: 15px;
 }
 .lp-hero-actions .btn.ghost {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.14);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.65);
 }
 .lp-hero-actions .btn.ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.26);
 }
 
 /* 빠른 시작 카드 */
@@ -379,12 +396,19 @@ const openFaq = ref(0)
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface);
   cursor: pointer;
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+.lp-role:hover {
+  border-color: var(--brand);
 }
 .lp-role.on {
   border-color: var(--brand);
   background: var(--brand-tint);
+  box-shadow: 0 0 0 3px var(--brand-tint);
 }
 .lp-role b {
   font-size: 14px;
@@ -522,12 +546,12 @@ const openFaq = ref(0)
   flex-wrap: wrap;
 }
 .lp-cta-btns .btn.ghost {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.14);
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.65);
 }
 .lp-cta-btns .btn.ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.26);
 }
 
 /* 푸터 */
