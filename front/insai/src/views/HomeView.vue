@@ -2,7 +2,6 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { CLAIM_TYPES } from '@/lib/claimType'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -43,12 +42,29 @@ const steps = [
   ['사정 결과를 평문으로 확인', '결정 내용을 이해하기 쉬운 말로 풀어 청구인에게 전달합니다.'],
 ]
 
-const claimAreas = {
-  DEATH: '사망 진단서·가족관계·수익자 확인 등 사망보험금 청구에 필요한 서류를 안내합니다.',
-  DISABILITY: '후유장해 진단서와 장해분류표 기준을 확인하며 장해보험금 청구를 진행합니다.',
-  DIAGNOSIS: '암·뇌·심장 등 진단 확정 서류를 모아 진단보험금을 청구합니다.',
-  HOSPITALIZATION_SURGERY: '입퇴원 확인서·수술 확인서로 입원·수술 급여금을 청구합니다.',
-}
+// 보험 종류 → 세부 청구 유형. (현재 실제 동작은 생명보험 흐름만)
+const insuranceCategories = [
+  {
+    name: '생명보험',
+    subtypes: ['사망보험금 (일반·재해)', '후유장해보험금', '진단보험금 (암·뇌·심장)', '입원·수술급여금'],
+  },
+  {
+    name: '실손의료보험',
+    subtypes: ['통원 의료비', '입원 의료비', '처방조제비', '비급여 (도수·주사·MRI)'],
+  },
+  {
+    name: '자동차보험',
+    subtypes: ['대인배상', '대물배상', '자기신체사고·자동차상해', '자기차량손해'],
+  },
+  {
+    name: '상해·질병보험',
+    subtypes: ['상해 진단·수술', '골절·화상 진단금', '질병 후유장해', '입원일당'],
+  },
+  {
+    name: '화재·재물보험',
+    subtypes: ['주택·건물 화재', '가재도구 손해', '일상생활 배상책임'],
+  },
+]
 
 const values = [
   ['🧩', '입력을 양식 칸에 맞게', '청구인이 자유롭게 쓴 내용을 미리 저장된 양식의 알맞은 칸에 채워 넣습니다.'],
@@ -58,7 +74,7 @@ const values = [
 
 const faqs = [
   ['로그인 없이도 써볼 수 있나요?', '네. 아래 “청구인으로 시작 / 손해사정사로 시작” 버튼으로 데모 계정에 바로 입장할 수 있습니다.'],
-  ['어떤 보험을 다루나요?', '현재는 생명보험 청구에 집중하고 있습니다. 사망·후유장해·진단·입원/수술 급여금 청구를 지원합니다.'],
+  ['어떤 보험을 다루나요?', '생명보험, 실손의료보험, 자동차보험, 상해·질병보험, 화재·재물보험까지 보험금 청구 전반을 다룹니다. 각 보험의 세부 청구 유형에 맞춰 서류를 안내합니다.'],
   ['서류 파일을 직접 올려야 하나요?', '텍스트 항목은 화면 안의 양식에서 바로 작성합니다. 첨부가 필요한 항목만 파일(PDF·이미지, 20MB 이하)을 올립니다.'],
   ['AI가 보험금 지급 여부를 결정하나요?', '아니요. AI는 정리·요약·번역만 돕고, 판단과 사정은 손해사정사가 합니다.'],
   ['내 보험 정보는 어디서 오나요?', '지금은 데모 데이터입니다. 정식 버전에서는 보험사 연동 또는 직접 등록으로 채워집니다.'],
@@ -94,10 +110,10 @@ onMounted(() => {
     <section class="lp-hero">
       <div class="lp-hero-in">
         <div class="lp-hero-copy">
-          <span class="lp-eyebrow">생명보험 청구 협업 플랫폼</span>
+          <span class="lp-eyebrow">보험금 청구 협업 플랫폼</span>
           <h1>보험금 청구,<br />청구인과 손해사정사가<br />한 화면에서</h1>
           <p>
-            서류 요청 · 작성 · 검토 · 사정까지 하나의 공간에서.
+            생명보험·실손·자동차·상해까지, 서류 요청 · 작성 · 검토 · 사정을 하나의 공간에서.
             그 사이를 AI가 중개해 옮겨 적고, 빠진 곳을 짚고, 결정을 쉬운 말로 풀어 줍니다.
           </p>
           <div class="lp-hero-actions">
@@ -135,9 +151,9 @@ onMounted(() => {
     <!-- 지표 스트립 -->
     <section class="lp-stats">
       <div class="lp-stats-in">
-        <div><b>15종</b><span>생명보험 청구 서류 양식</span></div>
+        <div><b>5개 보종</b><span>생명 · 실손 · 자동차 · 상해 · 화재</span></div>
+        <div><b>18+종</b><span>청구 유형별 서류 양식</span></div>
         <div><b>4단계</b><span>요청 → 작성 → 검토 → 사정</span></div>
-        <div><b>1곳</b><span>청구인·사정사가 함께 보는 공간</span></div>
         <div><b>AI</b><span>요약 · 누락 점검 · 평문 변환</span></div>
       </div>
     </section>
@@ -161,17 +177,22 @@ onMounted(() => {
       </div>
     </section>
 
-    <!-- 청구 유형 -->
+    <!-- 보험 종류 · 청구 유형 -->
     <section id="areas" class="lp-section alt">
       <div class="lp-inner">
         <div class="lp-head">
-          <span class="lp-eyebrow dark">청구 유형</span>
-          <h2>생명보험 청구, 유형별로 안내합니다</h2>
+          <span class="lp-eyebrow dark">보험 종류</span>
+          <h2>보험 종류별로 청구를 안내합니다</h2>
+          <p class="muted small" style="margin-top: 6px">
+            생명보험부터 실손·자동차·상해·화재까지, 청구 유형에 맞춰 필요한 서류를 정리해 드립니다.
+          </p>
         </div>
         <div class="grid">
-          <div v-for="t in CLAIM_TYPES" :key="t.code" class="card stack" style="gap: 6px">
-            <span class="chip on" style="cursor: default; align-self: flex-start">{{ t.label }}</span>
-            <p class="muted small">{{ claimAreas[t.code] }}</p>
+          <div v-for="c in insuranceCategories" :key="c.name" class="cat card stack">
+            <h3>{{ c.name }}</h3>
+            <ul class="cat-subs">
+              <li v-for="s in c.subtypes" :key="s">{{ s }}</li>
+            </ul>
           </div>
         </div>
       </div>
@@ -232,7 +253,7 @@ onMounted(() => {
     <footer class="lp-foot">
       <div class="lp-inner lp-foot-in">
         <span class="brand-word">Insurance<b>AI</b></span>
-        <p class="small muted">AI 중립 보험금 청구 협업 공간 · 생명보험 · 데모 서비스</p>
+        <p class="small muted">AI 중립 보험금 청구 협업 공간 · 데모 서비스</p>
         <p class="small muted">© {{ new Date().getFullYear() }} InsuranceAI</p>
       </div>
     </footer>
@@ -487,6 +508,35 @@ onMounted(() => {
   font-size: 14px;
   display: grid;
   place-items: center;
+}
+
+/* 보험 종류 카드 */
+.cat {
+  gap: 12px;
+}
+.cat-subs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cat-subs li {
+  font-size: 13px;
+  color: var(--ink-2);
+  padding-left: 14px;
+  position: relative;
+}
+.cat-subs li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--brand);
 }
 
 /* FAQ */
