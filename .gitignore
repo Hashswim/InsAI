@@ -46,3 +46,6 @@ application-secret*.yml
 
 # ---- Docker ----
 **/.docker-data/
+
+# ---- Local file storage (document module dev) ----
+**/.local-storage/

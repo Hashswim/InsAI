@@ -119,7 +119,13 @@ async function onSubmit() {
         </p>
 
         <form class="card stack" @submit.prevent="toConfirm">
-          <FormFieldInput v-for="f in fields" :key="f.key" :field="f" v-model="data[f.key]" />
+          <FormFieldInput
+            v-for="f in fields"
+            :key="f.key"
+            :field="f"
+            :case-id="id"
+            v-model="data[f.key]"
+          />
           <div v-if="saved" class="alert ok">임시저장했습니다.</div>
           <div class="row">
             <button type="button" class="btn ghost" @click="onSaveDraft">임시저장</button>
@@ -148,7 +154,9 @@ async function onSubmit() {
                 <span v-if="f.required" class="req">*</span>
               </dt>
               <dd :class="{ empty: !isFilled(f) }">
-                {{ isFilled(f) ? data[f.key] : '미입력' }}
+                <template v-if="!isFilled(f)">미입력</template>
+                <template v-else-if="f.type === 'FILE'">첨부 완료</template>
+                <template v-else>{{ data[f.key] }}</template>
               </dd>
             </template>
           </dl>

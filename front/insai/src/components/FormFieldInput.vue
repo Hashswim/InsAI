@@ -1,12 +1,42 @@
 <script setup>
+import { ref } from 'vue'
+import { uploadFile } from '@/api/files'
+
 const props = defineProps({
   field: { type: Object, required: true },
   modelValue: { type: [String, Number], default: '' },
+  caseId: { type: String, default: '' },
+  submissionId: { type: String, default: null },
 })
 const emit = defineEmits(['update:modelValue'])
 
 function on(e) {
   emit('update:modelValue', e.target.value)
+}
+
+const uploading = ref(false)
+const uploadErr = ref('')
+const uploadedName = ref('')
+
+async function onFile(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  uploadErr.value = ''
+  uploading.value = true
+  try {
+    const fileId = await uploadFile({
+      caseId: props.caseId,
+      submissionId: props.submissionId,
+      file,
+    })
+    uploadedName.value = file.name
+    emit('update:modelValue', fileId)
+  } catch (err) {
+    uploadErr.value = err.message || '업로드에 실패했습니다.'
+    e.target.value = ''
+  } finally {
+    uploading.value = false
+  }
 }
 </script>
 
@@ -45,8 +75,20 @@ function on(e) {
       @input="on"
     />
 
-    <div v-else-if="field.type === 'FILE'" class="alert info">
-      파일 첨부는 준비 중입니다. 파일명 등 텍스트 정보만 입력해 주세요.
+    <div v-else-if="field.type === 'FILE'" class="stack" style="gap: 6px">
+      <div v-if="modelValue" class="alert ok" style="display: flex; gap: 10px; align-items: center">
+        <span>첨부됨: {{ uploadedName || '기존 파일' }}</span>
+        <label class="btn ghost small" style="cursor: pointer">
+          다시 선택
+          <input type="file" hidden :disabled="uploading" @change="onFile" />
+        </label>
+      </div>
+      <label v-else class="btn ghost" style="cursor: pointer; align-self: flex-start">
+        {{ uploading ? '업로드 중…' : '파일 선택' }}
+        <input type="file" hidden :disabled="uploading" @change="onFile" />
+      </label>
+      <p class="small muted">PDF 또는 이미지, 20MB 이하.</p>
+      <div v-if="uploadErr" class="alert err">{{ uploadErr }}</div>
     </div>
 
     <input

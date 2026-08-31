@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import * as casesApi from '@/api/cases'
 import * as formsApi from '@/api/forms'
+import { openFile } from '@/api/files'
 import { claimTypes, requiredDocuments } from '@/api/catalog'
 import { claimTypeLabel } from '@/lib/claimType'
 import { isRead, markRead } from '@/lib/readState'
@@ -175,6 +176,9 @@ async function addRequest(rd) {
     addErr.value = e.message
   }
 }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const isFileValue = (v) => typeof v === 'string' && UUID_RE.test(v)
+
 const submissions = ref({})
 async function loadSubmission(drId) {
   try {
@@ -492,7 +496,16 @@ const statusLabel = {
                 <dl class="kv" style="margin-top: 10px">
                   <template v-for="(v, k) in submissions[d.id].data" :key="k">
                     <dt>{{ k }}</dt>
-                    <dd>{{ v }}</dd>
+                    <dd>
+                      <button
+                        v-if="isFileValue(v)"
+                        class="btn sm ghost"
+                        @click="openFile(v)"
+                      >
+                        첨부 파일 열기
+                      </button>
+                      <template v-else>{{ v }}</template>
+                    </dd>
                   </template>
                 </dl>
                 <div

@@ -24,6 +24,10 @@ insai:
     enabled: ${INSAI_AI_ENABLED:false}
     api-key: ${INSAI_AI_API_KEY:}
     model: ${INSAI_AI_MODEL:claude-opus-5}
+  storage:
+    # 로컬 디스크 스토리지 — 운영에서는 오브젝트 스토리지 presigned URL 로 교체
+    local-dir: ${INSAI_STORAGE_DIR:./.local-storage}
+    public-base-url: ${INSAI_STORAGE_BASE_URL:/local-storage}
 
 management:
   endpoints:

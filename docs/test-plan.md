@@ -191,31 +191,35 @@
 
 ---
 
-## 4. document (파일 저장)
+## 4. document (파일 저장) — GREEN
 
-### 4.1 Domain — `StoredFile`
-- [ ] `StoredFile.register`: storageKey/contentType/size/uploaderId 필수
-- [ ] 허용 확장자 외 → `INVALID_INPUT`
-- [ ] 용량 상한 초과 → `INVALID_INPUT`
-- [ ] `attachOcrText`: OCR 텍스트 부착
+### 4.1 Domain — `StoredFile` (`StoredFileTest`)
+- [x] `StoredFile.register`: storageKey/contentType/size/uploaderId 필수, isNew
+- [x] 허용 확장자 외 → `INVALID_INPUT`
+- [x] 용량 0 이하 / 상한(20MB) 초과 → `INVALID_INPUT`
+- [x] `extensionOf`: 마지막 점 뒤 소문자 / 점 없으면 빈 문자열
+- [x] `attachOcrText`: OCR 텍스트 부착
 
-### 4.2 Application
-- [ ] `IssueUploadUrlService`: `StoragePort.presignPut` 호출 → `{url, storageKey}` 반환
-- [ ] `ConfirmUploadService`: 업로드 확인 → `StoredFile` 저장
-- [ ] `IssueDownloadUrlService`: 케이스 참여자만, 비참여자 → `FORBIDDEN`
-- [ ] `AttachOcrTextService`: `OcrPort` 결과 저장
+### 4.2 Application (`DocumentFileServicesTest`, `CaseAccessServiceTest`, `LocalDiskStorageTest`)
+- [x] `IssueUploadUrlService`: 참여자 확인 → `StoragePort.uploadUrl` → `{url, storageKey}` (key = `caseId/uuid.ext`); 비참여자 → `FORBIDDEN`; 나쁜 확장자 → `INVALID_INPUT`
+- [x] `ConfirmUploadService`: 참여자 확인 → `StoredFile` 저장 + OCR 텍스트 부착; OCR 실패해도 저장
+- [x] `IssueDownloadUrlService`: 없는 파일 → `NOT_FOUND`, 비참여자 → `FORBIDDEN`, 참여자 → `{url}`
+- [x] `ListCaseFilesService`: `byCase` / `bySubmission` → 뷰 매핑
+- [x] `collab.CaseAccessService`: 없는 케이스 → `NOT_FOUND`, 참여자 통과 / 그 외 `FORBIDDEN`
+- [x] `LocalDiskStorage`: write→read 라운드트립, `..` 경로 탈출 차단, 없는 키 → `NOT_FOUND`
 
-### 4.3 Web — `@WebMvcTest`
-- [ ] `POST /files/upload-url` → 200 `{url, storageKey}`
-- [ ] `POST /files` (업로드 확인) → 201
-- [ ] `GET /files/{id}/download-url` → 200 `{url}` / 비참여자 → 403
+### 4.3 Web — `@WebMvcTest` (`FileControllerTest`)
+- [x] `POST /files/upload-url` → 200 `{url, storageKey}`; X-User-Id 없으면 400; filename 없으면 400
+- [x] `POST /files` (업로드 확인) → 201 `{fileId}`
+- [x] `GET /files/{id}/download-url` → 200 `{url}` / 비참여자 → 403
+- [x] `GET /files?caseId=` → 200 리스트; caseId/submissionId 둘 다 없으면 400
 
-### 4.4 Persistence — `@DataJpaTest`
-- [ ] `StoredFileRepository`: `findByCaseId`, `findBySubmissionId`
+### 4.4 Persistence — `@DataJpaTest` (`StoredFileRepositoryJpaTest`)
+- [x] `findByCaseIdOrderByCreatedAtAsc`, `findBySubmissionIdOrderByCreatedAtAsc`
 
-### 4.5 통합 — `DocumentUploadIntegrationTest`
-- [ ] upload-url 발급 → `FakeStorage` 에 PUT → confirm → download-url → 다운로드 성공
-- [ ] 다른 사용자가 download-url 요청 → 403
+### 4.5 수동 E2E (curl, dev)
+- [x] upload-url 발급 → `/local-storage` PUT → confirm → `?caseId=` 조회 → download-url → 바이트 다운로드 (직접 + Vite 프록시 경유)
+- [x] 다른 사용자가 download-url 요청 → 403; 나쁜 확장자 업로드 → INVALID_INPUT
 
 ---
 
@@ -256,10 +260,10 @@
 | **collab** | ✅ GREEN — domain · application · web · persistence · 통합 (+ `MarkDocumentRequestSubmittedService` form 연동점) |
 | **form** | ✅ GREEN — domain · application · web · persistence · 통합. 제출 성립 시 collab DOCS_SUBMITTED 전이 |
 | **form.catalog (생명보험)** | ✅ GREEN — 청구 서류 15종 FormTemplate 정의(공통 4 + 사망/장해/진단/입원·수술), 유형별 요구 서류 매트릭스, 부팅 시 멱등 시드, `GET /catalog/life/*` |
-| document | 착수(StoredFile 스케치) → 생명보험 카탈로그 우선 처리로 보류, 재개 예정 |
-| ai | 미착수 (form 의 AiStructurePort 는 규칙 기반 스텁) |
+| document | ✅ GREEN — `StoredFile` + 2단계 업로드(upload-url→PUT→confirm) + 참여자 제한 다운로드 + `LocalDiskStorage`/`StubOcrPort` + `V4__document.sql` + 프론트 FILE 필드 실동작 |
+| ai | ✅ GREEN — `LlmClient` 포트(+`StubLlmClient`/`AnthropicLlmClient`), `ReviewSummaryService`, `LlmAiStructurePort`(@Primary), `LlmDecisionTranslator`. `insai.ai.enabled` 로 스텁↔실 Claude 토글 |
 
 ### 다음 순서
-1. document (파일 저장 - Presigned URL, OCR 텍스트)
-2. ai (LLM 오케스트레이션 - FakeLlmClient 계약, form 의 AiStructurePort 를 실제 구현으로 교체)
-3. review-summary (사정사 요약/하이라이트/누락)
+1. 실제 OCR / 오브젝트 스토리지 presigner (현재 로컬 디스크)
+2. `INSAI_AI_API_KEY` 수령 후 `AnthropicLlmClient` 실호출 검증
+3. 첨부 파일 접근 로그 + 만료 URL
