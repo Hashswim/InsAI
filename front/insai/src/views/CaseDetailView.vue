@@ -15,7 +15,6 @@ const auth = useAuthStore()
 
 const caseData = ref(null)
 const err = ref('')
-const nav = ref('requests')
 const readTick = ref(0)
 
 const docs = ref([])
@@ -28,16 +27,43 @@ const myRole = computed(() => {
   if (caseData.value.adjusterId === auth.user?.id) return 'ADJUSTER'
   return null
 })
+const isAdj = computed(() => myRole.value === 'ADJUSTER')
 const canTakeCase = computed(
   () => !caseData.value?.adjusterId && auth.isAdjuster && caseData.value?.claimantId !== auth.user?.id,
 )
-const caseNo = computed(() => (caseData.value ? caseData.value.id.replace(/-/g, '').slice(0, 10).toUpperCase() : ''))
+const caseNo = computed(() =>
+  caseData.value ? caseData.value.id.replace(/-/g, '').slice(0, 10).toUpperCase() : '',
+)
+
+const nav = ref('todo')
+const NAV_CLAIMANT = [
+  { k: 'todo', label: '해야 할 일', icon: '✅' },
+  { k: 'inquiry', label: '문의', icon: '💬' },
+  { k: 'notice', label: '안내 사항', icon: '🔔' },
+  { k: 'progress', label: '진행 상황', icon: '🗂' },
+  { k: 'info', label: '청구 정보', icon: 'ℹ️' },
+]
+const NAV_ADJUSTER = [
+  { k: 'requests', label: '서류 요청·검토', icon: '📄' },
+  { k: 'inquiry', label: '문의', icon: '💬' },
+  { k: 'result', label: '사정 결과', icon: '⚖️' },
+  { k: 'info', label: '청구 정보', icon: 'ℹ️' },
+]
+const navItems = computed(() => (isAdj.value ? NAV_ADJUSTER : NAV_CLAIMANT))
 
 function fmtDate(at) {
   return at ? new Date(at).toLocaleDateString('ko-KR') : ''
 }
 function fmtDateTime(at) {
   return at ? new Date(at).toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }) : ''
+}
+function readKey(k) {
+  readTick.value
+  return isRead(props.id, k)
+}
+function acknowledge(k) {
+  markRead(props.id, k)
+  readTick.value++
 }
 
 async function loadCase() {
@@ -54,6 +80,7 @@ const loadTimeline = async () => (timeline.value = await casesApi.getTimeline(pr
 
 onMounted(async () => {
   await loadCase()
+  nav.value = isAdj.value ? 'requests' : 'todo'
   await Promise.all([loadDocs(), loadMessages(), loadTimeline()])
 })
 
@@ -61,31 +88,68 @@ async function takeCase() {
   try {
     await casesApi.assignAdjuster(props.id, auth.user.id)
     await Promise.all([loadCase(), loadTimeline()])
+    nav.value = 'requests'
   } catch (e) {
     err.value = e.message
   }
 }
 
-/* ---------- 요청 피드 ---------- */
-const requestFeed = computed(() =>
+/* ---------- 해야 할 일 (청구인) ---------- */
+const todoDocs = computed(() =>
   [...docs.value]
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    .map((d) => ({
-      ...d,
-      key: `req-${d.id}`,
-      isNew: d.status === 'PENDING' && !isReadKey(`req-${d.id}`),
-    })),
+    .filter((d) => ['PENDING', 'REJECTED'].includes(d.status))
+    .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)),
 )
-function isReadKey(k) {
-  readTick.value // 의존성
-  return isRead(props.id, k)
-}
-function acknowledge(k) {
-  markRead(props.id, k)
-  readTick.value++
+const doneDocs = computed(() =>
+  [...docs.value].filter((d) => ['SUBMITTED', 'ACCEPTED'].includes(d.status)),
+)
+
+/* ---------- 안내 사항 (청구인) ---------- */
+const noticeFeed = computed(() => {
+  const items = []
+  const T = {
+    ADJUSTER_ASSIGNED: ['손해사정사 배정', '담당 손해사정사가 배정되었습니다. 이제 서류 요청이 전달됩니다.'],
+    DOCS_REQUESTED: ['서류 요청', '제출이 필요한 서류가 있습니다. “해야 할 일”에서 확인해 작성해 주세요.'],
+    REVIEW_STARTED: ['심사 시작', '제출하신 서류에 대한 심사가 시작되었습니다.'],
+    DECISION_MADE: ['사정 결과 등록', '사정 결과가 등록되었습니다. 자세한 내용은 문의로 확인해 주세요.'],
+    CASE_CLOSED: ['청구 종결', '청구 건이 종결되었습니다.'],
+  }
+  timeline.value.forEach((e) => {
+    if (T[e.type]) {
+      items.push({ key: `tl-${e.type}-${e.at}`, title: T[e.type][0], body: T[e.type][1], at: e.at })
+    }
+  })
+  docs.value.forEach((d) => {
+    if (d.status === 'ACCEPTED')
+      items.push({ key: `dr-${d.id}-A`, title: '서류 승인', body: `‘${d.title}’ 서류가 승인되었습니다.`, at: null })
+    if (d.status === 'REJECTED')
+      items.push({
+        key: `dr-${d.id}-R`,
+        title: '서류 반려',
+        body: `‘${d.title}’ 서류가 반려되었습니다.${d.rejectionReason ? ' 사유: ' + d.rejectionReason : ''} “해야 할 일”에서 다시 작성해 주세요.`,
+        at: null,
+      })
+  })
+  return items.sort((a, b) => new Date(b.at || Date.now()) - new Date(a.at || Date.now()))
+})
+const unreadNotices = computed(() => noticeFeed.value.filter((i) => !readKey(i.key)).length)
+
+/* ---------- 문의 (양방향) ---------- */
+const inquiryText = ref('')
+const inquiryErr = ref('')
+async function sendInquiry() {
+  if (!inquiryText.value.trim() || !myRole.value) return
+  inquiryErr.value = ''
+  try {
+    await casesApi.postMessage(props.id, myRole.value, inquiryText.value.trim())
+    inquiryText.value = ''
+    await Promise.all([loadMessages(), loadTimeline()])
+  } catch (e) {
+    inquiryErr.value = e.message
+  }
 }
 
-/* 서류 요청 추가 (사정사) */
+/* ---------- 서류 요청·검토 (사정사) ---------- */
 const adding = ref(false)
 const types = ref([])
 const selectedType = ref('')
@@ -110,13 +174,13 @@ async function addRequest(rd) {
     addErr.value = e.message
   }
 }
-
-/* 제출물 검토 (사정사) */
-const submissions = ref({}) // drId -> submission | 'none'
+const submissions = ref({})
 async function loadSubmission(drId) {
-  if (submissions.value[drId]) return
   try {
-    submissions.value = { ...submissions.value, [drId]: await formsApi.getSubmissionByDocRequest(drId) }
+    submissions.value = {
+      ...submissions.value,
+      [drId]: await formsApi.getSubmissionByDocRequest(drId),
+    }
   } catch {
     submissions.value = { ...submissions.value, [drId]: 'none' }
   }
@@ -129,51 +193,15 @@ async function decide(drId, action) {
   }
   try {
     await casesApi.updateDocumentRequest(drId, action, reason)
-    await loadDocs()
+    await Promise.all([loadDocs(), loadTimeline()])
   } catch (e) {
     err.value = e.message
-  }
-}
-
-/* ---------- 안내 피드 ---------- */
-const noticeFeed = computed(() => {
-  const items = messages.value.map((m) => ({
-    key: `msg-${m.id}`,
-    kind: m.senderRole === 'ADJUSTER' ? 'notice' : 'inquiry',
-    title: m.senderRole === 'ADJUSTER' ? '손해사정사 안내' : m.senderId === auth.user?.id ? '내 문의' : '문의',
-    date: m.createdAt,
-    body: m.body,
-  }))
-  if (caseData.value && ['DECISION_MADE', 'CLOSED'].includes(caseData.value.status)) {
-    items.push({
-      key: 'decision',
-      kind: 'notice',
-      title: '사정 결과 등록',
-      date: null,
-      body: '손해사정사가 사정 결과를 등록했습니다. 상세 내용은 문의로 확인해 주세요.',
-    })
-  }
-  return items.sort((a, b) => new Date(b.date || Date.now()) - new Date(a.date || Date.now()))
-})
-
-const inquiryText = ref('')
-const inquiryErr = ref('')
-async function sendInquiry() {
-  if (!inquiryText.value.trim() || !myRole.value) return
-  inquiryErr.value = ''
-  try {
-    await casesApi.postMessage(props.id, myRole.value, inquiryText.value.trim())
-    inquiryText.value = ''
-    await Promise.all([loadMessages(), loadTimeline()])
-  } catch (e) {
-    inquiryErr.value = e.message
   }
 }
 
 /* ---------- 사정 결과 (사정사) ---------- */
 const decisionText = ref('')
 const decisionErr = ref('')
-const decisionSaved = ref(false)
 async function beginReview() {
   decisionErr.value = ''
   try {
@@ -188,26 +216,26 @@ async function submitDecision() {
   decisionErr.value = ''
   try {
     await casesApi.registerDecision(props.id, decisionText.value.trim())
-    decisionSaved.value = true
     await Promise.all([loadCase(), loadTimeline()])
   } catch (e) {
     decisionErr.value = e.message
   }
 }
 
-function goNav(n) {
-  nav.value = n
-  if (n === 'notices') loadMessages()
-  if (n === 'timeline') loadTimeline()
+function goNav(k) {
+  nav.value = k
+  if (k === 'inquiry') loadMessages()
+  if (k === 'progress') loadTimeline()
 }
-
-const NAV = [
-  { k: 'requests', label: '요청', icon: '📄' },
-  { k: 'notices', label: '안내', icon: '🔔' },
-  { k: 'timeline', label: '타임라인', icon: '🗂' },
-  { k: 'result', label: '사정 결과', icon: '✅' },
-]
 const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
+const statusLabel = {
+  OPEN: '접수',
+  DOCS_REQUESTED: '서류 요청됨',
+  DOCS_SUBMITTED: '서류 제출됨',
+  UNDER_REVIEW: '심사 중',
+  DECISION_MADE: '결정 완료',
+  CLOSED: '종결',
+}
 </script>
 
 <template>
@@ -222,58 +250,161 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
           <div class="side-head">
             <div class="small muted">사건 번호</div>
             <div class="side-no">{{ caseNo }}</div>
+            <div class="row" style="gap: 6px; margin-top: 8px">
+              <span class="chip on" style="cursor: default; height: 24px; font-size: 12px">
+                {{ claimTypeLabel(caseData.claimType) }}
+              </span>
+              <StatusBadge :status="caseData.status" />
+            </div>
           </div>
           <nav>
             <button
-              v-for="n in NAV"
+              v-for="n in navItems"
               :key="n.k"
               class="side-item"
               :class="{ on: nav === n.k }"
               @click="goNav(n.k)"
             >
               <span>{{ n.icon }}</span> {{ n.label }}
-              <span
-                v-if="n.k === 'requests' && requestFeed.some((r) => r.isNew)"
-                class="dot"
-              />
-              <span
-                v-if="n.k === 'notices' && noticeFeed.some((i) => i.kind === 'notice' && !isReadKey(i.key))"
-                class="dot"
-              />
+              <span v-if="n.k === 'todo' && todoDocs.length" class="pill">{{ todoDocs.length }}</span>
+              <span v-if="n.k === 'notice' && unreadNotices" class="dot" />
             </button>
           </nav>
+          <button v-if="canTakeCase" class="btn sm block" style="margin-top: 10px" @click="takeCase">
+            이 청구 배정받기
+          </button>
         </aside>
 
         <!-- 본문 -->
         <div class="main stack">
-          <div class="card stack" style="gap: 8px">
-            <div class="between">
-              <div class="row" style="gap: 6px">
-                <span class="chip on" style="cursor: default">{{ claimTypeLabel(caseData.claimType) }}</span>
-                <StatusBadge :status="caseData.status" />
-              </div>
-              <span v-if="myRole" class="badge b-muted">{{ roleLabel[myRole] }}</span>
-            </div>
+          <div class="between">
             <h1>{{ caseData.title }}</h1>
-            <div class="row small muted" style="flex-wrap: wrap">
-              <span>개설 {{ fmtDate(caseData.createdAt) }}</span>
-              <span>·</span>
-              <span>청구인 {{ caseData.claimantName || '—' }}</span>
-              <span>·</span>
-              <span>담당 손해사정사 {{ caseData.adjusterName || '미배정' }}</span>
-            </div>
-            <button v-if="canTakeCase" class="btn sm" @click="takeCase">이 청구 배정받기</button>
+            <span v-if="myRole" class="badge b-muted">{{ roleLabel[myRole] }}</span>
           </div>
 
-          <!-- 요청 -->
-          <section v-if="nav === 'requests'" class="stack">
+          <!-- 해야 할 일 -->
+          <section v-if="nav === 'todo'" class="stack">
+            <h2>해야 할 일 <span class="muted small">({{ todoDocs.length }})</span></h2>
+            <p v-if="!todoDocs.length" class="card muted">지금 작성하실 서류가 없습니다.</p>
+
+            <FeedCard
+              v-for="d in todoDocs"
+              :key="`todo-${d.id}`"
+              accent="brand"
+              :title="d.title"
+              :date="fmtDate(d.createdAt)"
+              :is-new="d.status === 'PENDING' && !readKey(`req-${d.id}`)"
+              attachment
+              default-open
+              @open="acknowledge(`req-${d.id}`)"
+            >
+              <div class="row" style="gap: 6px; margin-bottom: 8px">
+                <StatusBadge :status="d.status" />
+                <span v-if="d.dueDate" class="small muted">제출 기한 {{ d.dueDate }}</span>
+              </div>
+              <div v-if="d.rejectionReason" class="alert err" style="margin-bottom: 8px">
+                반려 사유: {{ d.rejectionReason }}
+              </div>
+              <p class="muted">아래 버튼에서 서류의 칸을 채워 제출하세요.</p>
+              <template #actions>
+                <RouterLink
+                  class="btn sm"
+                  :to="`/cases/${id}/requests/${d.id}/submit?templateId=${d.templateId}`"
+                >
+                  {{ d.status === 'REJECTED' ? '다시 작성하기' : '작성하기' }}
+                </RouterLink>
+              </template>
+            </FeedCard>
+
+            <template v-if="doneDocs.length">
+              <div class="divider" />
+              <h3 class="muted">제출한 서류</h3>
+              <div v-for="d in doneDocs" :key="`done-${d.id}`" class="row between card" style="padding: 12px 16px">
+                <span>{{ d.title }}</span>
+                <StatusBadge :status="d.status" />
+              </div>
+            </template>
+          </section>
+
+          <!-- 문의 -->
+          <section v-else-if="nav === 'inquiry'" class="stack">
+            <h2>문의</h2>
+            <p v-if="!messages.length" class="card muted">주고받은 문의가 없습니다.</p>
+            <div
+              v-for="m in messages"
+              :key="m.id"
+              class="msg"
+              :class="{ mine: m.senderId === auth.user?.id }"
+            >
+              <div class="small muted">
+                {{ roleLabel[m.senderRole] || m.senderRole }} · {{ fmtDateTime(m.createdAt) }}
+              </div>
+              <div class="bubble">{{ m.body }}</div>
+            </div>
+            <form v-if="myRole" class="card stack" @submit.prevent="sendInquiry">
+              <textarea
+                v-model="inquiryText"
+                class="textarea"
+                :placeholder="isAdj ? '청구인에게 문의/안내를 남기세요' : '손해사정사에게 문의하세요'"
+              />
+              <div v-if="inquiryErr" class="alert err">{{ inquiryErr }}</div>
+              <button class="btn sm" type="submit" :disabled="!inquiryText.trim()">보내기</button>
+            </form>
+          </section>
+
+          <!-- 안내 사항 -->
+          <section v-else-if="nav === 'notice'" class="stack">
+            <h2>안내 사항 <span class="muted small">({{ noticeFeed.length }})</span></h2>
+            <p v-if="!noticeFeed.length" class="card muted">아직 안내가 없습니다.</p>
+            <FeedCard
+              v-for="i in noticeFeed"
+              :key="i.key"
+              accent="indigo"
+              :title="i.title"
+              :date="fmtDateTime(i.at)"
+              :is-new="!readKey(i.key)"
+            >
+              {{ i.body }}
+              <template v-if="!readKey(i.key)" #actions>
+                <button class="btn sm ghost" @click="acknowledge(i.key)">확인 완료</button>
+              </template>
+            </FeedCard>
+          </section>
+
+          <!-- 진행 상황 -->
+          <section v-else-if="nav === 'progress'">
+            <h2 style="margin-bottom: 14px">진행 상황</h2>
+            <CaseTimeline :events="timeline" />
+          </section>
+
+          <!-- 청구 정보 -->
+          <section v-else-if="nav === 'info'" class="stack">
+            <h2>청구 정보</h2>
+            <div class="card">
+              <dl class="kv">
+                <dt>사건 번호</dt>
+                <dd>{{ caseNo }}</dd>
+                <dt>청구 유형</dt>
+                <dd>{{ claimTypeLabel(caseData.claimType) }}</dd>
+                <dt>청구 개요</dt>
+                <dd>{{ caseData.title }}</dd>
+                <dt>현재 상태</dt>
+                <dd>{{ statusLabel[caseData.status] || caseData.status }}</dd>
+                <dt>청구인</dt>
+                <dd>{{ caseData.claimantName || '—' }}</dd>
+                <dt>담당 손해사정사</dt>
+                <dd>{{ caseData.adjusterName || '미배정' }}</dd>
+                <dt>개설일</dt>
+                <dd>{{ fmtDate(caseData.createdAt) }}</dd>
+              </dl>
+            </div>
+          </section>
+
+          <!-- 서류 요청·검토 (사정사) -->
+          <section v-else-if="nav === 'requests'" class="stack">
             <div class="between">
-              <h2>요청 <span class="muted small">({{ docs.length }})</span></h2>
-              <button
-                v-if="myRole === 'ADJUSTER'"
-                class="btn sm ghost"
-                @click="adding ? (adding = false) : openAdd()"
-              >
+              <h2>서류 요청·검토 <span class="muted small">({{ docs.length }})</span></h2>
+              <button class="btn sm ghost" @click="adding ? (adding = false) : openAdd()">
                 {{ adding ? '닫기' : '+ 서류 요청' }}
               </button>
             </div>
@@ -303,55 +434,31 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
               </ul>
             </div>
 
-            <p v-if="!docs.length" class="card muted">아직 요청된 서류가 없습니다.</p>
-
+            <p v-if="!docs.length" class="card muted">아직 요청한 서류가 없습니다.</p>
             <FeedCard
-              v-for="d in requestFeed"
-              :key="d.key"
+              v-for="d in docs"
+              :key="d.id"
               accent="brand"
               :title="d.title"
               :date="fmtDate(d.createdAt)"
-              :is-new="d.isNew"
               attachment
-              @open="acknowledge(d.key)"
             >
               <div class="row" style="gap: 6px; margin-bottom: 8px">
                 <StatusBadge :status="d.status" />
-                <span v-if="d.dueDate" class="small muted">제출 기한 {{ d.dueDate }}</span>
               </div>
               <div v-if="d.rejectionReason" class="alert err" style="margin-bottom: 8px">
                 반려 사유: {{ d.rejectionReason }}
               </div>
-              <p class="muted">
-                {{
-                  myRole === 'CLAIMANT'
-                    ? '아래 버튼에서 서류의 칸을 채워 제출하세요.'
-                    : '청구인이 제출하면 여기에서 검토할 수 있습니다.'
-                }}
-              </p>
-
               <template #actions>
-                <RouterLink
-                  v-if="myRole === 'CLAIMANT' && d.status !== 'ACCEPTED'"
-                  class="btn sm"
-                  :to="`/cases/${id}/requests/${d.id}/submit?templateId=${d.templateId}`"
-                >
-                  {{ d.status === 'PENDING' ? '작성하기' : '수정 후 재제출' }}
-                </RouterLink>
-
-                <button
-                  v-if="myRole === 'ADJUSTER' && d.status !== 'PENDING'"
-                  class="btn sm ghost"
-                  @click="loadSubmission(d.id)"
-                >
+                <button v-if="d.status !== 'PENDING'" class="btn sm ghost" @click="loadSubmission(d.id)">
                   제출 내용 불러오기
                 </button>
               </template>
 
-              <div v-if="myRole === 'ADJUSTER' && submissions[d.id] && submissions[d.id] !== 'none'" class="review">
+              <div v-if="submissions[d.id] && submissions[d.id] !== 'none'" class="review">
                 <div class="row" style="gap: 6px">
                   <span class="badge" :class="submissions[d.id].complete ? 'b-ok' : 'b-warn'">
-                    {{ submissions[d.id].complete ? '완료' : '미완' }}
+                    {{ submissions[d.id].complete ? '작성 완료' : '미완' }}
                   </span>
                   <span class="small muted">버전 {{ submissions[d.id].version }}</span>
                 </div>
@@ -366,9 +473,9 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
                   class="alert"
                   style="background: #fff4e5; color: var(--warn); margin-top: 8px"
                 >
-                  누락 필드: {{ submissions[d.id].missingFields.join(', ') }}
+                  누락: {{ submissions[d.id].missingFields.join(', ') }}
                 </div>
-                <div class="row" style="margin-top: 10px">
+                <div v-if="d.status === 'SUBMITTED'" class="row" style="margin-top: 10px">
                   <button class="btn sm" @click="decide(d.id, 'ACCEPT')">승인</button>
                   <button class="btn sm danger" @click="decide(d.id, 'REJECT')">반려</button>
                 </div>
@@ -379,81 +486,36 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
             </FeedCard>
           </section>
 
-          <!-- 안내 -->
-          <section v-else-if="nav === 'notices'" class="stack">
-            <h2>안내 <span class="muted small">({{ noticeFeed.length }})</span></h2>
-            <p v-if="!noticeFeed.length" class="card muted">아직 안내가 없습니다.</p>
-
-            <FeedCard
-              v-for="i in noticeFeed"
-              :key="i.key"
-              :accent="i.kind === 'inquiry' ? 'muted' : 'indigo'"
-              :title="i.title"
-              :date="fmtDateTime(i.date)"
-              :is-new="i.kind === 'notice' && !isReadKey(i.key)"
-            >
-              {{ i.body }}
-              <template v-if="i.kind === 'notice' && !isReadKey(i.key)" #actions>
-                <button class="btn sm ghost" @click="acknowledge(i.key)">확인 완료</button>
-              </template>
-            </FeedCard>
-
-            <form v-if="myRole" class="card stack" @submit.prevent="sendInquiry">
-              <div class="field">
-                <label>{{ myRole === 'CLAIMANT' ? '문의 남기기' : '안내 보내기' }}</label>
-                <textarea v-model="inquiryText" class="textarea" placeholder="내용을 입력하세요" />
-              </div>
-              <div v-if="inquiryErr" class="alert err">{{ inquiryErr }}</div>
-              <button class="btn sm" type="submit" :disabled="!inquiryText.trim()">보내기</button>
-            </form>
-          </section>
-
-          <!-- 타임라인 -->
-          <section v-else-if="nav === 'timeline'">
-            <h2 style="margin-bottom: 14px">타임라인</h2>
-            <CaseTimeline :events="timeline" />
-          </section>
-
-          <!-- 사정 결과 -->
+          <!-- 사정 결과 (사정사) -->
           <section v-else class="stack">
             <h2>사정 결과</h2>
-            <template v-if="myRole === 'ADJUSTER'">
-              <div v-if="decisionErr" class="alert err">{{ decisionErr }}</div>
-              <div v-if="caseData.status === 'DOCS_SUBMITTED'" class="card stack">
-                <p class="muted small">제출된 서류를 확인했다면 심사를 시작하세요.</p>
-                <button class="btn sm" @click="beginReview">심사 시작</button>
+            <div v-if="decisionErr" class="alert err">{{ decisionErr }}</div>
+            <div v-if="caseData.status === 'DOCS_SUBMITTED'" class="card stack">
+              <p class="muted small">제출된 서류를 확인했다면 심사를 시작하세요.</p>
+              <button class="btn sm" @click="beginReview">심사 시작</button>
+            </div>
+            <div v-else-if="caseData.status === 'UNDER_REVIEW'" class="card stack">
+              <div class="field">
+                <label>사정 결과 (판단 내용)</label>
+                <textarea
+                  v-model="decisionText"
+                  class="textarea"
+                  placeholder="예: 약관 제O조에 따라 사망보험금 전액 지급 결정. 총 OOO원."
+                />
               </div>
-              <div v-else-if="caseData.status === 'UNDER_REVIEW'" class="card stack">
-                <div class="field">
-                  <label>사정 결과 (판단 내용)</label>
-                  <textarea
-                    v-model="decisionText"
-                    class="textarea"
-                    placeholder="예: 약관 제O조에 따라 사망보험금 전액 지급 결정. 총 OOO원."
-                  />
-                </div>
-                <button class="btn sm" :disabled="!decisionText.trim()" @click="submitDecision">
-                  결정 등록
-                </button>
-              </div>
-              <div v-else-if="['DECISION_MADE', 'CLOSED'].includes(caseData.status)" class="card">
-                <div class="alert ok">사정 결과가 등록되었습니다.</div>
-                <p v-if="decisionSaved && decisionText" class="small" style="margin-top: 10px; white-space: pre-wrap">
-                  {{ decisionText }}
-                </p>
-              </div>
-              <div v-else class="card muted">서류 제출이 완료되면 심사를 진행할 수 있습니다.</div>
-            </template>
-            <template v-else>
-              <div class="card muted">
-                <template v-if="caseData.status === 'UNDER_REVIEW'">손해사정사가 서류를 심사하고 있습니다.</template>
-                <template v-else-if="['DECISION_MADE', 'CLOSED'].includes(caseData.status)">
-                  사정 결과가 등록되었습니다. 자세한 내용은 “안내” 탭 또는 담당 손해사정사에게 문의하세요.
-                </template>
-                <template v-else>아직 사정 결과가 없습니다.</template>
-              </div>
-            </template>
+              <button class="btn sm" :disabled="!decisionText.trim()" @click="submitDecision">
+                결정 등록
+              </button>
+            </div>
+            <div v-else-if="['DECISION_MADE', 'CLOSED'].includes(caseData.status)" class="card">
+              <div class="alert ok">사정 결과가 등록되었습니다.</div>
+            </div>
+            <div v-else class="card muted">서류 제출이 완료되면 심사를 진행할 수 있습니다.</div>
           </section>
+
+          <p v-if="!isAdj" class="guide small">
+            온라인으로 진행되므로 “안내 사항”을 확인하고 “해야 할 일”의 서류를 정확히 작성·제출해 주세요.
+          </p>
         </div>
       </div>
     </template>
@@ -463,11 +525,11 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
 <style scoped>
 .detail {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 210px 1fr;
   gap: 20px;
   align-items: start;
 }
-@media (max-width: 760px) {
+@media (max-width: 780px) {
   .detail {
     grid-template-columns: 1fr;
   }
@@ -527,6 +589,18 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
   border-radius: 50%;
   background: var(--brand);
 }
+.side-item .pill {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .plain-list {
   list-style: none;
   margin: 0;
@@ -539,5 +613,33 @@ const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
   border-top: 1px dashed var(--border);
   padding-top: 12px;
   margin-top: 12px;
+}
+.msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+.msg.mine {
+  align-items: flex-end;
+}
+.bubble {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 14px;
+  max-width: 80%;
+  white-space: pre-wrap;
+}
+.msg.mine .bubble {
+  background: var(--brand-tint);
+  border-color: #ffd9d9;
+}
+.guide {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: #fff8e6;
+  color: #8a6d1f;
 }
 </style>
