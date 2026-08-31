@@ -8,12 +8,12 @@ const router = useRouter()
 const loading = ref('')
 const err = ref('')
 
-async function demo(role) {
+async function demo(role, to = 'cases') {
   err.value = ''
-  loading.value = role
+  loading.value = `${role}:${to}`
   try {
-    await auth.demoLogin(role)
-    router.push({ name: 'cases' })
+    if (!auth.isAuthenticated) await auth.demoLogin(role)
+    router.push({ name: to })
   } catch (e) {
     err.value = e.message || '입장에 실패했습니다.'
   } finally {
@@ -37,9 +37,11 @@ const features = [
         AI가 그 사이를 중개합니다. 서류 요청·제출·검토·사정을 하나의 협업 공간에서.
       </p>
       <div class="cta">
-        <RouterLink v-if="!auth.isAuthenticated" class="btn" to="/login">로그인</RouterLink>
-        <RouterLink v-if="!auth.isAuthenticated" class="btn ghost" to="/signup">회원가입</RouterLink>
-        <RouterLink v-else class="btn" to="/cases">내 청구 관리로 →</RouterLink>
+        <button class="btn" :disabled="loading" @click="demo('CLAIMANT', 'policies')">
+          🛡️ 내 보험 조회하기
+        </button>
+        <RouterLink v-if="!auth.isAuthenticated" class="btn ghost" to="/login">로그인</RouterLink>
+        <RouterLink v-else class="btn ghost" to="/cases">내 청구 관리로 →</RouterLink>
       </div>
     </section>
 
@@ -55,11 +57,11 @@ const features = [
       <div class="divider" />
       <p class="muted small">로그인 없이 둘러보기 — 데모 계정으로 역할을 체험합니다.</p>
       <div class="row" style="gap: 12px; flex-wrap: wrap">
-        <button class="btn ghost" :disabled="loading" @click="demo('CLAIMANT')">
-          {{ loading === 'CLAIMANT' ? '입장 중…' : '🧾 청구인으로 둘러보기' }}
+        <button class="btn ghost" :disabled="loading" @click="demo('CLAIMANT', 'cases')">
+          {{ loading === 'CLAIMANT:cases' ? '입장 중…' : '🧾 청구인으로 둘러보기' }}
         </button>
-        <button class="btn ghost" :disabled="loading" @click="demo('ADJUSTER')">
-          {{ loading === 'ADJUSTER' ? '입장 중…' : '🔎 손해사정사로 둘러보기' }}
+        <button class="btn ghost" :disabled="loading" @click="demo('ADJUSTER', 'cases')">
+          {{ loading === 'ADJUSTER:cases' ? '입장 중…' : '🔎 손해사정사로 둘러보기' }}
         </button>
       </div>
       <div v-if="err" class="alert err" style="margin-top: 10px">{{ err }}</div>

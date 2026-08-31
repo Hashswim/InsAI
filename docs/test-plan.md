@@ -251,6 +251,29 @@
 
 ---
 
+## 6. policy (가입 보험 조회) — GREEN
+
+### 6.1 Domain — `Policy` (`PolicyTest`)
+- [x] `register`: 필수값 채우면 생성, isNew, coverageEndDate 는 null 허용(종신)
+- [x] 보험사/상품명/증권번호/피보험자 공백 → `INVALID_INPUT`
+
+### 6.2 Application (`PolicyServicesTest`)
+- [x] `ListMyPoliciesService.list`: 계약 → 뷰(planTypeLabel/statusLabel 포함)
+- [x] `SeedDemoPoliciesService.seedFor`: 계약 없으면 데모 3건 저장(피보험자명 반영)
+- [x] 이미 계약이 있으면 no-op / `ownerId==null` 이면 조회도 안 함
+
+### 6.3 Web — `@WebMvcTest` (`PolicyControllerTest`)
+- [x] `GET /policies` → 200 목록; X-User-Id 없으면 400
+
+### 6.4 Persistence — `@DataJpaTest` (`PolicyRepositoryJpaTest`)
+- [x] `findByOwnerIdOrderByContractDateDesc`(본인 것만·계약일 내림차순), `existsByOwnerId`
+
+### 6.5 수동 E2E (curl, dev)
+- [x] `dev/demo-login`(CLAIMANT) → 데모 3건 자동 시드 → `GET /policies` 조회 (직접 + Vite 프록시)
+- [x] `POST /dev/seed-policies` idempotent (재호출해도 3건 유지)
+
+---
+
 ## 진행 현황
 
 | 도메인 | 상태 |
@@ -262,8 +285,9 @@
 | **form.catalog (생명보험)** | ✅ GREEN — 청구 서류 15종 FormTemplate 정의(공통 4 + 사망/장해/진단/입원·수술), 유형별 요구 서류 매트릭스, 부팅 시 멱등 시드, `GET /catalog/life/*` |
 | document | ✅ GREEN — `StoredFile` + 2단계 업로드(upload-url→PUT→confirm) + 참여자 제한 다운로드 + `LocalDiskStorage`/`StubOcrPort` + `V4__document.sql` + 프론트 FILE 필드 실동작 |
 | ai | ✅ GREEN — `LlmClient` 포트(+`StubLlmClient`/`AnthropicLlmClient`), `ReviewSummaryService`, `LlmAiStructurePort`(@Primary), `LlmDecisionTranslator`. `insai.ai.enabled` 로 스텁↔실 Claude 토글 |
+| policy | ✅ GREEN — `Policy` + `ListMyPoliciesService` + `SeedDemoPoliciesService` + `V5__policy.sql` + `GET /policies`. 홈 "내 보험 조회하기" → `PoliciesView` |
 
 ### 다음 순서
 1. 실제 OCR / 오브젝트 스토리지 presigner (현재 로컬 디스크)
 2. `INSAI_AI_API_KEY` 수령 후 `AnthropicLlmClient` 실호출 검증
-3. 첨부 파일 접근 로그 + 만료 URL
+3. policy: 보험사 연동 또는 청구인 직접 등록 · 청구 케이스에서 증권 선택

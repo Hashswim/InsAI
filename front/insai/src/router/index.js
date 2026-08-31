@@ -20,6 +20,7 @@ const routes = [
     component: () => import('@/views/SignupView.vue'),
     meta: { public: true },
   },
+  { path: '/policies', name: 'policies', component: () => import('@/views/PoliciesView.vue') },
   { path: '/cases', name: 'cases', component: () => import('@/views/CasesView.vue') },
   { path: '/cases/new', name: 'case-new', component: () => import('@/views/NewCaseView.vue') },
   {

@@ -12,12 +12,16 @@ import com.insuranceai.auth.domain.Role;
 import com.insuranceai.common.error.BusinessException;
 import com.insuranceai.common.error.ErrorCode;
 import com.insuranceai.common.web.ApiResponse;
+import com.insuranceai.policy.application.SeedDemoPoliciesService;
 import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 /**
  * 로컬 개발/데모 편의용. dev 프로파일에서만 노출된다 (test/prod 에는 존재하지 않음).
@@ -33,11 +37,14 @@ public class DevController {
 	private final AccountRepository accounts;
 	private final SignupService signupService;
 	private final LoginService loginService;
+	private final SeedDemoPoliciesService seedDemoPoliciesService;
 
-	public DevController(AccountRepository accounts, SignupService signupService, LoginService loginService) {
+	public DevController(AccountRepository accounts, SignupService signupService, LoginService loginService,
+	                    SeedDemoPoliciesService seedDemoPoliciesService) {
 		this.accounts = accounts;
 		this.signupService = signupService;
 		this.loginService = loginService;
+		this.seedDemoPoliciesService = seedDemoPoliciesService;
 	}
 
 	public record ActivateRequest(String email) {
@@ -82,9 +89,21 @@ public class DevController {
 				account.activate();
 				accounts.save(account);
 			}
+			if (role == Role.CLAIMANT) {
+				seedDemoPoliciesService.seedFor(account.getId(), account.getName());
+			}
 		});
 
 		return ApiResponse.ok(TokenResponse.from(loginService.login(new LoginCommand(email, DEMO_PASSWORD))));
+	}
+
+	/** 로그인한 청구인에게 데모 보험 계약을 심는다(이미 있으면 무시). */
+	@PostMapping("/seed-policies")
+	@Transactional
+	public ApiResponse<Void> seedPolicies(@RequestHeader("X-User-Id") UUID userId) {
+		accounts.findById(userId).ifPresent(account ->
+				seedDemoPoliciesService.seedFor(account.getId(), account.getName()));
+		return ApiResponse.ok();
 	}
 
 	private static String demoName(Role role) {

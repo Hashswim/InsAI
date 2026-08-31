@@ -17,6 +17,10 @@ async function onLogout() {
   <header class="hdr">
     <div class="hdr-inner">
       <RouterLink to="/cases" class="brand-word">Insurance<b>AI</b></RouterLink>
+      <nav v-if="auth.isClaimant" class="nav small">
+        <RouterLink to="/cases">청구 관리</RouterLink>
+        <RouterLink to="/policies">내 보험</RouterLink>
+      </nav>
       <div class="grow" />
       <span class="badge b-brand">
         {{ (auth.roles[0] && roleLabel[auth.roles[0]]) || '사용자' }}
@@ -43,5 +47,18 @@ async function onLogout() {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.nav {
+  display: flex;
+  gap: 14px;
+  margin-left: 8px;
+}
+.nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+.nav a.router-link-active {
+  color: var(--brand);
 }
 </style>

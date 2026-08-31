@@ -21,8 +21,9 @@
 | `modules/back-collab.md` | `back/insai/.../collab` | ✅ 완료 (+ 프론트용 조회 엔드포인트 갭) |
 | `modules/back-form.md` | `back/insai/.../form` | ✅ 완료 |
 | `modules/back-form-catalog.md` | `back/insai/.../form/catalog` | ✅ 완료 (생명보험 서류 15종) |
-| `modules/back-document.md` | `back/insai/.../document` | ⏳ 계획 (미착수) |
-| `modules/back-ai.md` | `back/insai/.../ai` | ⏳ 계획 (API 키 대기) |
+| `modules/back-document.md` | `back/insai/.../document` | ✅ 완료 (첨부 업로드/다운로드, 로컬 스토리지) |
+| `modules/back-policy.md` | `back/insai/.../policy` | ✅ 완료 (가입 보험 조회, 데모 시드) |
+| `modules/back-ai.md` | `back/insai/.../ai` | ✅ 완료 (스텁↔Claude 토글, 실호출 키 대기) |
 | `modules/back-infra.md` | gateway/discovery/config | ⏳ 계획 (모놀리스 유지 중) |
 | `modules/front-insai.md` | `front/insai` | 🔨 착수 (스캐폴드 정리·의존성 고정 완료) |
 
