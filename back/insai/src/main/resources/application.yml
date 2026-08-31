@@ -18,6 +18,13 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
 
+# AI(LLM) — 기본 비활성. 키 받으면 INSAI_AI_ENABLED=true + INSAI_AI_API_KEY 로 활성화.
+insai:
+  ai:
+    enabled: ${INSAI_AI_ENABLED:false}
+    api-key: ${INSAI_AI_API_KEY:}
+    model: ${INSAI_AI_MODEL:claude-opus-5}
+
 management:
   endpoints:
     web:
