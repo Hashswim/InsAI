@@ -2,17 +2,20 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { CLAIM_TYPES } from '@/lib/claimType'
 
 const auth = useAuthStore()
 const router = useRouter()
+
 const loading = ref('')
 const err = ref('')
+const role = ref('CLAIMANT')
 
-async function demo(role, to = 'cases') {
+async function go(selectedRole, to) {
   err.value = ''
-  loading.value = `${role}:${to}`
+  loading.value = `${selectedRole}:${to}`
   try {
-    if (!auth.isAuthenticated) await auth.demoLogin(role)
+    if (!auth.isAuthenticated) await auth.demoLogin(selectedRole)
     router.push({ name: to })
   } catch (e) {
     err.value = e.message || '입장에 실패했습니다.'
@@ -21,76 +24,576 @@ async function demo(role, to = 'cases') {
   }
 }
 
-const features = [
-  { icon: '📌', title: '청구 건별 관리', desc: '보험 청구를 건별로 만들고, 진행 상태를 한 곳에서 확인합니다.' },
-  { icon: '📄', title: '요청·안내 피드', desc: '손해사정사의 서류 요청과 안내가 시간순으로 쌓여 놓치지 않습니다.' },
-  { icon: '🤖', title: 'AI 중개', desc: '입력을 양식 칸에 맞춰 구조화하고 누락을 짚어 줍니다.' },
+function startByRole() {
+  if (role.value === 'ADJUSTER') return go('ADJUSTER', 'cases')
+  return go('CLAIMANT', 'cases')
+}
+
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const steps = [
+  ['역할 선택 · 내 보험 조회', '청구인/손해사정사로 입장하고, 청구인은 가입한 보험부터 확인합니다.'],
+  ['서류 요청 확인', '손해사정사가 요청한 서류가 “해야 할 일”에 쌓입니다. 무엇을, 언제까지 낼지 한눈에.'],
+  ['양식에 맞춰 작성·제출', '서류를 여는 대신 화면 안에서 칸을 채우고, 확인 후 제출합니다.'],
+  ['AI 요약 + 손해사정사 검토', 'AI가 제출 내용을 구조화하고 누락을 짚어 사정사에게 전달합니다.'],
+  ['사정 결과를 평문으로 확인', '결정 내용을 이해하기 쉬운 말로 풀어 청구인에게 전달합니다.'],
 ]
+
+const claimAreas = {
+  DEATH: '사망 진단서·가족관계·수익자 확인 등 사망보험금 청구에 필요한 서류를 안내합니다.',
+  DISABILITY: '후유장해 진단서와 장해분류표 기준을 확인하며 장해보험금 청구를 진행합니다.',
+  DIAGNOSIS: '암·뇌·심장 등 진단 확정 서류를 모아 진단보험금을 청구합니다.',
+  HOSPITALIZATION_SURGERY: '입퇴원 확인서·수술 확인서로 입원·수술 급여금을 청구합니다.',
+}
+
+const values = [
+  ['🧩', '입력을 양식 칸에 맞게', '청구인이 자유롭게 쓴 내용을 미리 저장된 양식의 알맞은 칸에 채워 넣습니다.'],
+  ['🔍', '누락을 먼저 짚어', '필수 항목이 비어 있으면 제출 전에 표시하고, 사정사에게도 함께 알립니다.'],
+  ['📝', '결정은 쉬운 말로', '손해사정사의 사정 결과를 청구인이 이해할 수 있는 평문으로 바꿔 전달합니다.'],
+]
+
+const faqs = [
+  ['로그인 없이도 써볼 수 있나요?', '네. 아래 “청구인으로 시작 / 손해사정사로 시작” 버튼으로 데모 계정에 바로 입장할 수 있습니다.'],
+  ['어떤 보험을 다루나요?', '현재는 생명보험 청구에 집중하고 있습니다. 사망·후유장해·진단·입원/수술 급여금 청구를 지원합니다.'],
+  ['서류 파일을 직접 올려야 하나요?', '텍스트 항목은 화면 안의 양식에서 바로 작성합니다. 첨부가 필요한 항목만 파일(PDF·이미지, 20MB 이하)을 올립니다.'],
+  ['AI가 보험금 지급 여부를 결정하나요?', '아니요. AI는 정리·요약·번역만 돕고, 판단과 사정은 손해사정사가 합니다.'],
+  ['내 보험 정보는 어디서 오나요?', '지금은 데모 데이터입니다. 정식 버전에서는 보험사 연동 또는 직접 등록으로 채워집니다.'],
+]
+const openFaq = ref(0)
 </script>
 
 <template>
-  <div class="home">
-    <section class="hero">
-      <div class="brand-word" style="font-size: 34px">Insurance<b>AI</b></div>
-      <h1 class="tagline">보험금 청구, 청구인과 손해사정사가 한 화면에서</h1>
-      <p class="muted">
-        AI가 그 사이를 중개합니다. 서류 요청·제출·검토·사정을 하나의 협업 공간에서.
-      </p>
-      <div class="cta">
-        <button class="btn" :disabled="loading" @click="demo('CLAIMANT', 'policies')">
-          🛡️ 내 보험 조회하기
-        </button>
-        <RouterLink v-if="!auth.isAuthenticated" class="btn ghost" to="/login">로그인</RouterLink>
-        <RouterLink v-else class="btn ghost" to="/cases">내 청구 관리로 →</RouterLink>
+  <div class="lp">
+    <!-- 상단 바 -->
+    <header class="lp-bar">
+      <div class="lp-bar-in">
+        <span class="brand-word" style="font-size: 20px">Insurance<b>AI</b></span>
+        <nav class="lp-bar-nav">
+          <button @click="scrollTo('how')">진행 절차</button>
+          <button @click="scrollTo('areas')">청구 유형</button>
+          <button @click="scrollTo('faq')">자주 묻는 질문</button>
+        </nav>
+        <div class="grow" />
+        <RouterLink v-if="!auth.isAuthenticated" to="/login" class="lp-login">로그인</RouterLink>
+        <button class="btn" :disabled="loading" @click="go('CLAIMANT', 'cases')">시작하기</button>
+      </div>
+    </header>
+
+    <!-- 히어로 -->
+    <section class="lp-hero">
+      <div class="lp-hero-in">
+        <div class="lp-hero-copy">
+          <span class="lp-eyebrow">생명보험 청구 협업 플랫폼</span>
+          <h1>보험금 청구,<br />청구인과 손해사정사가<br />한 화면에서</h1>
+          <p>
+            서류 요청 · 작성 · 검토 · 사정까지 하나의 공간에서.
+            그 사이를 AI가 중개해 옮겨 적고, 빠진 곳을 짚고, 결정을 쉬운 말로 풀어 줍니다.
+          </p>
+          <div class="lp-hero-actions">
+            <button class="btn lg" :disabled="loading" @click="go('CLAIMANT', 'policies')">
+              🛡️ 내 보험 조회하기
+            </button>
+            <button class="btn lg ghost" :disabled="loading" @click="scrollTo('start')">
+              둘러보기
+            </button>
+          </div>
+        </div>
+
+        <!-- 빠른 시작 카드 -->
+        <div id="start" class="lp-quick">
+          <h3>빠른 시작</h3>
+          <p class="small muted">역할을 고르고 바로 입장하세요. 자격 증명은 필요 없습니다.</p>
+          <div class="lp-roles">
+            <button :class="['lp-role', { on: role === 'CLAIMANT' }]" @click="role = 'CLAIMANT'">
+              <b>청구인</b><span class="small muted">보험금을 청구합니다</span>
+            </button>
+            <button :class="['lp-role', { on: role === 'ADJUSTER' }]" @click="role = 'ADJUSTER'">
+              <b>손해사정사</b><span class="small muted">청구를 검토·사정합니다</span>
+            </button>
+          </div>
+          <button class="btn block lg" :disabled="loading" @click="startByRole">
+            {{ loading.startsWith(role) ? '입장 중…' : (role === 'ADJUSTER' ? '손해사정사로 입장' : '청구인으로 입장') }}
+          </button>
+          <button
+            v-if="role === 'CLAIMANT'"
+            class="btn block ghost"
+            :disabled="loading"
+            @click="go('CLAIMANT', 'policies')"
+          >
+            먼저 내 보험부터 보기
+          </button>
+          <div v-if="err" class="alert err" style="margin-top: 4px">{{ err }}</div>
+        </div>
       </div>
     </section>
 
-    <section class="grid" style="margin-top: 40px">
-      <div v-for="f in features" :key="f.title" class="card stack" style="gap: 8px">
-        <div style="font-size: 26px">{{ f.icon }}</div>
-        <h3>{{ f.title }}</h3>
-        <p class="muted small">{{ f.desc }}</p>
+    <!-- 지표 스트립 -->
+    <section class="lp-stats">
+      <div class="lp-stats-in">
+        <div><b>15종</b><span>생명보험 청구 서류 양식</span></div>
+        <div><b>4단계</b><span>요청 → 작성 → 검토 → 사정</span></div>
+        <div><b>1곳</b><span>청구인·사정사가 함께 보는 공간</span></div>
+        <div><b>AI</b><span>요약 · 누락 점검 · 평문 변환</span></div>
       </div>
     </section>
 
-    <section class="demo">
-      <div class="divider" />
-      <p class="muted small">로그인 없이 둘러보기 — 데모 계정으로 역할을 체험합니다.</p>
-      <div class="row" style="gap: 12px; flex-wrap: wrap">
-        <button class="btn ghost" :disabled="loading" @click="demo('CLAIMANT', 'cases')">
-          {{ loading === 'CLAIMANT:cases' ? '입장 중…' : '🧾 청구인으로 둘러보기' }}
-        </button>
-        <button class="btn ghost" :disabled="loading" @click="demo('ADJUSTER', 'cases')">
-          {{ loading === 'ADJUSTER:cases' ? '입장 중…' : '🔎 손해사정사로 둘러보기' }}
-        </button>
+    <!-- 진행 절차 -->
+    <section id="how" class="lp-section">
+      <div class="lp-inner">
+        <div class="lp-head">
+          <span class="lp-eyebrow dark">진행 절차</span>
+          <h2>다섯 걸음이면 됩니다</h2>
+        </div>
+        <ol class="lp-steps">
+          <li v-for="(s, i) in steps" :key="i">
+            <span class="lp-step-no">{{ i + 1 }}</span>
+            <div>
+              <h3>{{ s[0] }}</h3>
+              <p class="muted small">{{ s[1] }}</p>
+            </div>
+          </li>
+        </ol>
       </div>
-      <div v-if="err" class="alert err" style="margin-top: 10px">{{ err }}</div>
     </section>
+
+    <!-- 청구 유형 -->
+    <section id="areas" class="lp-section alt">
+      <div class="lp-inner">
+        <div class="lp-head">
+          <span class="lp-eyebrow dark">청구 유형</span>
+          <h2>생명보험 청구, 유형별로 안내합니다</h2>
+        </div>
+        <div class="grid">
+          <div v-for="t in CLAIM_TYPES" :key="t.code" class="card stack" style="gap: 6px">
+            <span class="chip on" style="cursor: default; align-self: flex-start">{{ t.label }}</span>
+            <p class="muted small">{{ claimAreas[t.code] }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 가치 -->
+    <section class="lp-section">
+      <div class="lp-inner">
+        <div class="lp-head">
+          <span class="lp-eyebrow dark">AI 중개</span>
+          <h2>사람의 일은 사람이, 옮겨 적는 일은 AI가</h2>
+        </div>
+        <div class="grid">
+          <div v-for="v in values" :key="v[1]" class="card stack" style="gap: 8px">
+            <div style="font-size: 24px">{{ v[0] }}</div>
+            <h3>{{ v[1] }}</h3>
+            <p class="muted small">{{ v[2] }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="lp-section alt">
+      <div class="lp-inner" style="max-width: 720px">
+        <div class="lp-head">
+          <span class="lp-eyebrow dark">자주 묻는 질문</span>
+          <h2>궁금한 점</h2>
+        </div>
+        <div class="lp-faq">
+          <div v-for="(f, i) in faqs" :key="i" class="lp-faq-item">
+            <button class="lp-faq-q" @click="openFaq = openFaq === i ? -1 : i">
+              <span>{{ f[0] }}</span>
+              <span class="lp-faq-chev" :class="{ up: openFaq === i }">▾</span>
+            </button>
+            <p v-if="openFaq === i" class="lp-faq-a muted small">{{ f[1] }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 마무리 CTA -->
+    <section class="lp-cta">
+      <div class="lp-inner" style="text-align: center">
+        <h2>지금 바로 둘러보세요</h2>
+        <p class="small">데모 계정으로 두 역할을 모두 체험할 수 있습니다.</p>
+        <div class="lp-cta-btns">
+          <button class="btn lg" :disabled="loading" @click="go('CLAIMANT', 'cases')">
+            {{ loading === 'CLAIMANT:cases' ? '입장 중…' : '🧾 청구인으로 시작' }}
+          </button>
+          <button class="btn lg ghost" :disabled="loading" @click="go('ADJUSTER', 'cases')">
+            {{ loading === 'ADJUSTER:cases' ? '입장 중…' : '🔎 손해사정사로 시작' }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="lp-foot">
+      <div class="lp-inner lp-foot-in">
+        <span class="brand-word">Insurance<b>AI</b></span>
+        <p class="small muted">AI 중립 보험금 청구 협업 공간 · 생명보험 · 데모 서비스</p>
+        <p class="small muted">© {{ new Date().getFullYear() }} InsuranceAI</p>
+      </div>
+    </footer>
+
+    <!-- 모바일 하단 고정 바 -->
+    <div class="lp-dock">
+      <button :disabled="loading" @click="go('CLAIMANT', 'policies')">내 보험</button>
+      <button :disabled="loading" @click="go('CLAIMANT', 'cases')">청구인 시작</button>
+      <button class="prim" :disabled="loading" @click="go('ADJUSTER', 'cases')">사정사 시작</button>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.home {
-  max-width: 860px;
+.lp {
+  color: var(--ink);
+}
+.lp-inner {
+  max-width: 1000px;
   margin: 0 auto;
+  padding: 0 20px;
 }
-.hero {
-  text-align: center;
-  padding: 40px 0 12px;
+
+/* 상단 바 */
+.lp-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
 }
-.tagline {
-  margin: 18px 0 8px;
-  font-size: 26px;
-  line-height: 1.35;
-}
-.cta {
+.lp-bar-in {
+  max-width: 1000px;
+  margin: 0 auto;
+  height: 60px;
+  padding: 0 20px;
   display: flex;
-  justify-content: center;
+  align-items: center;
+  gap: 22px;
+}
+.lp-bar-nav {
+  display: flex;
+  gap: 18px;
+}
+.lp-bar-nav button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.lp-bar-nav button:hover {
+  color: var(--brand);
+}
+.lp-login {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+  padding: 0 6px;
+}
+
+/* 히어로 */
+.lp-hero {
+  background: linear-gradient(160deg, var(--brand-deep) 0%, var(--brand-deep-2) 100%);
+  color: #fff;
+}
+.lp-hero-in {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 68px 20px 76px;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 44px;
+  align-items: center;
+}
+.lp-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #d6fbf5;
+  margin-bottom: 16px;
+}
+.lp-eyebrow.dark {
+  background: var(--brand-tint);
+  color: var(--brand-deep);
+  margin-bottom: 10px;
+}
+.lp-hero-copy h1 {
+  font-size: 38px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.lp-hero-copy p {
+  margin-top: 18px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 15px;
+  max-width: 460px;
+}
+.lp-hero-actions {
+  display: flex;
   gap: 10px;
-  margin-top: 22px;
+  margin-top: 26px;
   flex-wrap: wrap;
 }
-.demo {
-  margin-top: 44px;
+.btn.lg {
+  height: 48px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+.lp-hero-actions .btn.ghost {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.lp-hero-actions .btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 빠른 시작 카드 */
+.lp-quick {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  color: var(--ink);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lp-roles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.lp-role {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+.lp-role.on {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+.lp-role b {
+  font-size: 14px;
+}
+
+/* 지표 */
+.lp-stats {
+  background: var(--brand-tint);
+  border-bottom: 1px solid var(--border);
+}
+.lp-stats-in {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 26px 20px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+.lp-stats-in div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lp-stats-in b {
+  font-size: 22px;
+  color: var(--brand-deep);
+}
+.lp-stats-in span {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* 섹션 */
+.lp-section {
+  padding: 64px 0;
+  background: #fff;
+}
+.lp-section.alt {
+  background: var(--surface);
+}
+.lp-head {
+  margin-bottom: 28px;
+}
+.lp-head h2 {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+/* 절차 */
+.lp-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.lp-steps li {
+  display: flex;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.lp-section.alt .lp-steps li {
+  background: #fff;
+}
+.lp-step-no {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+
+/* FAQ */
+.lp-faq {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+.lp-faq-item {
+  border-bottom: 1px solid var(--border);
+}
+.lp-faq-q {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 4px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink);
+}
+.lp-faq-chev {
+  transition: transform 0.15s;
+  color: var(--muted);
+}
+.lp-faq-chev.up {
+  transform: rotate(180deg);
+}
+.lp-faq-a {
+  padding: 0 4px 16px;
+  line-height: 1.6;
+}
+
+/* 마무리 CTA */
+.lp-cta {
+  padding: 64px 0;
+  background: linear-gradient(160deg, var(--brand-deep) 0%, var(--brand-deep-2) 100%);
+  color: #fff;
+}
+.lp-cta h2 {
+  font-size: 26px;
+}
+.lp-cta p {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.82);
+}
+.lp-cta-btns {
+  margin-top: 22px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.lp-cta-btns .btn.ghost {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.lp-cta-btns .btn.ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 푸터 */
+.lp-foot {
+  background: var(--brand-deep-2);
+  color: #fff;
+  padding: 34px 0;
+}
+.lp-foot-in {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lp-foot .brand-word b {
+  color: #7fe6db;
+}
+.lp-foot .muted {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 모바일 하단 고정 바 */
+.lp-dock {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .lp-hero-in {
+    grid-template-columns: 1fr;
+    padding: 48px 20px 56px;
+  }
+  .lp-hero-copy h1 {
+    font-size: 30px;
+  }
+  .lp-bar-nav {
+    display: none;
+  }
+  .lp-stats-in {
+    grid-template-columns: 1fr 1fr;
+  }
+  .lp-dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  }
+  .lp-dock button {
+    flex: 1;
+    height: 42px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .lp-dock button.prim {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
 }
 </style>

@@ -1,9 +1,11 @@
-/* InsuranceAI — 크몽풍 경량 디자인 시스템 (코랄 포인트 · 카드 · 라운드 · 넉넉한 여백) */
+/* InsuranceAI — 경량 디자인 시스템 (틸 그린 포인트 · 카드 · 라운드 · 넉넉한 여백) */
 
 :root {
-  --brand: #ff5252;
-  --brand-hover: #e64545;
-  --brand-tint: #fff1f1;
+  --brand: #10b3a6;
+  --brand-hover: #0e988d;
+  --brand-tint: #e5f7f4;
+  --brand-deep: #0a5f59;
+  --brand-deep-2: #073f3b;
   --ink: #1a1a1a;
   --ink-2: #4b5563;
   --muted: #8a94a6;

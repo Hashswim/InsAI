@@ -18,7 +18,7 @@ function toggle() {
 }
 
 const ACCENT = {
-  brand: '#ff5252',
+  brand: '#10b3a6',
   indigo: '#6366f1',
   ok: '#12b76a',
   muted: '#cbd2dc',
