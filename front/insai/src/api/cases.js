@@ -6,6 +6,8 @@ export const getCase = (id) => api.get(`/cases/${id}`)
 export const openCase = (title, claimType) => api.post('/cases', { title, claimType })
 export const assignAdjuster = (id, adjusterId) => api.patch(`/cases/${id}/assign`, { adjusterId })
 export const startReview = (id) => api.post(`/cases/${id}/review`)
+export const closeCase = (id) => api.post(`/cases/${id}/close`)
+export const getDecision = (id) => api.get(`/cases/${id}/decision`)
 
 export const listDocumentRequests = (id) => api.get(`/cases/${id}/document-requests`)
 export const createDocumentRequest = (id, body) => api.post(`/cases/${id}/document-requests`, body)

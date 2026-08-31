@@ -41,6 +41,7 @@ const NAV_CLAIMANT = [
   { k: 'inquiry', label: '문의', icon: '💬' },
   { k: 'notice', label: '안내 사항', icon: '🔔' },
   { k: 'progress', label: '진행 상황', icon: '🗂' },
+  { k: 'result', label: '사정 결과', icon: '⚖️' },
   { k: 'info', label: '청구 정보', icon: 'ℹ️' },
 ]
 const NAV_ADJUSTER = [
@@ -199,9 +200,24 @@ async function decide(drId, action) {
   }
 }
 
-/* ---------- 사정 결과 (사정사) ---------- */
+/* ---------- 사정 결과 ---------- */
 const decisionText = ref('')
 const decisionErr = ref('')
+const decision = ref(null) // 조회된 사정 결과
+const decisionMade = computed(() =>
+  caseData.value && ['DECISION_MADE', 'CLOSED'].includes(caseData.value.status),
+)
+async function loadDecision() {
+  if (!decisionMade.value) {
+    decision.value = null
+    return
+  }
+  try {
+    decision.value = await casesApi.getDecision(props.id)
+  } catch {
+    decision.value = null
+  }
+}
 async function beginReview() {
   decisionErr.value = ''
   try {
@@ -217,6 +233,16 @@ async function submitDecision() {
   try {
     await casesApi.registerDecision(props.id, decisionText.value.trim())
     await Promise.all([loadCase(), loadTimeline()])
+    await loadDecision()
+  } catch (e) {
+    decisionErr.value = e.message
+  }
+}
+async function closeCase() {
+  decisionErr.value = ''
+  try {
+    await casesApi.closeCase(props.id)
+    await Promise.all([loadCase(), loadTimeline()])
   } catch (e) {
     decisionErr.value = e.message
   }
@@ -226,6 +252,7 @@ function goNav(k) {
   nav.value = k
   if (k === 'inquiry') loadMessages()
   if (k === 'progress') loadTimeline()
+  if (k === 'result') loadDecision()
 }
 const roleLabel = { CLAIMANT: '청구인', ADJUSTER: '담당 손해사정사' }
 const statusLabel = {
@@ -486,32 +513,63 @@ const statusLabel = {
             </FeedCard>
           </section>
 
-          <!-- 사정 결과 (사정사) -->
-          <section v-else class="stack">
+          <!-- 사정 결과 -->
+          <section v-else-if="nav === 'result'" class="stack">
             <h2>사정 결과</h2>
             <div v-if="decisionErr" class="alert err">{{ decisionErr }}</div>
-            <div v-if="caseData.status === 'DOCS_SUBMITTED'" class="card stack">
-              <p class="muted small">제출된 서류를 확인했다면 심사를 시작하세요.</p>
-              <button class="btn sm" @click="beginReview">심사 시작</button>
-            </div>
-            <div v-else-if="caseData.status === 'UNDER_REVIEW'" class="card stack">
-              <div class="field">
-                <label>사정 결과 (판단 내용)</label>
-                <textarea
-                  v-model="decisionText"
-                  class="textarea"
-                  placeholder="예: 약관 제O조에 따라 사망보험금 전액 지급 결정. 총 OOO원."
-                />
+
+            <!-- 등록된 결과 (양측 공통) -->
+            <div v-if="decision" class="card stack">
+              <div class="row" style="gap: 6px">
+                <span class="badge b-ok">사정 결과</span>
+                <span class="small muted">
+                  {{ decision.adjusterName || '손해사정사' }} · {{ fmtDateTime(decision.decidedAt) }}
+                </span>
               </div>
-              <button class="btn sm" :disabled="!decisionText.trim()" @click="submitDecision">
-                결정 등록
-              </button>
+              <p v-if="decision.plainText" style="white-space: pre-wrap">{{ decision.plainText }}</p>
+              <p style="white-space: pre-wrap" :class="{ muted: !!decision.plainText, small: !!decision.plainText }">
+                {{ decision.rawText }}
+              </p>
             </div>
-            <div v-else-if="['DECISION_MADE', 'CLOSED'].includes(caseData.status)" class="card">
-              <div class="alert ok">사정 결과가 등록되었습니다.</div>
-            </div>
-            <div v-else class="card muted">서류 제출이 완료되면 심사를 진행할 수 있습니다.</div>
+
+            <!-- 사정사 컨트롤 -->
+            <template v-if="isAdj">
+              <div v-if="caseData.status === 'DOCS_SUBMITTED'" class="card stack">
+                <p class="muted small">제출된 서류를 확인했다면 심사를 시작하세요.</p>
+                <button class="btn sm" @click="beginReview">심사 시작</button>
+              </div>
+              <div v-else-if="caseData.status === 'UNDER_REVIEW'" class="card stack">
+                <div class="field">
+                  <label>사정 결과 (판단 내용)</label>
+                  <textarea
+                    v-model="decisionText"
+                    class="textarea"
+                    placeholder="예: 약관 제O조에 따라 사망보험금 전액 지급 결정. 총 OOO원."
+                  />
+                </div>
+                <button class="btn sm" :disabled="!decisionText.trim()" @click="submitDecision">
+                  결정 등록
+                </button>
+              </div>
+              <div v-else-if="caseData.status === 'DECISION_MADE'" class="card stack">
+                <p class="muted small">결과 전달이 완료되었으면 청구 건을 종결하세요.</p>
+                <button class="btn sm" @click="closeCase">청구 종결</button>
+              </div>
+              <div v-else-if="caseData.status === 'CLOSED'" class="card muted">종결된 청구 건입니다.</div>
+              <div v-else class="card muted">서류 제출이 완료되면 심사를 진행할 수 있습니다.</div>
+            </template>
+
+            <!-- 청구인 안내 -->
+            <template v-else-if="!decision">
+              <div class="card muted">
+                <template v-if="caseData.status === 'UNDER_REVIEW'">손해사정사가 서류를 심사하고 있습니다.</template>
+                <template v-else>아직 사정 결과가 없습니다.</template>
+              </div>
+            </template>
           </section>
+
+          <section v-else />
+          <!-- (사정사 기본 진입은 requests 이므로 여기 도달하지 않음) -->
 
           <p v-if="!isAdj" class="guide small">
             온라인으로 진행되므로 “안내 사항”을 확인하고 “해야 할 일”의 서류를 정확히 작성·제출해 주세요.

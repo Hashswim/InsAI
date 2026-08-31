@@ -1,6 +1,7 @@
 package com.insuranceai.collab.api;
 
 import com.insuranceai.collab.application.AssignAdjusterService;
+import com.insuranceai.collab.application.CloseCaseService;
 import com.insuranceai.collab.application.CreateDocumentRequestService;
 import com.insuranceai.collab.application.DocumentRequestAction;
 import com.insuranceai.collab.application.DocumentRequestView;
@@ -54,6 +55,7 @@ class CaseControllerTest {
 	@MockitoBean PostMessageService postMessageService;
 	@MockitoBean RegisterDecisionService registerDecisionService;
 	@MockitoBean StartReviewService startReviewService;
+	@MockitoBean CloseCaseService closeCaseService;
 	@MockitoBean GetCaseTimelineService getCaseTimelineService;
 
 	private static final String USER = "11111111-1111-1111-1111-111111111111";
@@ -190,6 +192,13 @@ class CaseControllerTest {
 	@DisplayName("POST /cases/{id}/review -> 200")
 	void startReview() throws Exception {
 		mvc.perform(post("/cases/{id}/review", CASE).header("X-User-Id", USER))
+				.andExpect(status().isOk());
+	}
+
+	@Test
+	@DisplayName("POST /cases/{id}/close -> 200")
+	void closeCase() throws Exception {
+		mvc.perform(post("/cases/{id}/close", CASE).header("X-User-Id", USER))
 				.andExpect(status().isOk());
 	}
 

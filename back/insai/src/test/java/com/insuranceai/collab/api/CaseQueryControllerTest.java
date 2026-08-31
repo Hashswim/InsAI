@@ -2,6 +2,8 @@ package com.insuranceai.collab.api;
 
 import com.insuranceai.auth.domain.Role;
 import com.insuranceai.collab.application.CaseView;
+import com.insuranceai.collab.application.DecisionView;
+import com.insuranceai.collab.application.GetCaseDecisionService;
 import com.insuranceai.collab.application.GetCaseService;
 import com.insuranceai.collab.application.ListCaseMessagesService;
 import com.insuranceai.collab.application.ListCasesService;
@@ -37,6 +39,7 @@ class CaseQueryControllerTest {
 	@MockitoBean ListCasesService listCasesService;
 	@MockitoBean GetCaseService getCaseService;
 	@MockitoBean ListCaseMessagesService listCaseMessagesService;
+	@MockitoBean GetCaseDecisionService getCaseDecisionService;
 
 	private static final String USER = "11111111-1111-1111-1111-111111111111";
 	private static final String CASE = "22222222-2222-2222-2222-222222222222";
@@ -81,6 +84,26 @@ class CaseQueryControllerTest {
 
 		mvc.perform(get("/cases/{id}", CASE))
 				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@DisplayName("GET /cases/{id}/decision -> 200")
+	void getDecision() throws Exception {
+		given(getCaseDecisionService.get(any())).willReturn(new DecisionView(
+				"지급 승인", null, UUID.fromString(USER), "김사정", Instant.now()));
+
+		mvc.perform(get("/cases/{id}/decision", CASE))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.data.rawText").value("지급 승인"))
+				.andExpect(jsonPath("$.data.adjusterName").value("김사정"));
+	}
+
+	@Test
+	@DisplayName("GET /cases/{id}/decision 없음 -> 404")
+	void getDecisionNotFound() throws Exception {
+		given(getCaseDecisionService.get(any())).willThrow(new BusinessException(ErrorCode.NOT_FOUND));
+
+		mvc.perform(get("/cases/{id}/decision", CASE)).andExpect(status().isNotFound());
 	}
 
 	@Test

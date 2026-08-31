@@ -1,6 +1,7 @@
 package com.insuranceai.collab.api;
 
 import com.insuranceai.collab.application.AssignAdjusterService;
+import com.insuranceai.collab.application.CloseCaseService;
 import com.insuranceai.collab.application.CreateDocumentRequestCommand;
 import com.insuranceai.collab.application.CreateDocumentRequestService;
 import com.insuranceai.collab.application.DocumentRequestView;
@@ -44,6 +45,7 @@ public class CaseController {
 	private final PostMessageService postMessageService;
 	private final RegisterDecisionService registerDecisionService;
 	private final StartReviewService startReviewService;
+	private final CloseCaseService closeCaseService;
 	private final GetCaseTimelineService getCaseTimelineService;
 
 	public CaseController(OpenCaseService openCaseService,
@@ -54,6 +56,7 @@ public class CaseController {
 	                      PostMessageService postMessageService,
 	                      RegisterDecisionService registerDecisionService,
 	                      StartReviewService startReviewService,
+	                      CloseCaseService closeCaseService,
 	                      GetCaseTimelineService getCaseTimelineService) {
 		this.openCaseService = openCaseService;
 		this.assignAdjusterService = assignAdjusterService;
@@ -63,6 +66,7 @@ public class CaseController {
 		this.postMessageService = postMessageService;
 		this.registerDecisionService = registerDecisionService;
 		this.startReviewService = startReviewService;
+		this.closeCaseService = closeCaseService;
 		this.getCaseTimelineService = getCaseTimelineService;
 	}
 
@@ -124,6 +128,14 @@ public class CaseController {
 			@PathVariable UUID caseId,
 			@RequestHeader("X-User-Id") UUID userId) {
 		startReviewService.startReview(caseId, userId);
+		return ApiResponse.ok();
+	}
+
+	@PostMapping("/cases/{caseId}/close")
+	public ApiResponse<Void> closeCase(
+			@PathVariable UUID caseId,
+			@RequestHeader("X-User-Id") UUID userId) {
+		closeCaseService.close(caseId, userId);
 		return ApiResponse.ok();
 	}
 
