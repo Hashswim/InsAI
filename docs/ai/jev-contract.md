@@ -50,6 +50,8 @@ JEV_ALLOW_STUB=true가 필요하며 기본값은 false다. 운영 환경에서�
 - evidence: document_id, page(1부터), description.
 - 판정 근거가 없으면 SUITABLE/NEEDS_SUPPLEMENT 불가. UNVERIFIABLE의 신뢰도는 0.
 - 존재하지 않는 문서/페이지 참조는 응답 실패 처리. 근거 내용의 사실성까지 서버가 보증하지 않는다.
+- [구조화 출력 파싱 정책](structured-output.md)에 따라 숫자 문자열·bool 페이지/신뢰도,
+  중복 JSON 키·빈 필수 설명·잘린 출력은 거절한다. 자동 수정·재호출은 하지 않는다.
 - provider, model, prompt_version, prompt_sha256, chain_version, input_tokens, output_tokens.
   새 응답의 버전 세 필드는 필수이며, SHA-256은 소문자 16진수 64자리다.
   [프롬프트·체인 버전 관리](prompt-chain-versions.md)의 배포·과거 결과 호환 정책을 따른다.
@@ -61,7 +63,8 @@ JEV_ALLOW_STUB=true가 필요하며 기본값은 false다. 운영 환경에서�
 ## 원문 저장 금지의 범위
 LangSmith 자동 추적을 비활성화하고, 명시적 허용 목록만 수동 전송한다.
 PDF, 추출 텍스트, 프롬프트, 판정 내용, 근거, 파일명, 사용자/케이스 ID, 예외 원문을 전송하지 않는다.
-공급자/모델, 프롬프트 버전, 토큰 수, 실행 시작/종료 시각, 일반화된 성공/실패만 기록한다.
+공급자/모델, 프롬프트 버전·해시와 체인 버전, 토큰 수, 실행 시작/종료 시각,
+별도 허용된 실행·라우팅·비용 메타데이터와 일반화된 성공/실패만 기록한다.
 실제 분석 시 PDF 원문은 선택한 공급자(Gemini 또는 선택적 로컬 OpenAI)로 전송된다.
 업무용 원본 파일과 분석 결과는 기존 스토리지/업무 DB에 보관된다.
 OpenAI의 저장 방지 옵션과 공급자 측 보존 한계는 [어댑터 안내](openai-adapter.md)를 따른다.

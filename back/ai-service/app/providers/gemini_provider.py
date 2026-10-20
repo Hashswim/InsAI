@@ -5,6 +5,7 @@ from google.genai.errors import APIError
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from app.chains.structured_output import parse_findings, validate_findings
 from app.core.config import Settings
 from app.core.errors import (
     InvalidProviderResponse,
@@ -93,7 +94,13 @@ class GeminiProvider:
         ):
             raise ValueError("Invalid structured model result")
         raw = result.get("raw")
-        if not isinstance(raw, AIMessage) or not raw.content or raw.tool_calls:
+        if (
+            not isinstance(raw, AIMessage)
+            or not raw.content
+            or raw.tool_calls
+            or raw.invalid_tool_calls
+            or raw.additional_kwargs.get("refusal")
+        ):
             raise ValueError("Invalid raw model result")
         metadata = raw.response_metadata
         if metadata.get("finish_reason") != "STOP":
@@ -104,11 +111,22 @@ class GeminiProvider:
         usage: Any = raw.usage_metadata if raw.usage_metadata is not None else {}
         if not isinstance(usage, dict):
             raise ValueError("Invalid usage metadata")
-        parsed = result["parsed"]
-        if isinstance(parsed, Findings):
-            parsed = parsed.model_dump()
+        content = raw.content
+        if isinstance(content, list):
+            if (
+                len(content) != 1
+                or not isinstance(content[0], dict)
+                or content[0].get("type") != "text"
+            ):
+                raise ValueError("Expected one structured output")
+            text = content[0].get("text")
+        else:
+            text = content
+        findings = parse_findings(text)
+        if findings != validate_findings(result["parsed"]):
+            raise ValueError("SDK parsed output does not match raw output")
         return ProviderResult(
-            Findings.model_validate(parsed),
+            findings,
             usage.get("input_tokens", 0),
             usage.get("output_tokens", 0),
             usage_complete="input_tokens" in usage and "output_tokens" in usage,

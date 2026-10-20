@@ -4,6 +4,11 @@ from typing import Any
 
 import httpx
 
+from app.chains.structured_output import (
+    MAX_PROVIDER_RESPONSE_BYTES,
+    decode_json_object,
+    parse_findings,
+)
 from app.core.config import Settings
 from app.core.errors import (
     InvalidProviderResponse,
@@ -101,31 +106,53 @@ class OpenAIProvider:
             # Never expose/log an upstream error body, which can contain input.
             raise ProviderFailure()
         try:
-            return self._parse(response.json())
+            if len(response.content) > MAX_PROVIDER_RESPONSE_BYTES:
+                raise ValueError("Oversized provider response")
+            return self._parse(
+                decode_json_object(
+                    response.content.decode("utf-8"), max_bytes=MAX_PROVIDER_RESPONSE_BYTES
+                )
+            )
         except (ValueError, TypeError, KeyError, AttributeError):
             raise InvalidProviderResponse() from None
 
     @staticmethod
     def _parse(data: Any) -> ProviderResult:
-        if data.get("status") != "completed" or data.get("error"):
+        if (
+            not isinstance(data, dict)
+            or data.get("status") != "completed"
+            or data.get("error") is not None
+            or data.get("incomplete_details") is not None
+            or not isinstance(data.get("output"), list)
+        ):
             raise ValueError("Incomplete response")
         texts = []
+        messages = 0
         for output in data["output"]:
+            if not isinstance(output, dict):
+                raise ValueError("Unexpected output")
             if output.get("type") == "reasoning":
                 continue
             if output.get("type") != "message" or output.get("status") != "completed":
                 raise ValueError("Unexpected output")
             if output.get("role") != "assistant":
                 raise ValueError("Unexpected role")
+            messages += 1
+            if not isinstance(output.get("content"), list) or len(output["content"]) != 1:
+                raise ValueError("Expected one structured output")
             for part in output["content"]:
                 if part.get("type") != "output_text":
                     raise ValueError("Refused or unexpected content")
                 texts.append(part["text"])
-        if len(texts) != 1:
+        if len(texts) != 1 or messages != 1:
             raise ValueError("Expected one structured output")
-        usage = data.get("usage") or {}
+        usage = data.get("usage")
+        if usage is None:
+            usage = {}
+        if not isinstance(usage, dict):
+            raise ValueError("Invalid usage metadata")
         return ProviderResult(
-            Findings.model_validate_json(texts[0]),
+            parse_findings(texts[0]),
             usage.get("input_tokens", 0),
             usage.get("output_tokens", 0),
             usage_complete="input_tokens" in usage and "output_tokens" in usage,

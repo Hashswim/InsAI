@@ -1,3 +1,4 @@
+import json
 from unittest.mock import Mock
 
 import httpx
@@ -25,7 +26,7 @@ def test_pdf_and_schema_are_passed_to_langchain(monkeypatch, sample_request):
     structured.invoke.return_value = {
         "parsed": FakeProvider().analyze(sample_request).findings,
         "raw": AIMessage(
-            content="structured model output",
+            content=FakeProvider().analyze(sample_request).findings.model_dump_json(),
             response_metadata={"finish_reason": "STOP"},
             usage_metadata={"input_tokens": 12, "output_tokens": 34, "total_tokens": 46},
         ),
@@ -189,6 +190,57 @@ def test_missing_usage_and_dictionary_output(monkeypatch, sample_request):
     parsed = provider.analyze(port_request(sample_request))
     assert parsed.input_tokens == parsed.output_tokens == 0
     assert len(parsed.findings.items) == 1
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "fence",
+        "duplicate_key",
+        "numeric_string",
+        "mismatch",
+        "mixed_blocks",
+        "invalid_tool",
+        "refusal",
+        "bad_metadata",
+        "bad_feedback",
+    ],
+)
+def test_raw_output_cannot_be_repaired_or_overridden_by_sdk(monkeypatch, sample_request, mutation):
+    result = model_result(sample_request)
+    raw = result["raw"]
+    if mutation == "fence":
+        raw.content = f"```json\n{raw.content}\n```"
+    elif mutation == "duplicate_key":
+        raw.content = raw.content.replace('"page":1', '"page":2,"page":1')
+    elif mutation == "numeric_string":
+        raw.content = raw.content.replace('"confidence":0.8', '"confidence":"0.8"')
+    elif mutation == "mismatch":
+        data = json.loads(raw.content)
+        data["items"][0]["item"] = "different raw item"
+        raw.content = json.dumps(data)
+    elif mutation == "mixed_blocks":
+        raw.content = [{"type": "text", "text": raw.content}, {"type": "image", "data": "SECRET"}]
+    elif mutation == "invalid_tool":
+        raw.invalid_tool_calls = [{"name": "unexpected", "args": "SECRET", "id": "call"}]
+    elif mutation == "refusal":
+        raw.additional_kwargs["refusal"] = "SECRET_PATIENT"
+    elif mutation == "bad_metadata":
+        raw.response_metadata = []
+    elif mutation == "bad_feedback":
+        raw.response_metadata["prompt_feedback"] = "SECRET_PATIENT"
+    provider, structured, _ = mocked_provider(monkeypatch, result=result)
+    with pytest.raises(InvalidProviderResponse) as error:
+        provider.analyze(port_request(sample_request))
+    assert "SECRET" not in str(error.value)
+    structured.invoke.assert_called_once()
+
+
+def test_single_raw_text_block_is_supported(monkeypatch, sample_request):
+    result = model_result(sample_request)
+    result["raw"].content = [{"type": "text", "text": result["raw"].content}]
+    provider, _, _ = mocked_provider(monkeypatch, result=result)
+    assert len(provider.analyze(port_request(sample_request)).findings.items) == 1
 
 
 @pytest.mark.parametrize("changes", [{}, {"google_api_key": "synthetic"}, {"gemini_model": "fake"}])

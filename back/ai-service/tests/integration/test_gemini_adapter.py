@@ -132,6 +132,34 @@ def test_real_sdk_partial_output_is_not_success(monkeypatch, sample_request, fin
         real_sdk_service(monkeypatch, handler).run(sample_request)
 
 
+@pytest.mark.parametrize("mutation", ["duplicate", "fence", "numeric_string", "truncated"])
+def test_real_sdk_parsing_does_not_bypass_raw_validation(
+    monkeypatch, sample_request, mutation, caplog
+):
+    calls = []
+
+    def handler(request):
+        calls.append(request)
+        data = successful_response(sample_request)
+        part = data["candidates"][0]["content"]["parts"][0]
+        text = part["text"]
+        if mutation == "duplicate":
+            text = text.replace('"page":1', '"page":2,"page":1')
+        elif mutation == "fence":
+            text = "```json\n" + text + "\n```"
+        elif mutation == "numeric_string":
+            text = text.replace('"confidence":0.8', '"confidence":"0.8"')
+        elif mutation == "truncated":
+            text = text[:-2]
+        part["text"] = text
+        return httpx.Response(200, json=data)
+
+    with pytest.raises(InvalidProviderResponse):
+        real_sdk_service(monkeypatch, handler).run(sample_request)
+    assert len(calls) == 1
+    assert "날짜 항목 확인" not in caplog.text
+
+
 @pytest.mark.parametrize(
     "logger_name", ["langchain_google_genai.chat_models", "google.genai.models"]
 )

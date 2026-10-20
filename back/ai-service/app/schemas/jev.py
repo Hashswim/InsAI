@@ -4,12 +4,22 @@ from io import BytesIO
 from typing import Literal, Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pypdf import PdfReader
 
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+
+def valid_text(value: str, *, allow_blank: bool = False) -> str:
+    if not allow_blank and not value.strip():
+        raise ValueError("Nonblank text required")
+    try:
+        value.encode("utf-8")
+    except UnicodeError:
+        raise ValueError("Valid Unicode text required") from None
+    return value
 
 
 class DocumentKind(str, Enum):
@@ -62,17 +72,32 @@ class JevRequest(StrictModel):
 
 class Evidence(StrictModel):
     document_id: UUID
-    page: int = Field(ge=1)
+    page: int = Field(ge=1, strict=True)
     description: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("description")
+    @classmethod
+    def nonblank_description(cls, value: str) -> str:
+        return valid_text(value)
 
 
 class Item(StrictModel):
     item: str = Field(min_length=1, max_length=200)
     judgment: Literal["SUITABLE", "NEEDS_SUPPLEMENT", "UNVERIFIABLE"]
-    evidence: list[Evidence] = Field(max_length=20)
-    confidence: float = Field(ge=0, le=1)
+    evidence: list[Evidence] = Field(max_length=20, strict=True)
+    confidence: float = Field(ge=0, le=1, strict=True, allow_inf_nan=False)
     verification_reason: str = Field(min_length=1, max_length=2000)
     supplement: str = Field(max_length=2000)
+
+    @field_validator("item", "verification_reason")
+    @classmethod
+    def nonblank_text(cls, value: str) -> str:
+        return valid_text(value)
+
+    @field_validator("supplement")
+    @classmethod
+    def unicode_supplement(cls, value: str) -> str:
+        return valid_text(value, allow_blank=True)
 
     @model_validator(mode="after")
     def grounded(self) -> Self:
@@ -86,7 +111,7 @@ class Item(StrictModel):
 
 
 class Findings(StrictModel):
-    items: list[Item] = Field(min_length=1, max_length=100)
+    items: list[Item] = Field(min_length=1, max_length=100, strict=True)
 
 
 class JevResponse(StrictModel):

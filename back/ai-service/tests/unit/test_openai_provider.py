@@ -143,6 +143,12 @@ def test_transport_errors_are_normalized(sample_request, failure):
         "unknown_document",
         "unknown_output",
         "nonobject",
+        "empty_extra_message",
+        "incomplete_details",
+        "malformed_usage",
+        "duplicate_json_key",
+        "numeric_string",
+        "fenced_json",
     ],
 )
 def test_invalid_results_fail_closed(sample_request, mutation):
@@ -172,6 +178,20 @@ def test_invalid_results_fail_closed(sample_request, mutation):
         data["output"].append({"type": "function_call"})
     elif mutation == "nonobject":
         data = []
+    elif mutation == "empty_extra_message":
+        data["output"].append(
+            {"type": "message", "role": "assistant", "status": "completed", "content": []}
+        )
+    elif mutation == "incomplete_details":
+        data["incomplete_details"] = {"reason": "max_output_tokens"}
+    elif mutation == "malformed_usage":
+        data["usage"] = []
+    elif mutation == "duplicate_json_key":
+        content[0]["text"] = content[0]["text"].replace('"page":1', '"page":2,"page":1')
+    elif mutation == "numeric_string":
+        content[0]["text"] = content[0]["text"].replace('"confidence":0.8', '"confidence":"0.8"')
+    elif mutation == "fenced_json":
+        content[0]["text"] = "```json\n" + content[0]["text"] + "\n```"
     with pytest.raises(InvalidProviderResponse):
         service_for(lambda request: httpx.Response(200, json=data)).run(sample_request)
 
@@ -183,6 +203,21 @@ def test_non_json_response_and_missing_usage(sample_request):
     data.pop("usage")
     result = service_for(lambda request: httpx.Response(200, json=data)).run(sample_request)
     assert result.input_tokens == result.output_tokens == 0
+
+
+@pytest.mark.parametrize("body", [b'{"status":"completed","status":"incomplete"}', b"{}\xff"])
+def test_invalid_outer_json_is_not_silently_decoded(sample_request, body):
+    with pytest.raises(InvalidProviderResponse):
+        service_for(lambda request: httpx.Response(200, content=body)).run(sample_request)
+
+
+def test_oversized_outer_response_is_rejected_before_json_decoding(monkeypatch, sample_request):
+    monkeypatch.setattr("app.providers.openai_provider.MAX_PROVIDER_RESPONSE_BYTES", 10)
+    decoder = Mock()
+    monkeypatch.setattr("app.providers.openai_provider.decode_json_object", decoder)
+    with pytest.raises(InvalidProviderResponse):
+        service_for(lambda request: httpx.Response(200, content=b"x" * 11)).run(sample_request)
+    decoder.assert_not_called()
 
 
 @pytest.mark.parametrize("missing", ["openai_api_key", "openai_model", "jev_service_token"])

@@ -24,6 +24,7 @@ Gemini를 선택하면 필수 설정이 없을 때 시작 시 실패한다.
 요청·응답은 [API 계약](../../docs/ai/jev-contract.md)을 참고한다.
 환경 선택·키 주입·마스킹·운영 설정은 [환경설정 안내](../../docs/ai/configuration-secrets.md)를 따른다.
 프롬프트·체인 변경과 배포는 [버전 관리 안내](../../docs/ai/prompt-chain-versions.md)를 따른다.
+모델 출력 수용·오류 처리는 [공통 파싱 정책](../../docs/ai/structured-output.md)을 따른다.
 
 ## 구성
 

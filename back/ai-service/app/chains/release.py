@@ -20,5 +20,5 @@ class JevRelease:
 ACTIVE_RELEASE = JevRelease(
     prompt_version="jev-v1",
     prompt_sha256="994f8ed30f350b9655e10f6ff4a18d247d72563dffd7e42a509f3730e79454e5",
-    chain_version="jev-chain-v1",
+    chain_version="jev-chain-v2",
 )

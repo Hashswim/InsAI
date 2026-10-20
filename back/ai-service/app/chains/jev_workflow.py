@@ -1,7 +1,8 @@
 from langsmith import tracing_context
 
+from app.chains.structured_output import validate_findings
 from app.providers.base import Provider, ProviderDocument, ProviderRequest, ProviderResult
-from app.schemas.jev import Findings, JevRequest
+from app.schemas.jev import JevRequest
 
 
 def run_workflow(request: JevRequest, provider: Provider) -> ProviderResult:
@@ -16,7 +17,7 @@ def run_workflow(request: JevRequest, provider: Provider) -> ProviderResult:
         result = provider.analyze(model_request)
     if not isinstance(result, ProviderResult):
         raise ValueError("Invalid provider result type")
-    findings = Findings.model_validate(result.findings.model_dump())
+    findings = validate_findings(result.findings)
     pages = {d.document_id: d.page_count() for d in request.documents}
     for item in findings.items:
         for evidence in item.evidence:
