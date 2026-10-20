@@ -13,12 +13,12 @@ class GeminiProvider:
     name = "gemini"
 
     def __init__(self, config: Settings) -> None:
-        if not config.google_api_key or not config.gemini_model:
+        if not config.google_api_key.get_secret_value() or not config.gemini_model:
             raise ValueError("Gemini credentials and model are required")
         self.model = config.gemini_model
         self.client = ChatGoogleGenerativeAI(
             model=self.model,
-            api_key=config.google_api_key,
+            api_key=config.google_api_key.get_secret_value(),
             temperature=0,
             timeout=90,
             max_retries=0,

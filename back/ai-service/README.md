@@ -16,10 +16,13 @@ make run
 ```
 
 Makefile의 PYTHON을 지정하면 별도 가상환경도 사용할 수 있다.
-모델 키가 없어도 서비스 실행과 GET /health/live는 가능하다. 분석은 설정이 필요하다.
+기본값은 local/stub이며 모델 키 없이 시작·health 확인이 가능하다.
+서비스 토큰을 설정하면 실제 모델 호출 없는 스텁 분석도 가능하다.
+Gemini를 선택하면 필수 설정이 없을 때 시작 시 실패한다.
 설정 변수는 `.env.example`, 전체 서비스 설정·실행은
 [실행 안내](../../docs/ai/jev-cycle-acceptance.md),
 요청·응답은 [API 계약](../../docs/ai/jev-contract.md)을 참고한다.
+환경 선택·키 주입·마스킹·운영 설정은 [환경설정 안내](../../docs/ai/configuration-secrets.md)를 따른다.
 
 ## 구성
 

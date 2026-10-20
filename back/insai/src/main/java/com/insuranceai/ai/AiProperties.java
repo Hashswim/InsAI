@@ -17,4 +17,9 @@ public record AiProperties(boolean enabled, String apiKey, String model) {
 	public boolean usable() {
 		return enabled && apiKey != null && !apiKey.isBlank();
 	}
+
+	@Override
+	public String toString() {
+		return "AiProperties[enabled=" + enabled + ", apiKey=[REDACTED], model=" + model + "]";
+	}
 }

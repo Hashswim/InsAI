@@ -26,7 +26,7 @@ class SafeTrace:
             from langsmith import Client
 
             client = Client(
-                api_key=self.config.langsmith_api_key,
+                api_key=self.config.langsmith_api_key.get_secret_value(),
                 api_url=self.config.langsmith_endpoint,
                 hide_inputs=True,
                 hide_outputs=True,

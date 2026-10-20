@@ -21,7 +21,18 @@ def main() -> None:
         port = sock.getsockname()[1]
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
-    env.update({"LANGSMITH_TRACING": "false", "LANGCHAIN_TRACING_V2": "false"})
+    for name in ("JEV_SECRETS_DIR", "GOOGLE_API_KEY", "LANGSMITH_API_KEY", "JEV_SERVICE_TOKEN"):
+        env.pop(name, None)
+    env.update(
+        {
+            "LANGSMITH_TRACING": "false",
+            "LANGCHAIN_TRACING_V2": "false",
+            "APP_ENV": "test",
+            "JEV_PROVIDER": "stub",
+            "LANGSMITH_ENABLED": "false",
+            "PYDANTIC_SETTINGS_DEBUG": "false",
+        }
+    )
     with tempfile.TemporaryDirectory(prefix="insai-smoke-") as directory:
         process = subprocess.Popen(
             [

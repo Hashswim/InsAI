@@ -34,7 +34,9 @@ public class FastApiJevClient implements JevGateway {
                 || !"ON_HOLD".equals(result.submissionStatus())
                 || !"NOT_REGISTERED".equals(result.regulationsStatus())
                 || result.items() == null || result.items().isEmpty()
-                || result.model() == null || !"gemini".equals(result.provider())) {
+                || result.model() == null
+                || !("gemini".equals(result.provider())
+                     || (properties.allowStub() && "stub".equals(result.provider())))) {
                 throw new IllegalStateException();
             }
             return result;

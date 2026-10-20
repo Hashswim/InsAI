@@ -56,9 +56,9 @@ def test_trace_only_receives_allowlisted_metadata(monkeypatch):
     monkeypatch.setattr("langsmith.Client", Mock(return_value=client))
     from datetime import datetime, timezone
 
-    trace_id, status = SafeTrace(Settings(langsmith_enabled=True)).record(
-        datetime.now(timezone.utc), "gemini", "test-model", True, 10, 20
-    )
+    trace_id, status = SafeTrace(
+        Settings(app_env="local", langsmith_enabled=True, langsmith_api_key="test-trace-key")
+    ).record(datetime.now(timezone.utc), "gemini", "test-model", True, 10, 20)
     payload = client.create_run.call_args.kwargs
     assert trace_id and status == "RECORDED"
     assert payload["inputs"] == payload["outputs"] == {}
@@ -75,6 +75,6 @@ def test_tracing_failure_does_not_fail_analysis(monkeypatch):
     monkeypatch.setattr("langsmith.Client", Mock(side_effect=RuntimeError("SECRET")))
     from datetime import datetime, timezone
 
-    assert SafeTrace(Settings(langsmith_enabled=True)).record(
-        datetime.now(timezone.utc), "gemini", "test-model", True
-    ) == (None, "FAILED")
+    assert SafeTrace(
+        Settings(app_env="local", langsmith_enabled=True, langsmith_api_key="test-trace-key")
+    ).record(datetime.now(timezone.utc), "gemini", "test-model", True) == (None, "FAILED")

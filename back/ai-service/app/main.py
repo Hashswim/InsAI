@@ -1,4 +1,6 @@
 import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 # Disable automatic tracing before importing any LangChain integration.
 os.environ["LANGSMITH_TRACING"] = "false"
@@ -12,9 +14,22 @@ from starlette.responses import Response
 
 from app.api.health import router as health
 from app.api.jev import router as jev
+from app.core.config import settings
 from app.core.errors import ProviderFailure
+from app.core.logging import install_secret_redaction
 
-app = FastAPI(title="InsuranceAI JEV", version="0.1.0")
+
+@asynccontextmanager
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    config = settings()
+    restore_logging = install_secret_redaction(config)
+    try:
+        yield
+    finally:
+        restore_logging()
+
+
+app = FastAPI(title="InsuranceAI JEV", version="0.1.0", lifespan=lifespan)
 app.include_router(health)
 app.include_router(jev)
 

@@ -18,7 +18,7 @@ def service() -> JevService:
     try:
         return JevService(build_provider(config), SafeTrace(config))
     except Exception:
-        raise HTTPException(503, "Gemini is not configured") from None
+        raise HTTPException(503, "AI provider is unavailable") from None
 
 
 @router.post("/internal/jev", response_model=JevResponse, dependencies=[Depends(authenticate)])

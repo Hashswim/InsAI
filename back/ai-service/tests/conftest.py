@@ -9,6 +9,33 @@ from app.providers.base import ProviderResult
 from app.schemas.jev import DocumentKind, Findings, JevRequest
 
 
+@pytest.fixture(autouse=True)
+def isolated_settings(monkeypatch):
+    from app.api.jev import service
+    from app.core.config import settings
+    from app.main import app
+
+    for name in (
+        "GOOGLE_API_KEY",
+        "LANGSMITH_API_KEY",
+        "JEV_SERVICE_TOKEN",
+        "JEV_SECRETS_DIR",
+        "GEMINI_MODEL",
+        "LANGSMITH_ENDPOINT",
+        "PYDANTIC_SETTINGS_DEBUG",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("APP_ENV", "test")
+    monkeypatch.setenv("JEV_PROVIDER", "stub")
+    monkeypatch.setenv("LANGSMITH_ENABLED", "false")
+    settings.cache_clear()
+    service.cache_clear()
+    yield
+    app.dependency_overrides.clear()
+    settings.cache_clear()
+    service.cache_clear()
+
+
 @pytest.fixture
 def request_data():
     writer = PdfWriter()

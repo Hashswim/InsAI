@@ -1,5 +1,6 @@
 FROM python:3.11-slim
 WORKDIR /service
+ENV APP_ENV=production JEV_PROVIDER=gemini
 COPY pyproject.toml ./
 COPY README.md ./
 COPY app ./app

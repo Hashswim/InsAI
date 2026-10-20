@@ -1,15 +1,20 @@
 # 실행 및 검증
 
 ## 설정
-1. back/ai-service에서 .env.example을 .env로 복사한다.
+1. 로컬에서는 back/ai-service의 .env.example을 .env로 복사한다. 기본값은 키 없는 stub 모드다.
 2. JEV_SERVICE_TOKEN에 충분히 긴 임의 문자열을 넣는다.
-3. GOOGLE_API_KEY와 계정에서 사용할 수 있는 GEMINI_MODEL을 설정한다.
+3. 실제 분석은 JEV_PROVIDER=gemini로 변경하고 GOOGLE_API_KEY와 사용할 GEMINI_MODEL을 설정한다.
 4. LangSmith 사용 시 LANGSMITH_ENABLED=true, LANGSMITH_API_KEY, LANGSMITH_PROJECT를 설정한다.
    자동 추적 설정은 false로 유지한다. 사용자 지정 endpoint는 LANGSMITH_ENDPOINT로 설정한다.
 5. Spring 실행 환경에도 동일한 JEV_SERVICE_TOKEN을 설정한다.
    Spring은 Python 서비스의 .env를 자동으로 읽지 않는다.
    JEV_BASE_URL 기본값은 http://localhost:8085 이다.
 6. 실제 PDF에는 의료정보가 포함되므로 초기 검증은 익명화된 파일로 진행한다.
+
+스텁 연결만 확인하려면 모델 키 없이 JEV_PROVIDER=stub을 사용하고,
+Spring에도 JEV_ALLOW_STUB=true를 명시한다. 스텁 결과는 실제 문서 판정이 아니다.
+APP_ENV는 프로세스 환경에서 지정하며 test/staging/production에서는 .env를 읽지 않는다.
+운영 필수 설정과 마운트된 비밀정보 사용법은 [환경설정 안내](configuration-secrets.md)를 따른다.
 
 키는 채팅이나 저장소에 넣지 않는다. .env는 gitignore 대상이다.
 
@@ -35,7 +40,8 @@ cd back/insai
 
 Spring 시작 시 Flyway V6가 jev_analyses 테이블을 추가한다.
 FastAPI 문서는 http://localhost:8085/docs 에서 확인한다.
-모델 설정이 없어도 /health/live는 UP이며, 실제 분석은 설정 없으면 503이다.
+local/stub에서는 모델 키 없이 시작할 수 있다. 서비스 토큰이 없으면 분석 API는 503이다.
+gemini를 선택하고 필수 설정이 없거나 운영 환경 설정이 불완전하면 시작 자체가 실패한다.
 
 ## 실제 한 사이클
 1. 기존 로그인/청구 생성 API로 사용자와 케이스를 준비한다.
