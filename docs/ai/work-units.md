@@ -9,7 +9,7 @@
 | 01 | JEV 결정 모델 명세 작성 | 완료 — [명세와 예제 5건](jev-model-spec.md) |
 | 02 | AI의 권한과 금지 행위 정의 | 완료 — [권한·데이터 처리 정책](ai-authority-policy.md) |
 | 03 | Spring Boot와 FastAPI 책임 경계 결정 | 완료 — [서비스 책임 경계](service-boundaries.md) |
-| 04 | AI 유스케이스 우선순위 확정 | 대기 |
+| 04 | AI 유스케이스 우선순위 확정 | 완료 — [우선순위와 MVP 범위](use-case-priorities.md) |
 | 05 | Python AI 서비스 프로젝트 생성 | 대기 — 기존 구현 점검 필요 |
 | 06 | 환경설정 및 비밀정보 관리 | 대기 |
 | 07 | 기본 운영 엔드포인트 구현 | 대기 |

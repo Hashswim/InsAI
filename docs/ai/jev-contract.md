@@ -4,6 +4,7 @@
 28개 단위 진행 상태는 [작업 진행표](work-units.md)를 참고한다.
 AI의 허용 범위와 개인정보·로그 처리 기준은 [권한 정책](ai-authority-policy.md)을 따른다.
 데이터 소유권, 실패 처리 책임과 동기·비동기 기준은 [서비스 책임 경계](service-boundaries.md)를 따른다.
+기능 우선순위와 MVP 완료 기준은 [유스케이스 우선순위](use-case-priorities.md)를 따른다.
 
 J = Judgment(항목 판정), E = Evidence(문서 근거), V = Verification(검증 및 신뢰도).
 세 단계는 현재 하나의 Gemini 구조화 응답에서 수행하며, 서버가 출력 형식과 문서/페이지 참조를 검증한다.
