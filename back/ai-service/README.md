@@ -71,3 +71,7 @@ Docker 생존 검사와 응답 형식은 [운영 엔드포인트 안내](../../d
 내부 요청·응답의 기계 판독 스키마는 실행 중인 서비스의 `/openapi.json`을 참고한다.
 내부 분석 API는 PDF 본문을 읽기 전에 서버 전용 Bearer 토큰을 검증한다.
 사용자 JWT와 케이스 권한은 Spring에서 검증하며, [인증 안내](../../docs/ai/service-auth-and-access.md)를 따른다.
+
+OpenAI는 선택적 로컬 어댑터로 추가했다. 기본 공급자와 운영의 Gemini 제한은 유지한다.
+구현 방식, 모의 검증, 실제 의료 문서 사용 전 확인 사항은
+[OpenAI 어댑터 안내](../../docs/ai/openai-adapter.md)를 참고한다.

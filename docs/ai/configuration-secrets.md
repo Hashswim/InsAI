@@ -9,7 +9,7 @@ APP_ENV는 프로세스 환경에서 선택한다. 로컬 .env의 APP_ENV 항목
 
 | 환경 | .env 로딩 | 모델 모드 | 필수 설정 |
 |---|---|---|---|
-| local | 현재 실행 디렉터리의 .env를 선택적으로 읽음 | 기본 stub; 명시적으로 gemini 선택 가능 | stub의 health는 키 없이 가능. 분석 API에는 서비스 토큰 필요 |
+| local | 현재 실행 디렉터리의 .env를 선택적으로 읽음 | 기본 stub; 명시적으로 gemini/openai 선택 가능 | stub의 health는 키 없이 가능. 분석 API에는 서비스 토큰 필요 |
 | test | 읽지 않음 | stub만 허용, LangSmith 비활성 | 외부 호출 없이 테스트. 테스트 fixture가 설정·캐시·의존성 override를 격리 |
 | staging | 읽지 않음 | gemini 필수 | 서비스 토큰 32자 이상, Google 키, 모델 ID |
 | production | 읽지 않음 | gemini 필수 | staging과 동일 |
@@ -24,10 +24,12 @@ APP_ENV는 프로세스 환경에서 선택한다. 로컬 .env의 APP_ENV 항목
 | 변수 | 기본값·처리 |
 |---|---|
 | APP_ENV | local; local/test/staging/production만 허용 |
-| JEV_PROVIDER | stub; stub/gemini만 허용 |
-| JEV_SERVICE_TOKEN | 빈 값. Gemini 모드는 필수; staging/production은 32자 이상. 공백 없는 ASCII |
+| JEV_PROVIDER | stub; stub/gemini/openai 허용. staging/production은 gemini만 허용 |
+| JEV_SERVICE_TOKEN | 빈 값. Gemini/OpenAI 모드는 필수; staging/production은 32자 이상. 공백 없는 ASCII |
 | GOOGLE_API_KEY | 빈 비밀값. gemini 선택 시 필수 |
 | GEMINI_MODEL | 빈 값. gemini 선택 시 계정에서 사용 가능한 모델 ID 필요 |
+| OPENAI_API_KEY | 빈 비밀값. openai 선택 시 필수. 실제 키는 아직 입력하지 않음 |
+| OPENAI_MODEL | 빈 값. openai 선택 시 PDF·구조화 출력 지원 모델 ID 필요 |
 | LANGSMITH_ENABLED | false. true이면 LANGSMITH_API_KEY 필수 |
 | LANGSMITH_API_KEY | 빈 비밀값. 활성화된 경우에만 SDK 인증에 사용 |
 | LANGSMITH_PROJECT | insai-jev |
@@ -68,7 +70,7 @@ Spring은 Python의 JEV_SECRETS_DIR을 읽지 않으므로 서비스 토큰을 S
 
 ## 마스킹과 오류
 
-- Python의 세 비밀 필드는 SecretStr와 repr 제외로 설정 출력·JSON 직렬화에서 숨긴다.
+- Python의 비밀 필드는 SecretStr와 repr 제외로 설정 출력·JSON 직렬화에서 숨긴다.
 - SDK/인증 비교 경계에서만 명시적으로 원래 값을 꺼내 사용한다.
 - 시작 설정 오류는 입력값을 포함하지 않는 ConfigurationError로 바꾼다.
 - 표준 Python 로그는 현재 설정된 키·토큰과 URL 인코딩 값을 메시지·포맷 인자·예외 traceback에서 치환한다.

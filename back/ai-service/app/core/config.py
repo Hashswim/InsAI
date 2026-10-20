@@ -18,8 +18,10 @@ class Settings(BaseSettings):
     app_env: Literal["local", "test", "staging", "production"] = "local"
     jev_service_token: SecretStr = Field(default=SecretStr(""), repr=False)
     google_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
+    openai_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
+    openai_model: str = Field(default="", pattern=r"^[A-Za-z0-9._/-]*$", max_length=200)
     gemini_model: str = Field(default="", pattern=r"^[A-Za-z0-9._/-]*$", max_length=200)
-    jev_provider: Literal["stub", "gemini"] = "stub"
+    jev_provider: Literal["stub", "gemini", "openai"] = "stub"
     langsmith_enabled: bool = False
     langsmith_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
     langsmith_project: str = Field(default="insai-jev", min_length=1, max_length=200)
@@ -30,10 +32,11 @@ class Settings(BaseSettings):
         token = self.jev_service_token.get_secret_value()
         if token and token in {
             self.google_api_key.get_secret_value(),
+            self.openai_api_key.get_secret_value(),
             self.langsmith_api_key.get_secret_value(),
         }:
             raise ValueError("Service and provider credentials must be different")
-        for key in (self.google_api_key, self.langsmith_api_key):
+        for key in (self.google_api_key, self.openai_api_key, self.langsmith_api_key):
             if any(char.isspace() for char in key.get_secret_value()):
                 raise ValueError("API keys must not contain whitespace")
         if token and (not token.isascii() or any(char.isspace() for char in token)):
@@ -56,6 +59,10 @@ class Settings(BaseSettings):
                 )
         if self.langsmith_enabled and not self.langsmith_api_key.get_secret_value().strip():
             raise ValueError("LANGSMITH_ENABLED requires LANGSMITH_API_KEY")
+        if self.jev_provider == "openai" and (
+            not token or not self.openai_api_key.get_secret_value() or not self.openai_model
+        ):
+            raise ValueError("OpenAI requires JEV_SERVICE_TOKEN, OPENAI_API_KEY and OPENAI_MODEL")
         endpoint = urlsplit(self.langsmith_endpoint)
         local_http = (
             self.app_env in {"local", "test"}

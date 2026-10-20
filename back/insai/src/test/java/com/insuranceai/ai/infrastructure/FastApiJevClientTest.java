@@ -14,7 +14,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class FastApiJevClientTest {
-    @Test void sendsAuthenticationAndParsesSnakeCase() throws Exception {
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"gemini", "openai"})
+    void sendsAuthenticationAndParsesSnakeCase(String provider) throws Exception {
         UUID requestId=UUID.randomUUID(), traceId=UUID.randomUUID();
         var server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
         server.createContext("/internal/jev", exchange -> {
@@ -26,9 +28,9 @@ class FastApiJevClientTest {
                 {"request_id":"%s","submission_status":"ON_HOLD","regulations_status":"NOT_REGISTERED",
                  "reason":"rules missing","items":[{"item":"date","judgment":"UNVERIFIABLE","evidence":[],
                  "confidence":0,"verification_reason":"unreadable","supplement":"rescan"}],
-                 "provider":"gemini","model":"fake","prompt_version":"jev-v1","trace_id":"%s",
+                 "provider":"%s","model":"fake","prompt_version":"jev-v1","trace_id":"%s",
                  "trace_status":"RECORDED","input_tokens":10,"output_tokens":20}
-                """.formatted(requestId,traceId);
+                """.formatted(requestId,provider,traceId);
             byte[] bytes=response.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type","application/json");
             exchange.sendResponseHeaders(200,bytes.length);
@@ -41,6 +43,7 @@ class FastApiJevClientTest {
                 "http://127.0.0.1:"+server.getAddress().getPort(),"test-token",5));
             var result=client.analyze(new JevGateway.Request(requestId,List.of()));
             assertEquals(traceId,result.traceId());
+            assertEquals(provider,result.provider());
             assertEquals("ON_HOLD",result.submissionStatus());
             assertEquals(10,result.inputTokens());
         } finally { server.stop(0); }

@@ -12,7 +12,7 @@ router = APIRouter()
 
 class Readiness(BaseModel):
     status: Literal["READY", "NOT_READY"]
-    mode: Literal["stub", "gemini"]
+    mode: Literal["stub", "gemini", "openai"]
     checks: dict[str, str]
     external_connections: Literal["NOT_PROBED"] = "NOT_PROBED"
 

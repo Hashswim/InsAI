@@ -19,6 +19,8 @@ def isolated_settings(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     for name in (
         "GOOGLE_API_KEY",
+        "OPENAI_API_KEY",
+        "OPENAI_MODEL",
         "LANGSMITH_API_KEY",
         "JEV_SERVICE_TOKEN",
         "JEV_SECRETS_DIR",

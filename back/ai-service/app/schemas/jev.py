@@ -95,7 +95,7 @@ class JevResponse(StrictModel):
     regulations_status: Literal["NOT_REGISTERED"] = "NOT_REGISTERED"
     reason: str = "규정 미등록: 최종 제출 가능 여부는 판정 보류입니다."
     items: list[Item] = Field(min_length=1, max_length=100)
-    provider: Literal["gemini", "stub"]
+    provider: Literal["gemini", "stub", "openai"]
     model: str = Field(min_length=1, max_length=200)
     prompt_version: str = Field(default="jev-v1", min_length=1, max_length=100)
     trace_id: UUID | None

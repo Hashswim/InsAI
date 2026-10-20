@@ -11,7 +11,12 @@ from app.core.config import Settings
 
 def install_secret_redaction(config: Settings) -> Callable[[], None]:
     values: set[str] = set()
-    for secret in (config.google_api_key, config.langsmith_api_key, config.jev_service_token):
+    for secret in (
+        config.google_api_key,
+        config.openai_api_key,
+        config.langsmith_api_key,
+        config.jev_service_token,
+    ):
         value = secret.get_secret_value()
         if value:
             values.update((value, quote(value, safe=""), quote_plus(value, safe="")))

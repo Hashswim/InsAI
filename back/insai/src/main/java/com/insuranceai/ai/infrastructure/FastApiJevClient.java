@@ -43,6 +43,7 @@ public class FastApiJevClient implements JevGateway {
                 || result.items() == null || result.items().isEmpty()
                 || result.model() == null
                 || !("gemini".equals(result.provider())
+                     || "openai".equals(result.provider())
                      || (properties.allowStub() && "stub".equals(result.provider())))) {
                 throw new IllegalStateException();
             }
