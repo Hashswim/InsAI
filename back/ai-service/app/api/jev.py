@@ -1,5 +1,7 @@
 from functools import lru_cache
+
 from fastapi import APIRouter, Depends, HTTPException
+
 from app.application.jev_service import JevService
 from app.core.config import settings
 from app.core.security import authenticate
@@ -11,7 +13,7 @@ router = APIRouter()
 
 
 @lru_cache
-def service():
+def service() -> JevService:
     config = settings()
     try:
         return JevService(build_provider(config), SafeTrace(config))
@@ -20,5 +22,5 @@ def service():
 
 
 @router.post("/internal/jev", response_model=JevResponse, dependencies=[Depends(authenticate)])
-def analyze(request: JevRequest, runner: JevService = Depends(service)):
+def analyze(request: JevRequest, runner: JevService = Depends(service)) -> JevResponse:
     return runner.run(request)

@@ -1,4 +1,5 @@
 import os
+
 # Disable automatic tracing before importing any LangChain integration.
 os.environ["LANGSMITH_TRACING"] = "false"
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
@@ -6,6 +7,9 @@ os.environ["LANGCHAIN_TRACING_V2"] = "false"
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import RequestResponseEndpoint
+from starlette.responses import Response
+
 from app.api.health import router as health
 from app.api.jev import router as jev
 from app.core.errors import ProviderFailure
@@ -16,18 +20,18 @@ app.include_router(jev)
 
 
 @app.exception_handler(RequestValidationError)
-async def invalid_input(request: Request, exc: RequestValidationError):
+async def invalid_input(request: Request, exc: RequestValidationError) -> JSONResponse:
     # FastAPI's default errors contain the rejected input, including PDF bytes.
     return JSONResponse(status_code=422, content={"detail": "Invalid JEV request"})
 
 
 @app.exception_handler(ProviderFailure)
-async def provider_failure(request: Request, exc: ProviderFailure):
+async def provider_failure(request: Request, exc: ProviderFailure) -> JSONResponse:
     return JSONResponse(status_code=502, content={"detail": "AI analysis failed"})
 
 
 @app.middleware("http")
-async def bound_body(request: Request, call_next):
+async def bound_body(request: Request, call_next: RequestResponseEndpoint) -> Response:
     limit = 43_000_000
     size = 0
     chunks = []

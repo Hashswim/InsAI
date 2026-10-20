@@ -1,10 +1,12 @@
 import base64
 from io import BytesIO
 from uuid import uuid4
+
 import pytest
 from pypdf import PdfWriter
-from app.schemas.jev import JevRequest, DocumentKind, Findings
+
 from app.providers.base import ProviderResult
+from app.schemas.jev import DocumentKind, Findings, JevRequest
 
 
 @pytest.fixture
@@ -14,10 +16,13 @@ def request_data():
     stream = BytesIO()
     writer.write(stream)
     encoded = base64.b64encode(stream.getvalue()).decode()
-    return {"request_id": str(uuid4()), "documents": [
-        {"document_id": str(uuid4()), "kind": kind.value, "content_base64": encoded}
-        for kind in DocumentKind
-    ]}
+    return {
+        "request_id": str(uuid4()),
+        "documents": [
+            {"document_id": str(uuid4()), "kind": kind.value, "content_base64": encoded}
+            for kind in DocumentKind
+        ],
+    }
 
 
 @pytest.fixture
@@ -30,9 +35,25 @@ class FakeProvider:
     model = "fake-test-model"
 
     def analyze(self, request):
-        return ProviderResult(Findings(items=[{
-            "item": "진료일자", "judgment": "SUITABLE",
-            "evidence": [{"document_id": request.documents[0].document_id,
-                          "page": 1, "description": "날짜 항목 확인"}],
-            "confidence": 0.8, "verification_reason": "날짜 판독 가능", "supplement": ""
-        }]), 10, 20)
+        return ProviderResult(
+            Findings(
+                items=[
+                    {
+                        "item": "진료일자",
+                        "judgment": "SUITABLE",
+                        "evidence": [
+                            {
+                                "document_id": request.documents[0].document_id,
+                                "page": 1,
+                                "description": "날짜 항목 확인",
+                            }
+                        ],
+                        "confidence": 0.8,
+                        "verification_reason": "날짜 판독 가능",
+                        "supplement": "",
+                    }
+                ]
+            ),
+            10,
+            20,
+        )

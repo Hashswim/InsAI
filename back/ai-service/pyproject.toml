@@ -6,16 +6,37 @@ build-backend = "setuptools.build_meta"
 name = "insai-ai-service"
 version = "0.1.0"
 requires-python = ">=3.11"
+readme = "README.md"
 dependencies = [
   "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pydantic-settings>=2.7,<3",
-  "langchain-google-genai>=4,<5", "langsmith>=0.4,<1", "pypdf>=6,<7"
+  "langchain-core>=1,<2", "langchain-google-genai>=4,<5", "langsmith>=0.4,<1", "pypdf>=6,<7"
 ]
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "httpx>=0.28,<1"]
+dev = ["ruff>=0.12,<1", "mypy>=1.15,<3", "build>=1.2,<2"]
 [tool.setuptools.packages.find]
 include = ["app*"]
 [tool.setuptools.package-data]
-app = ["chains/prompts/*.txt"]
+app = ["chains/prompts/*.txt", "rules/*.yaml"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Automatic tracing must be disabled before importing any integration.
+"app/main.py" = ["E402"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["app", "scripts"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+explicit_package_bases = true

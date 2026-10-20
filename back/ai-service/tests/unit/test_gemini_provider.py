@@ -1,7 +1,9 @@
 from unittest.mock import Mock
+
+from conftest import FakeProvider
+
 from app.core.config import Settings
 from app.providers.gemini_provider import GeminiProvider
-from conftest import FakeProvider
 
 
 def test_pdf_and_schema_are_passed_to_langchain(monkeypatch, sample_request):
@@ -13,7 +15,9 @@ def test_pdf_and_schema_are_passed_to_langchain(monkeypatch, sample_request):
         "raw": Mock(usage_metadata={"input_tokens": 12, "output_tokens": 34}),
         "parsing_error": None,
     }
-    monkeypatch.setattr("app.providers.gemini_provider.ChatGoogleGenerativeAI", Mock(return_value=client))
+    monkeypatch.setattr(
+        "app.providers.gemini_provider.ChatGoogleGenerativeAI", Mock(return_value=client)
+    )
     provider = GeminiProvider(Settings(google_api_key="test-key", gemini_model="test-model"))
     result = provider.analyze(sample_request)
     assert result.input_tokens == 12

@@ -1,7 +1,9 @@
 import base64
 from enum import Enum
 from io import BytesIO
+from typing import Self
 from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pypdf import PdfReader
 
@@ -28,7 +30,7 @@ class PdfDocument(StrictModel):
         return len(PdfReader(BytesIO(self.pdf_bytes())).pages)
 
     @model_validator(mode="after")
-    def valid_pdf(self):
+    def valid_pdf(self) -> Self:
         try:
             raw = self.pdf_bytes()
             if len(raw) > 10 * 1024 * 1024 or not raw.startswith(b"%PDF-"):
@@ -46,7 +48,7 @@ class JevRequest(StrictModel):
     documents: list[PdfDocument] = Field(min_length=3, max_length=3)
 
     @model_validator(mode="after")
-    def unique_documents(self):
+    def unique_documents(self) -> Self:
         if len({d.document_id for d in self.documents}) != 3:
             raise ValueError("Duplicate document IDs")
         if {d.kind for d in self.documents} != set(DocumentKind):
@@ -69,7 +71,7 @@ class Item(StrictModel):
     supplement: str = Field(max_length=2000)
 
     @model_validator(mode="after")
-    def grounded(self):
+    def grounded(self) -> Self:
         if self.judgment != "UNVERIFIABLE" and not self.evidence:
             raise ValueError("A judgment needs evidence")
         if self.judgment == "UNVERIFIABLE":

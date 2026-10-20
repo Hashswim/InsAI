@@ -1,9 +1,10 @@
 from langsmith import tracing_context
-from app.providers.base import Provider
+
+from app.providers.base import Provider, ProviderResult
 from app.schemas.jev import Findings, JevRequest
 
 
-def run_workflow(request: JevRequest, provider: Provider):
+def run_workflow(request: JevRequest, provider: Provider) -> ProviderResult:
     # Force off even when the host has automatic tracing enabled.
     with tracing_context(enabled=False):
         result = provider.analyze(request)

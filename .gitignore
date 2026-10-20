@@ -21,6 +21,8 @@ Thumbs.db
 **/.venv/
 **/__pycache__/
 **/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
 **/*.egg-info/
 *.log
 *.jar

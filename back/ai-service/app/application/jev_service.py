@@ -1,11 +1,14 @@
 from datetime import datetime, timezone
+
 from app.chains.jev_workflow import run_workflow
 from app.core.errors import ProviderFailure
+from app.observability.langsmith import SafeTrace
+from app.providers.base import Provider
 from app.schemas.jev import JevRequest, JevResponse
 
 
 class JevService:
-    def __init__(self, provider, trace):
+    def __init__(self, provider: Provider, trace: SafeTrace) -> None:
         self.provider = provider
         self.trace = trace
 
@@ -17,12 +20,20 @@ class JevService:
             self.trace.record(started, self.provider.name, self.provider.model, False)
             raise ProviderFailure() from None
         trace_id, trace_status = self.trace.record(
-            started, self.provider.name, self.provider.model, True,
-            result.input_tokens, result.output_tokens,
+            started,
+            self.provider.name,
+            self.provider.model,
+            True,
+            result.input_tokens,
+            result.output_tokens,
         )
         return JevResponse(
-            request_id=request.request_id, items=result.findings.items,
-            provider=self.provider.name, model=self.provider.model,
-            trace_id=trace_id, trace_status=trace_status,
-            input_tokens=result.input_tokens, output_tokens=result.output_tokens,
+            request_id=request.request_id,
+            items=result.findings.items,
+            provider=self.provider.name,
+            model=self.provider.model,
+            trace_id=trace_id,
+            trace_status=trace_status,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
         )

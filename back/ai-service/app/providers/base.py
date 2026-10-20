@@ -1,5 +1,6 @@
-from typing import Protocol
 from dataclasses import dataclass
+from typing import Protocol
+
 from app.schemas.jev import Findings, JevRequest
 
 

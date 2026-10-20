@@ -22,8 +22,8 @@ docker compose up -d
 별도 터미널:
 ```sh
 cd back/ai-service
-python3 -m venv .venv
-.venv/bin/pip install -e '.[test]'
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -e '.[test,dev]'
 .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8085 --no-access-log
 ```
 
@@ -62,6 +62,9 @@ cd back/insai
 ```
 
 테스트는 가짜 모델과 합성 입력을 사용하며 외부 API 비용을 발생시키지 않는다.
+개발 전체 검사는 `make check`, 실제 설치 패키지의 기본 HTTP 검사는 `make smoke`로 실행한다.
+가상환경 경로가 다르면 `make check PYTHON=/가상환경/bin/python`처럼 지정한다.
+프로젝트 기반의 검증 결과는 [05번 작업 기록](project-foundation.md)을 참고한다.
 HTTP 계약 테스트, 실제 H2 저장/재조회 테스트, PDF 검증 및 근거 참조 검증,
 원문을 전송하지 않는 trace 허용 목록 테스트를 포함한다.
 실제 Gemini/LangSmith 연결은 사용자 키와 예제 PDF를 설정한 후 별도 검증해야 한다.
