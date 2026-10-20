@@ -12,7 +12,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from app.api.jev import service
 from app.application.jev_service import JevService
 from app.core.config import Settings
-from app.core.errors import InvalidProviderResponse, ProviderFailure, ProviderTimeout
+from app.core.errors import (
+    InvalidProviderResponse,
+    ProviderFailure,
+    ProviderTimeout,
+    TransientProviderFailure,
+)
 from app.core.logging import install_secret_redaction
 from app.main import app
 from app.providers.gemini_provider import GeminiProvider
@@ -99,7 +104,7 @@ def test_real_sdk_pdf_conversion_and_api_contract(monkeypatch, sample_request):
     [
         (401, ProviderFailure),
         (429, ProviderFailure),
-        (503, ProviderFailure),
+        (503, TransientProviderFailure),
         (504, ProviderTimeout),
     ],
 )

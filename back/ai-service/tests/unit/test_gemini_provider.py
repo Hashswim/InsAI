@@ -7,7 +7,12 @@ from google.genai.errors import ClientError, ServerError
 from langchain_core.messages import AIMessage
 
 from app.core.config import Settings
-from app.core.errors import InvalidProviderResponse, ProviderFailure, ProviderTimeout
+from app.core.errors import (
+    InvalidProviderResponse,
+    ProviderFailure,
+    ProviderTimeout,
+    TransientProviderFailure,
+)
 from app.providers.base import Provider, ProviderDocument, ProviderRequest
 from app.providers.gemini_provider import GeminiProvider
 
@@ -188,3 +193,16 @@ def test_missing_usage_and_dictionary_output(monkeypatch, sample_request):
 def test_constructor_requires_key_and_model(changes):
     with pytest.raises(ValueError, match="credentials and model"):
         GeminiProvider(Settings(**changes))
+
+
+def test_overload_retains_only_retry_delay(monkeypatch, sample_request):
+    error = ServerError(
+        503,
+        {"error": {"message": "SECRET_PATIENT"}},
+        response=httpx.Response(503, headers={"Retry-After": "60"}),
+    )
+    provider, _, _ = mocked_provider(monkeypatch, error=error)
+    with pytest.raises(TransientProviderFailure) as caught:
+        provider.analyze(port_request(sample_request))
+    assert caught.value.retry_after == 60
+    assert "SECRET_PATIENT" not in str(caught.value)

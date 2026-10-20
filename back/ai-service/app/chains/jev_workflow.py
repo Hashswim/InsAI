@@ -22,4 +22,6 @@ def run_workflow(request: JevRequest, provider: Provider) -> ProviderResult:
         for evidence in item.evidence:
             if evidence.document_id not in pages or evidence.page > pages[evidence.document_id]:
                 raise ValueError("Evidence refers to an unknown document or page")
-    return ProviderResult(findings, result.input_tokens, result.output_tokens)
+    return ProviderResult(
+        findings, result.input_tokens, result.output_tokens, result.usage_complete
+    )

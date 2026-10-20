@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
+from app.application.resilient_execution import ExecutionStats
 from app.core.config import Settings
 from app.providers.routing_policy import RouteDecision
 
@@ -21,6 +22,7 @@ class SafeTrace:
         output_tokens: int = 0,
         *,
         route: RouteDecision | None = None,
+        execution: ExecutionStats | None = None,
     ) -> tuple[UUID | None, str]:
         if not self.config.langsmith_enabled:
             return None, "DISABLED"
@@ -53,6 +55,7 @@ class SafeTrace:
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
                         **(route.metadata() if route else {}),
+                        **(execution.metadata() if execution else {}),
                     }
                 },
             )

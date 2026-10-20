@@ -21,11 +21,14 @@ class RouteDecision:
     profile: ModelProfile
     policy: RoutingPolicy
     priority_index: int | None = None
+    fallback: bool = False
 
     @property
     def reason(self) -> str:
         if self.profile.provider == "stub":
             return "OFFLINE_STUB"
+        if self.fallback:
+            return "SAME_PROVIDER_FALLBACK"
         return "PINNED_MODEL" if self.policy == "pinned" else "FIRST_COMPATIBLE_PRIORITY"
 
     def metadata(self) -> dict[str, str | int]:
@@ -40,7 +43,7 @@ class RouteDecision:
         return result
 
 
-def select_route(config: Settings) -> RouteDecision:
+def route_candidates(config: Settings) -> tuple[RouteDecision, ...]:
     catalog = load_catalog(config.jev_model_catalog_path)
     if config.jev_routing_policy == "pinned":
         model = (
@@ -50,13 +53,20 @@ def select_route(config: Settings) -> RouteDecision:
             if config.jev_provider == "openai"
             else config.gemini_model
         )
-        return RouteDecision(catalog.require(config.jev_provider, model), "pinned")
+        return (RouteDecision(catalog.require(config.jev_provider, model), "pinned"),)
     # Explicit order, within one approved provider. This is preflight selection,
     # not failure-triggered fallback. Never consider unlisted catalog entries.
+    routes = []
     for index, model in enumerate(config.jev_model_priority):
         try:
             profile = catalog.require(config.jev_provider, model)
         except CatalogError:
             continue
-        return RouteDecision(profile, "priority", index)
+        routes.append(RouteDecision(profile, "priority", index))
+    if routes:
+        return tuple(routes)
     raise RouteUnavailable("No compatible model satisfies the routing policy")
+
+
+def select_route(config: Settings) -> RouteDecision:
+    return route_candidates(config)[0]

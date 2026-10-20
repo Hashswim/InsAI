@@ -41,6 +41,7 @@ def catalog_path(tmp_path):
 def isolated_settings(monkeypatch, tmp_path):
     from app.api.jev import service
     from app.core.config import settings
+    from app.core.usage import usage_guard
     from app.main import app
 
     # Local-mode tests must never read a developer's real .env file.
@@ -56,6 +57,24 @@ def isolated_settings(monkeypatch, tmp_path):
         "JEV_MODEL_CATALOG_PATH",
         "JEV_ROUTING_POLICY",
         "JEV_MODEL_PRIORITY",
+        "JEV_MAX_ATTEMPTS",
+        "JEV_RETRY_ATTEMPTS",
+        "JEV_FALLBACK_ENABLED",
+        "JEV_ATTEMPT_TIMEOUT_SECONDS",
+        "JEV_EXECUTION_BUDGET_SECONDS",
+        "JEV_RETRY_BASE_DELAY_SECONDS",
+        "JEV_CIRCUIT_ENABLED",
+        "JEV_CIRCUIT_FAILURE_THRESHOLD",
+        "JEV_CIRCUIT_COOLDOWN_SECONDS",
+        "JEV_LIMITS_ENABLED",
+        "JEV_REQUESTS_PER_MINUTE",
+        "JEV_ATTEMPTS_PER_MINUTE",
+        "JEV_MAX_CONCURRENT_REQUESTS",
+        "JEV_MAX_CONCURRENT_CALLS",
+        "JEV_COST_GUARD_ENABLED",
+        "JEV_REQUEST_BUDGET_USD",
+        "JEV_DAILY_BUDGET_USD",
+        "JEV_PRICING_MAX_AGE_DAYS",
         "LANGSMITH_ENDPOINT",
         "PYDANTIC_SETTINGS_DEBUG",
     ):
@@ -65,10 +84,12 @@ def isolated_settings(monkeypatch, tmp_path):
     monkeypatch.setenv("LANGSMITH_ENABLED", "false")
     settings.cache_clear()
     service.cache_clear()
+    usage_guard.cache_clear()
     yield
     app.dependency_overrides.clear()
     settings.cache_clear()
     service.cache_clear()
+    usage_guard.cache_clear()
 
 
 @pytest.fixture

@@ -10,8 +10,14 @@ from pydantic import ValidationError
 
 from app.api.jev import service
 from app.application.jev_service import JevService
+from app.chains.jev_workflow import run_workflow
 from app.core.config import Settings
-from app.core.errors import InvalidProviderResponse, ProviderFailure, ProviderTimeout
+from app.core.errors import (
+    InvalidProviderResponse,
+    ProviderFailure,
+    ProviderTimeout,
+    TransientProviderFailure,
+)
 from app.core.logging import install_secret_redaction
 from app.main import app
 from app.providers.base import Provider
@@ -227,3 +233,45 @@ def test_internal_api_returns_openai_contract(monkeypatch, sample_request):
     assert body["request_id"] == str(sample_request.request_id)
     assert body["submission_status"] == "ON_HOLD"
     assert body["trace_id"] is None and body["trace_status"] == "DISABLED"
+
+
+@pytest.mark.parametrize(
+    "code,error_type,temporary",
+    [
+        ("rate_limit_exceeded", "rate_limit_error", True),
+        ("slow_down", "rate_limit_error", True),
+        ("insufficient_quota", "insufficient_quota", False),
+        ("organization_spend_limit_exceeded", "insufficient_quota", False),
+        ("project_spend_limit_exceeded", "insufficient_quota", False),
+        ("unknown", "unknown", False),
+    ],
+)
+def test_rate_limit_and_quota_are_distinct(sample_request, code, error_type, temporary):
+    def handler(request):
+        return httpx.Response(
+            429,
+            json={"error": {"code": code, "type": error_type, "message": "SECRET_PATIENT"}},
+            headers={"Retry-After": "1.5"},
+        )
+
+    provider = OpenAIProvider(config(), transport=httpx.MockTransport(handler))
+    with pytest.raises(ProviderFailure) as caught:
+        run_workflow(sample_request, provider)
+    assert isinstance(caught.value, TransientProviderFailure) is temporary
+    if temporary:
+        assert caught.value.retry_after == 1.5
+    assert "SECRET_PATIENT" not in str(caught.value)
+
+
+def test_overload_retains_only_numeric_retry_delay(sample_request):
+    provider = OpenAIProvider(
+        config(),
+        transport=httpx.MockTransport(
+            lambda request: httpx.Response(
+                503, text="SECRET_PATIENT", headers={"Retry-After": "60"}
+            )
+        ),
+    )
+    with pytest.raises(TransientProviderFailure) as caught:
+        run_workflow(sample_request, provider)
+    assert caught.value.retry_after == 60

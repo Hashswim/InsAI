@@ -99,7 +99,7 @@ class FastApiJevClientTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"401,AI_SERVICE_UNAVAILABLE", "403,AI_SERVICE_UNAVAILABLE", "429,AI_SERVICE_UNAVAILABLE",
+    @CsvSource({"401,AI_SERVICE_UNAVAILABLE", "403,AI_SERVICE_UNAVAILABLE", "429,AI_RATE_LIMITED",
         "503,AI_SERVICE_UNAVAILABLE", "400,INVALID_INPUT", "422,INVALID_INPUT", "415,INVALID_INPUT",
         "413,PAYLOAD_TOO_LARGE", "500,AI_UPSTREAM_ERROR", "502,AI_UPSTREAM_ERROR", "504,AI_TIMEOUT"})
     void mapsRemoteStatusWithoutLeakingBody(int status, ErrorCode expected) throws Exception {

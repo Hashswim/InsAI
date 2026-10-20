@@ -88,7 +88,7 @@ Spring ID 필터는 JEV 경로에만 적용하며 다른 업무 API의 응답 �
 | 415 | UNSUPPORTED_MEDIA_TYPE | 내부 분석 요청이 application/json이 아님 |
 | 422 | INVALID_INPUT | JSON·스키마·PDF 입력 검증 실패 |
 | 422 | REQUEST_ID_MISMATCH | 헤더와 검증된 본문 ID 불일치 |
-| 429 | RATE_LIMITED | 제한 초과용 공통 규격; 실제 rate limit 구현은 17번 |
+| 429 | RATE_LIMITED | 17번의 요청·호출·동시 처리·추정 비용 한도 초과 |
 | 500 | INTERNAL_ERROR | 분류되지 않은 서버 오류 |
 | 502 | AI_ANALYSIS_FAILED | 모델 분석 실패 |
 | 502 | INVALID_AI_RESPONSE | 출력 형식·근거 검증 또는 API 응답 스키마 실패 |
@@ -111,7 +111,8 @@ Spring 클라이언트는 내부 오류 본문을 사용자에게 복사하지 �
 |---|---|
 | 400, 415, 422 | 400 / INVALID_INPUT |
 | 413 | 413 / PAYLOAD_TOO_LARGE |
-| 401, 403, 429, 503 | 503 / AI_SERVICE_UNAVAILABLE |
+| 401, 403, 503 | 503 / AI_SERVICE_UNAVAILABLE |
+| 429 | 429 / AI_RATE_LIMITED |
 | 504, 실제 HTTP 읽기 타임아웃 | 504 / AI_TIMEOUT |
 | 그 외 오류 HTTP(예: 500, 502) | 502 / AI_UPSTREAM_ERROR |
 | 성공 HTTP의 잘못된 JSON·필수 응답 상태·요청 ID 불일치 | 502 / AI_INVALID_RESPONSE |

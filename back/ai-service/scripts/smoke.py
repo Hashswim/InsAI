@@ -31,6 +31,24 @@ def main() -> None:
         "JEV_MODEL_CATALOG_PATH",
         "JEV_ROUTING_POLICY",
         "JEV_MODEL_PRIORITY",
+        "JEV_MAX_ATTEMPTS",
+        "JEV_RETRY_ATTEMPTS",
+        "JEV_FALLBACK_ENABLED",
+        "JEV_ATTEMPT_TIMEOUT_SECONDS",
+        "JEV_EXECUTION_BUDGET_SECONDS",
+        "JEV_RETRY_BASE_DELAY_SECONDS",
+        "JEV_CIRCUIT_ENABLED",
+        "JEV_CIRCUIT_FAILURE_THRESHOLD",
+        "JEV_CIRCUIT_COOLDOWN_SECONDS",
+        "JEV_LIMITS_ENABLED",
+        "JEV_REQUESTS_PER_MINUTE",
+        "JEV_ATTEMPTS_PER_MINUTE",
+        "JEV_MAX_CONCURRENT_REQUESTS",
+        "JEV_MAX_CONCURRENT_CALLS",
+        "JEV_COST_GUARD_ENABLED",
+        "JEV_REQUEST_BUDGET_USD",
+        "JEV_DAILY_BUDGET_USD",
+        "JEV_PRICING_MAX_AGE_DAYS",
         "LANGSMITH_API_KEY",
         "JEV_SERVICE_TOKEN",
     ):
@@ -44,6 +62,7 @@ def main() -> None:
             "LANGSMITH_ENABLED": "false",
             "PYDANTIC_SETTINGS_DEBUG": "false",
             "JEV_SERVICE_TOKEN": "synthetic-smoke-token",
+            "JEV_REQUESTS_PER_MINUTE": "1",
         }
     )
     with tempfile.TemporaryDirectory(prefix="insai-smoke-") as directory:
@@ -109,6 +128,7 @@ def main() -> None:
                 (None, 401),
                 ("wrong-token", 401),
                 ("synthetic-smoke-token", 422),
+                ("synthetic-smoke-token", 429),
             ]:
                 headers = {"Content-Type": "application/json"}
                 if token is not None:
@@ -124,10 +144,12 @@ def main() -> None:
                     raise RuntimeError("Authentication probe unexpectedly succeeded")
                 except HTTPError as error:
                     failure = json.load(error)
-                    expected = "UNAUTHORIZED" if status == 401 else "INVALID_INPUT"
+                    expected = {401: "UNAUTHORIZED", 422: "INVALID_INPUT", 429: "RATE_LIMITED"}[
+                        status
+                    ]
                     if error.code != status or failure["error"]["code"] != expected:
                         raise RuntimeError("Unexpected authentication contract") from None
-            print("Smoke OK: HTTP operations, request IDs, service auth before validation")
+            print("Smoke OK: HTTP operations, request IDs, service auth and pre-body usage limit")
         finally:
             process.terminate()
             try:

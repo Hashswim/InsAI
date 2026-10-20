@@ -17,9 +17,12 @@ from app.api.middleware import http_context
 from app.core.config import settings
 from app.core.errors import (
     ApiError,
+    CircuitOpen,
     InvalidProviderResponse,
     ProviderFailure,
     ProviderTimeout,
+    UsageLimitExceeded,
+    UsagePolicyUnavailable,
     error_response,
 )
 from app.core.logging import install_secret_redaction
@@ -52,13 +55,20 @@ async def invalid_input(request: Request, exc: RequestValidationError) -> JSONRe
 
 @app.exception_handler(ProviderFailure)
 async def provider_failure(request: Request, exc: ProviderFailure) -> JSONResponse:
-    if isinstance(exc, ProviderTimeout):
+    if isinstance(exc, UsageLimitExceeded):
+        code = ErrorCode.RATE_LIMITED
+    elif isinstance(exc, (CircuitOpen, UsagePolicyUnavailable)):
+        code = ErrorCode.SERVICE_UNAVAILABLE
+    elif isinstance(exc, ProviderTimeout):
         code = ErrorCode.AI_TIMEOUT
     elif isinstance(exc, InvalidProviderResponse):
         code = ErrorCode.INVALID_AI_RESPONSE
     else:
         code = ErrorCode.AI_ANALYSIS_FAILED
-    return error_response(request, code)
+    response = error_response(request, code)
+    if isinstance(exc, UsageLimitExceeded) and exc.retry_after is not None:
+        response.headers["Retry-After"] = str(exc.retry_after)
+    return response
 
 
 @app.exception_handler(ApiError)

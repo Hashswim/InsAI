@@ -3,7 +3,13 @@ from datetime import datetime, timezone
 from httpx import TimeoutException
 
 from app.chains.jev_workflow import run_workflow
-from app.core.errors import InvalidProviderResponse, ProviderFailure, ProviderTimeout
+from app.core.errors import (
+    CircuitOpen,
+    InvalidProviderResponse,
+    ProviderFailure,
+    ProviderTimeout,
+    TransientProviderFailure,
+)
 from app.observability.langsmith import SafeTrace
 from app.providers.base import Provider
 from app.providers.routing_policy import RouteDecision
@@ -46,6 +52,10 @@ class JevService:
                 raise ProviderTimeout() from None
             if isinstance(error, InvalidProviderResponse):
                 raise InvalidProviderResponse() from None
+            if isinstance(error, CircuitOpen):
+                raise CircuitOpen() from None
+            if isinstance(error, TransientProviderFailure):
+                raise TransientProviderFailure(retry_after=error.retry_after) from None
             raise ProviderFailure() from None
         except Exception:
             self.trace.record(

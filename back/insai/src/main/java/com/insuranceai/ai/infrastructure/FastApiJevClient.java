@@ -61,7 +61,8 @@ public class FastApiJevClient implements JevGateway {
         return switch (status) {
             case 400, 415, 422 -> ErrorCode.INVALID_INPUT;
             case 413 -> ErrorCode.PAYLOAD_TOO_LARGE;
-            case 401, 403, 429, 503 -> ErrorCode.AI_SERVICE_UNAVAILABLE;
+            case 401, 403, 503 -> ErrorCode.AI_SERVICE_UNAVAILABLE;
+            case 429 -> ErrorCode.AI_RATE_LIMITED;
             case 504 -> ErrorCode.AI_TIMEOUT;
             default -> ErrorCode.AI_UPSTREAM_ERROR;
         };

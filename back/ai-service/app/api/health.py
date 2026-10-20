@@ -4,8 +4,10 @@ from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel
 
 from app.core.config import Settings, settings
+from app.core.errors import UsagePolicyUnavailable
 from app.core.resources import load_jev_prompt
-from app.providers.routing_policy import select_route
+from app.core.usage import usage_guard, validate_cost_profiles
+from app.providers.routing_policy import route_candidates
 from app.version import SERVICE_NAME, SERVICE_VERSION
 
 router = APIRouter()
@@ -47,17 +49,23 @@ def ready(request: Request, response: Response, config: Settings = Depends(setti
     except Exception:
         checks["prompt"] = "UNAVAILABLE"
     try:
-        select_route(config)
+        routes = route_candidates(config)
         checks["model_catalog"] = "COMPATIBLE"
         checks["routing"] = "SELECTABLE"
+        validate_cost_profiles(config, routes)
+        if config.jev_cost_guard_enabled and not usage_guard().policy_ready():
+            raise UsagePolicyUnavailable()
+        checks["cost_policy"] = "CONFIGURED" if config.jev_cost_guard_enabled else "DISABLED"
     except Exception:
         checks["model_catalog"] = "UNAVAILABLE"
         checks["routing"] = "UNAVAILABLE"
+        checks["cost_policy"] = "UNAVAILABLE"
     is_ready = (
         checks["startup"] == "COMPLETE"
         and checks["service_auth"] == "CONFIGURED"
         and checks["prompt"] == "AVAILABLE"
         and checks["model_catalog"] == "COMPATIBLE"
+        and checks["cost_policy"] != "UNAVAILABLE"
     )
     # LangSmith is optional. No network, model SDK initialization, or paid probes.
     checks["langsmith"] = "CONFIGURED" if config.langsmith_enabled else "DISABLED"

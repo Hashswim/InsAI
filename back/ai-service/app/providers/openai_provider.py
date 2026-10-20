@@ -5,10 +5,16 @@ from typing import Any
 import httpx
 
 from app.core.config import Settings
-from app.core.errors import InvalidProviderResponse, ProviderFailure, ProviderTimeout
+from app.core.errors import (
+    InvalidProviderResponse,
+    ProviderFailure,
+    ProviderTimeout,
+    TransientProviderFailure,
+)
 from app.core.resources import load_jev_prompt
 from app.providers.base import ProviderRequest, ProviderResult
 from app.providers.catalog import JEV_OUTPUT_TOKENS
+from app.providers.retry_after import retry_after_seconds
 from app.schemas.jev import Findings
 
 
@@ -21,6 +27,7 @@ class OpenAIProvider:
         self.model = config.openai_model
         self._key = config.openai_api_key
         self._transport = transport
+        self._timeout = config.jev_attempt_timeout_seconds
         self.prompt = load_jev_prompt()
 
     def analyze(self, request: ProviderRequest) -> ProviderResult:
@@ -58,7 +65,10 @@ class OpenAIProvider:
         try:
             # Fixed origin, no redirects, no ambient proxies/credentials; one request.
             with httpx.Client(
-                transport=self._transport, timeout=90, trust_env=False, follow_redirects=False
+                transport=self._transport,
+                timeout=self._timeout,
+                trust_env=False,
+                follow_redirects=False,
             ) as client:
                 response = client.post(
                     "https://api.openai.com/v1/responses",
@@ -67,10 +77,26 @@ class OpenAIProvider:
                 )
         except httpx.TimeoutException:
             raise ProviderTimeout() from None
+        except httpx.ConnectError:
+            raise TransientProviderFailure() from None
         except httpx.HTTPError:
             raise ProviderFailure() from None
         if response.status_code in {408, 504}:
             raise ProviderTimeout()
+        temporary = response.status_code in {500, 502, 503}
+        if response.status_code == 429:
+            try:
+                error = response.json()["error"]
+                temporary = error.get("type") != "insufficient_quota" and error.get("code") in {
+                    "rate_limit_exceeded",
+                    "slow_down",
+                }
+            except (ValueError, KeyError, TypeError, AttributeError):
+                temporary = False
+        if temporary:
+            raise TransientProviderFailure(
+                retry_after=retry_after_seconds(response.headers.get("Retry-After"))
+            )
         if not 200 <= response.status_code < 300:
             # Never expose/log an upstream error body, which can contain input.
             raise ProviderFailure()
@@ -102,4 +128,5 @@ class OpenAIProvider:
             Findings.model_validate_json(texts[0]),
             usage.get("input_tokens", 0),
             usage.get("output_tokens", 0),
+            usage_complete="input_tokens" in usage and "output_tokens" in usage,
         )

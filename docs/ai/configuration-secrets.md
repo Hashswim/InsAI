@@ -27,6 +27,18 @@ APP_ENV는 프로세스 환경에서 선택한다. 로컬 .env의 APP_ENV 항목
 | JEV_PROVIDER | stub; stub/gemini/openai 허용. staging/production은 gemini만 허용 |
 | JEV_ROUTING_POLICY | pinned 기본. 선택적으로 priority 사용. [정책 안내](model-routing.md) |
 | JEV_MODEL_PRIORITY | priority 전용 JSON 배열. 동일 공급자의 정확한 모델 ID 1~20개, 중복 불가 |
+| JEV_MAX_ATTEMPTS / JEV_RETRY_ATTEMPTS | 기본 각각 1. 전체·모델별 시도 상한. [복구 정책](model-resilience.md) |
+| JEV_FALLBACK_ENABLED | false 기본. 명시적 동일 공급자 priority 폴백만 허용 |
+| JEV_ATTEMPT_TIMEOUT_SECONDS / JEV_EXECUTION_BUDGET_SECONDS | 기본 90/110초. 강제 취소가 아닌 호출 제한·추가 시도 검사 |
+| JEV_RETRY_BASE_DELAY_SECONDS | 기본 0.25초, jitter 백오프 기준 |
+| JEV_CIRCUIT_ENABLED | true 기본, 스텁에는 미적용 |
+| JEV_CIRCUIT_FAILURE_THRESHOLD / JEV_CIRCUIT_COOLDOWN_SECONDS | 기본 연속 5회/30초, 프로세스별 모델 차단 |
+| JEV_LIMITS_ENABLED | true 기본. [17번 요청·실행 제한](usage-limits.md) |
+| JEV_REQUESTS_PER_MINUTE / JEV_ATTEMPTS_PER_MINUTE | 기본 30/60. 재시도·폴백도 실행 한도를 공유 |
+| JEV_MAX_CONCURRENT_REQUESTS / JEV_MAX_CONCURRENT_CALLS | 기본 각각 2. HTTP 처리와 모델 호출 별도 제한 |
+| JEV_COST_GUARD_ENABLED | false 기본. 켜면 검토한 단가·상한·두 USD 예산 필수 |
+| JEV_REQUEST_BUDGET_USD / JEV_DAILY_BUDGET_USD | 미설정. 비용 제한 활성 시 양수 설정, 프로세스 단위 추정 비용 한도 |
+| JEV_PRICING_MAX_AGE_DAYS | 기본 30일. 미래·오래된 검토일은 비용 구성 거부 |
 | JEV_SERVICE_TOKEN | 빈 값. Gemini/OpenAI 모드는 필수; staging/production은 32자 이상. 공백 없는 ASCII |
 | GOOGLE_API_KEY | 빈 비밀값. gemini 선택 시 필수 |
 | GEMINI_MODEL | 빈 값. gemini/pinned에서 필수. priority에서는 명시적 목록 사용 |

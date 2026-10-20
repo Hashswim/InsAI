@@ -27,8 +27,11 @@ class ProviderResult:
     findings: Findings = field(repr=False)
     input_tokens: int = 0
     output_tokens: int = 0
+    usage_complete: bool = False
 
     def __post_init__(self) -> None:
+        if type(self.usage_complete) is not bool:
+            raise ValueError("Invalid usage completeness flag")
         # Reject coercion (including bool) and invalid usage before tracing it.
         for count in (self.input_tokens, self.output_tokens):
             if type(count) is not int or count < 0:

@@ -19,6 +19,7 @@ public enum ErrorCode {
 	AI_UPSTREAM_ERROR(HttpStatus.BAD_GATEWAY, "AI 분석에 실패했습니다."),
 	AI_INVALID_RESPONSE(HttpStatus.BAD_GATEWAY, "AI 분석 응답이 올바르지 않습니다."),
 	AI_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI 분석 응답 시간이 초과되었습니다."),
+	AI_RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "AI 서비스의 요청 또는 사용 한도에 도달했습니다."),
 	INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 오류가 발생했습니다.");
 
 	private final HttpStatus status;

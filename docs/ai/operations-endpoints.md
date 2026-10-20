@@ -43,6 +43,9 @@ Gemini를 선택한 경우 provider는 CONFIGURED다. 이는 설정 구조가 �
 ready는 503, model_catalog=UNAVAILABLE이다. 상세 모델·파일 경로는 노출하지 않는다.
 선택 정책도 같은 함수로 검사해 routing=SELECTABLE/UNAVAILABLE을 반환한다.
 실행 가능한 후보가 없으면 ready 503이며 [라우팅 정책](model-routing.md)을 따른다.
+17번의 비용 제한을 켠 경우 검토 단가·토큰 상한과 확인된 상한 충돌을 검사해
+cost_policy=CONFIGURED/UNAVAILABLE을 반환한다. 꺼져 있으면 DISABLED다.
+동적인 잔여 예산·속도 제한은 공개하지 않으며 한도 도달만으로 생존 검사를 실패시키지 않는다.
 
 서비스 토큰이 없으면 live는 200이지만 ready는 503이고 service_auth=MISSING이다.
 프롬프트가 없거나 비어 있거나 읽을 수 없으면 ready는 503이고 prompt=UNAVAILABLE이다.

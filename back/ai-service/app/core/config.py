@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 from functools import lru_cache
 from pathlib import Path
 from typing import Annotated, Any, Literal, Self
@@ -31,6 +32,28 @@ class Settings(BaseSettings):
     jev_model_catalog_path: Path | None = Field(default=None, repr=False)
     jev_routing_policy: RoutingPolicy = "pinned"
     jev_model_priority: tuple[ModelId, ...] = Field(default=(), max_length=20, repr=False)
+    jev_max_attempts: int = Field(default=1, ge=1, le=5)
+    jev_retry_attempts: int = Field(default=1, ge=1, le=3)
+    jev_fallback_enabled: bool = False
+    jev_attempt_timeout_seconds: int = Field(default=90, ge=1, le=100)
+    jev_execution_budget_seconds: int = Field(default=110, ge=1, le=115)
+    jev_retry_base_delay_seconds: float = Field(default=0.25, ge=0, le=2)
+    jev_circuit_enabled: bool = True
+    jev_circuit_failure_threshold: int = Field(default=5, ge=1, le=20)
+    jev_circuit_cooldown_seconds: int = Field(default=30, ge=1, le=300)
+    jev_limits_enabled: bool = True
+    jev_requests_per_minute: int = Field(default=30, ge=1, le=100000)
+    jev_attempts_per_minute: int = Field(default=60, ge=1, le=100000)
+    jev_max_concurrent_requests: int = Field(default=2, ge=1, le=1000)
+    jev_max_concurrent_calls: int = Field(default=2, ge=1, le=1000)
+    jev_cost_guard_enabled: bool = False
+    jev_request_budget_usd: Decimal | None = Field(
+        default=None, gt=0, le=1000000, allow_inf_nan=False
+    )
+    jev_daily_budget_usd: Decimal | None = Field(
+        default=None, gt=0, le=1000000, allow_inf_nan=False
+    )
+    jev_pricing_max_age_days: int = Field(default=30, ge=1, le=365)
     langsmith_enabled: bool = False
     langsmith_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
     langsmith_project: str = Field(default="insai-jev", min_length=1, max_length=200)
@@ -38,6 +61,29 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_configuration(self) -> Self:
+        if self.jev_cost_guard_enabled:
+            if (
+                self.jev_provider == "stub"
+                or self.jev_request_budget_usd is None
+                or self.jev_daily_budget_usd is None
+            ):
+                raise ValueError(
+                    "Cost guard requires a real provider and explicit request/daily USD budgets"
+                )
+        elif self.jev_request_budget_usd is not None or self.jev_daily_budget_usd is not None:
+            raise ValueError("USD budgets require the cost guard to be enabled")
+        if self.jev_retry_attempts > self.jev_max_attempts:
+            raise ValueError("Per-model attempts cannot exceed total attempts")
+        if self.jev_execution_budget_seconds < self.jev_attempt_timeout_seconds:
+            raise ValueError("Execution budget must cover one attempt timeout")
+        if self.jev_fallback_enabled and (
+            self.jev_routing_policy != "priority" or self.jev_max_attempts < 2
+        ):
+            raise ValueError("Fallback requires priority routing and multiple total attempts")
+        if self.jev_provider == "stub" and (
+            self.jev_max_attempts != 1 or self.jev_retry_attempts != 1 or self.jev_fallback_enabled
+        ):
+            raise ValueError("Stub execution must remain single-attempt")
         if self.jev_routing_policy == "priority":
             if self.jev_provider == "stub" or not self.jev_model_priority:
                 raise ValueError(

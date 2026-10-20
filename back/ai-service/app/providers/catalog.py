@@ -2,6 +2,8 @@
 
 import json
 from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Literal
 
@@ -17,6 +19,19 @@ class CatalogError(RuntimeError):
     """Safe errors: never include file contents, paths or rejected values."""
 
 
+class ModelPricing(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
+    currency: Literal["USD"] = "USD"
+    input_usd_per_million: Decimal = Field(
+        ge=0, le=1000000, max_digits=18, decimal_places=8, allow_inf_nan=False
+    )
+    output_usd_per_million: Decimal = Field(
+        ge=0, le=1000000, max_digits=18, decimal_places=8, allow_inf_nan=False
+    )
+    reviewed_on: date
+    source: str = Field(min_length=1, max_length=1000, repr=False, pattern=r"\S")
+
+
 class ModelProfile(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
     provider: ProviderName
@@ -27,6 +42,7 @@ class ModelProfile(BaseModel):
     max_output_tokens: int = Field(strict=True, ge=1)
     context_window_tokens: int | None = Field(default=None, strict=True, ge=1)
     source: str = Field(min_length=1, max_length=1000, repr=False)
+    pricing: ModelPricing | None = Field(default=None, repr=False)
 
     @model_validator(mode="after")
     def nonblank_source(self) -> "ModelProfile":

@@ -19,7 +19,7 @@ ERRORS: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.AI_ANALYSIS_FAILED: (502, "AI analysis failed"),
     ErrorCode.INVALID_AI_RESPONSE: (502, "Invalid AI response"),
     ErrorCode.AI_TIMEOUT: (504, "AI analysis timed out"),
-    ErrorCode.RATE_LIMITED: (429, "Service rate limit exceeded"),
+    ErrorCode.RATE_LIMITED: (429, "AI service usage limit exceeded"),
     ErrorCode.INTERNAL_ERROR: (500, "Internal server error"),
 }
 
@@ -54,4 +54,24 @@ class ProviderTimeout(ProviderFailure):
 
 
 class InvalidProviderResponse(ProviderFailure):
+    pass
+
+
+class TransientProviderFailure(ProviderFailure):
+    def __init__(self, *, retry_after: float | None = None):
+        super().__init__("Temporary provider failure")
+        self.retry_after = retry_after
+
+
+class CircuitOpen(ProviderFailure):
+    pass
+
+
+class UsageLimitExceeded(ProviderFailure):
+    def __init__(self, *, retry_after: int | None = None):
+        super().__init__("AI usage limit reached")
+        self.retry_after = retry_after
+
+
+class UsagePolicyUnavailable(ProviderFailure):
     pass
