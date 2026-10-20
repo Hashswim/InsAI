@@ -1,11 +1,17 @@
 import os
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal, Self
+from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.providers.routing_policy import RoutingPolicy
+
+ModelId = Annotated[
+    str, Field(strict=True, min_length=1, max_length=200, pattern=r"^[A-Za-z0-9._/-]+$")
+]
 
 
 class ConfigurationError(RuntimeError):
@@ -23,6 +29,8 @@ class Settings(BaseSettings):
     gemini_model: str = Field(default="", pattern=r"^[A-Za-z0-9._/-]*$", max_length=200)
     jev_provider: Literal["stub", "gemini", "openai"] = "stub"
     jev_model_catalog_path: Path | None = Field(default=None, repr=False)
+    jev_routing_policy: RoutingPolicy = "pinned"
+    jev_model_priority: tuple[ModelId, ...] = Field(default=(), max_length=20, repr=False)
     langsmith_enabled: bool = False
     langsmith_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
     langsmith_project: str = Field(default="insai-jev", min_length=1, max_length=200)
@@ -30,6 +38,15 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_configuration(self) -> Self:
+        if self.jev_routing_policy == "priority":
+            if self.jev_provider == "stub" or not self.jev_model_priority:
+                raise ValueError(
+                    "Priority routing requires a real provider and explicit model order"
+                )
+            if len(set(self.jev_model_priority)) != len(self.jev_model_priority):
+                raise ValueError("Priority routing model IDs must be unique")
+        elif self.jev_model_priority:
+            raise ValueError("Model priority is only valid with priority routing")
         token = self.jev_service_token.get_secret_value()
         if token and token in {
             self.google_api_key.get_secret_value(),
@@ -53,17 +70,21 @@ class Settings(BaseSettings):
             if (
                 not token
                 or not self.google_api_key.get_secret_value().strip()
-                or not self.gemini_model
+                or (self.jev_routing_policy == "pinned" and not self.gemini_model)
             ):
                 raise ValueError(
-                    "Gemini requires JEV_SERVICE_TOKEN, GOOGLE_API_KEY and GEMINI_MODEL"
+                    "Gemini requires service credentials and a routing model configuration"
                 )
         if self.langsmith_enabled and not self.langsmith_api_key.get_secret_value().strip():
             raise ValueError("LANGSMITH_ENABLED requires LANGSMITH_API_KEY")
         if self.jev_provider == "openai" and (
-            not token or not self.openai_api_key.get_secret_value() or not self.openai_model
+            not token
+            or not self.openai_api_key.get_secret_value()
+            or (self.jev_routing_policy == "pinned" and not self.openai_model)
         ):
-            raise ValueError("OpenAI requires JEV_SERVICE_TOKEN, OPENAI_API_KEY and OPENAI_MODEL")
+            raise ValueError(
+                "OpenAI requires service credentials and a routing model configuration"
+            )
         endpoint = urlsplit(self.langsmith_endpoint)
         local_http = (
             self.app_env in {"local", "test"}

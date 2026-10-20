@@ -27,6 +27,7 @@ OpenAPI에는 /health/ready의 200 및 503 응답 스키마를 등록했다.
     "provider": "STUB",
     "prompt": "AVAILABLE",
     "model_catalog": "COMPATIBLE",
+    "routing": "SELECTABLE",
     "langsmith": "DISABLED"
   },
   "external_connections": "NOT_PROBED"
@@ -40,6 +41,8 @@ Gemini를 선택한 경우 provider는 CONFIGURED다. 이는 설정 구조가 �
 현재 Gemini/OpenAI/stub의 로컬 설정과 카탈로그 적합성을 검사하며 외부 연결을 추측하지 않는다.
 미등록·비활성·요구 기능/한도가 부족한 모델이나 잘못된 카탈로그 파일이면
 ready는 503, model_catalog=UNAVAILABLE이다. 상세 모델·파일 경로는 노출하지 않는다.
+선택 정책도 같은 함수로 검사해 routing=SELECTABLE/UNAVAILABLE을 반환한다.
+실행 가능한 후보가 없으면 ready 503이며 [라우팅 정책](model-routing.md)을 따른다.
 
 서비스 토큰이 없으면 live는 200이지만 ready는 503이고 service_auth=MISSING이다.
 프롬프트가 없거나 비어 있거나 읽을 수 없으면 ready는 503이고 prompt=UNAVAILABLE이다.

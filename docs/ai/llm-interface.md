@@ -25,7 +25,8 @@
 
 Gemini·스텁을 동일 포트에 맞췄다. Gemini SDK와 메시지·PDF 블록 구성 및
 구조화 응답 파싱은 Gemini 어댑터에 남긴다. LangChain 객체는 공통 포트에 노출하지 않는다.
-선택은 기존 `build_provider`가 담당하며 실제 정책 라우터는 15번에서 구현한다.
+선택은 `build_provider`/`build_routed_provider`가 담당하며
+15번의 [서버 측 라우팅 정책](model-routing.md)을 사용한다.
 
 한 번의 호출은 한 번의 시도다. 공통 포트에 재시도·폴백·DB 저장·사용자 인가를 넣지 않는다.
 Gemini 타임아웃은 90초이며 자동 재시도는 하지 않는다.

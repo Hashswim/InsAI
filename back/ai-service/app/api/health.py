@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from app.core.config import Settings, settings
 from app.core.resources import load_jev_prompt
-from app.providers.catalog import load_catalog, selected_profile
+from app.providers.routing_policy import select_route
 from app.version import SERVICE_NAME, SERVICE_VERSION
 
 router = APIRouter()
@@ -47,12 +47,12 @@ def ready(request: Request, response: Response, config: Settings = Depends(setti
     except Exception:
         checks["prompt"] = "UNAVAILABLE"
     try:
-        catalog = load_catalog(config.jev_model_catalog_path)
-        model = config.openai_model if config.jev_provider == "openai" else config.gemini_model
-        selected_profile(catalog, config.jev_provider, model)
+        select_route(config)
         checks["model_catalog"] = "COMPATIBLE"
+        checks["routing"] = "SELECTABLE"
     except Exception:
         checks["model_catalog"] = "UNAVAILABLE"
+        checks["routing"] = "UNAVAILABLE"
     is_ready = (
         checks["startup"] == "COMPLETE"
         and checks["service_auth"] == "CONFIGURED"

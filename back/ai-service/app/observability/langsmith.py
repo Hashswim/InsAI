@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from app.core.config import Settings
+from app.providers.routing_policy import RouteDecision
 
 
 class SafeTrace:
@@ -18,6 +19,8 @@ class SafeTrace:
         success: bool,
         input_tokens: int = 0,
         output_tokens: int = 0,
+        *,
+        route: RouteDecision | None = None,
     ) -> tuple[UUID | None, str]:
         if not self.config.langsmith_enabled:
             return None, "DISABLED"
@@ -49,6 +52,7 @@ class SafeTrace:
                         "prompt_version": "jev-v1",
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
+                        **(route.metadata() if route else {}),
                     }
                 },
             )

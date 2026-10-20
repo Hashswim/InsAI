@@ -29,6 +29,8 @@ def main() -> None:
         "OPENAI_API_KEY",
         "OPENAI_MODEL",
         "JEV_MODEL_CATALOG_PATH",
+        "JEV_ROUTING_POLICY",
+        "JEV_MODEL_PRIORITY",
         "LANGSMITH_API_KEY",
         "JEV_SERVICE_TOKEN",
     ):
@@ -87,6 +89,7 @@ def main() -> None:
                 or readiness["mode"] != "stub"
                 or readiness["external_connections"] != "NOT_PROBED"
                 or readiness["checks"].get("model_catalog") != "COMPATIBLE"
+                or readiness["checks"].get("routing") != "SELECTABLE"
             ):
                 raise RuntimeError("Unexpected readiness response")
             with urlopen(f"http://127.0.0.1:{port}/version", timeout=2) as response:

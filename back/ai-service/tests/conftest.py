@@ -54,6 +54,8 @@ def isolated_settings(monkeypatch, tmp_path):
         "JEV_SECRETS_DIR",
         "GEMINI_MODEL",
         "JEV_MODEL_CATALOG_PATH",
+        "JEV_ROUTING_POLICY",
+        "JEV_MODEL_PRIORITY",
         "LANGSMITH_ENDPOINT",
         "PYDANTIC_SETTINGS_DEBUG",
     ):

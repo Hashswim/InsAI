@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.core.errors import ApiError
 from app.core.security import authenticate
 from app.observability.langsmith import SafeTrace
-from app.providers.router import build_provider
+from app.providers.router import build_routed_provider
 from app.schemas.errors import ErrorCode, ErrorResponse
 from app.schemas.jev import JevRequest, JevResponse
 
@@ -19,7 +19,8 @@ router = APIRouter()
 def service() -> JevService:
     config = settings()
     try:
-        return JevService(build_provider(config), SafeTrace(config))
+        provider, route = build_routed_provider(config)
+        return JevService(provider, SafeTrace(config), route)
     except Exception:
         raise HTTPException(503, "AI provider is unavailable") from None
 
