@@ -50,6 +50,8 @@ gemini를 선택하고 필수 설정이 없거나 운영 환경 설정이 불완
 1. 기존 로그인/청구 생성 API로 사용자와 케이스를 준비한다.
 2. 기존 /files/upload-url → PUT 업로드 → POST /files 로 PDF 세 개를 등록한다.
 3. jev-contract.md의 POST /ai/jev 요청에 해당 케이스 ID와 실제 파일 ID를 넣는다.
+   JEV 요청과 조회에는 로그인 accessToken을 Authorization: Bearer로 전송한다.
+   X-User-Id만으로는 JEV를 호출할 수 없다. 서버 전용 서비스 토큰을 사용자 앱에 넣지 않는다.
 4. 응답의 analysisId로 GET /ai/jev/{analysisId}를 호출한다.
 5. 저장 후 재조회된 항목 근거/신뢰도/모델/trace ID가 원 응답과 같은지 확인한다.
 6. 규정 미등록 때문에 항상 ON_HOLD와 NOT_REGISTERED인지 확인한다.

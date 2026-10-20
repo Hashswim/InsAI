@@ -8,7 +8,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * 임시 보안 설정: 현재는 모든 요청 허용.
+ * 기존 업무 API의 임시 보안 설정.
+ * JEV 경로는 별도 JevAuthenticationFilter에서 JWT와 현재 계정 상태를 검증한다.
+ * 다른 업무 API의 통합 인증은 아직 이 설정에서 활성화하지 않았다.
  *
  * TODO: API Gateway 도입 후 게이트웨이가 검증한 JWT 기준으로 인가 처리
  *       (X-User-Id / X-User-Roles 헤더 신뢰 또는 oauth2ResourceServer + JWKS).

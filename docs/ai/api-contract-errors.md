@@ -8,11 +8,13 @@
 
 | API | 입력 | 성공 |
 |---|---|---|
-| Spring POST /ai/jev | caseId, documents[{fileId, kind}], X-User-Id | 200, 기존 봉투의 data={analysisId,result} |
-| Spring GET /ai/jev/{analysisId} | 저장된 분석 ID, X-User-Id | 200, 권한 확인 후 동일 형태의 data |
+| Spring POST /ai/jev | caseId, documents[{fileId, kind}], 사용자 Bearer JWT | 200, 기존 봉투의 data={analysisId,result} |
+| Spring GET /ai/jev/{analysisId} | 저장된 분석 ID, 사용자 Bearer JWT | 200, 권한 확인 후 동일 형태의 data |
 | FastAPI POST /internal/jev | request_id, documents[{document_id,kind,content_base64}], Bearer 토큰 | 200, JevResponse 직접 반환 |
 
 JEV 요청은 Content-Type: application/json을 사용한다.
+09번부터 공개 JEV API는 JWT 필수이며 X-User-Id를 신뢰하지 않는다.
+인증은 입력 본문 처리보다 우선하므로 비인증 요청은 본문 형식 오류보다 401을 먼저 받을 수 있다.
 Spring 업무 필드는 camelCase, 내부 DTO와 result의 모델 결과 필드는 snake_case다.
 전체 성공 결과의 합성 예제는 [공유 계약 fixture](contracts/jev-response-example.json)에 있다.
 Python 스키마 검증과 Java DTO 역직렬화·재직렬화가 동일 파일을 검증한다.

@@ -5,6 +5,7 @@ from starlette.middleware.base import RequestResponseEndpoint
 from starlette.responses import Response
 
 from app.core.errors import ApiError, error_response
+from app.core.security import validate_service_token
 from app.schemas.errors import ErrorCode
 
 MAX_REQUEST_BYTES = 43_000_000
@@ -22,6 +23,8 @@ async def http_context(request: Request, call_next: RequestResponseEndpoint) -> 
         except ValueError:
             return error_response(request, ErrorCode.INVALID_REQUEST_ID)
     try:
+        if request.method == "POST" and request.url.path.rstrip("/") == "/internal/jev":
+            validate_service_token(request)
         if request.method == "POST" and request.url.path == "/internal/jev":
             media = request.headers.get("Content-Type", "").split(";", 1)[0].strip().lower()
             if media != "application/json":

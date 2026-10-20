@@ -1,6 +1,7 @@
 package com.insuranceai.ai.api;
 
 import com.insuranceai.ai.application.*;
+import com.insuranceai.auth.application.AuthenticateAccessTokenService.Actor;
 import com.insuranceai.common.web.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -13,14 +14,15 @@ public class JevController {
     public JevController(RunJevService service) { this.service=service; }
 
     @PostMapping
-    public ApiResponse<RunJevService.AnalysisView> run(@RequestHeader("X-User-Id") UUID userId,
+    public ApiResponse<RunJevService.AnalysisView> run(@RequestAttribute("jevActor") Actor actor,
                                                     @Valid @RequestBody RunJevCommand command,
                                                     @RequestAttribute("jevRequestId") UUID requestId) {
-        return ApiResponse.ok(service.run(userId, command, requestId));
+        return ApiResponse.ok(service.run(actor.userId(), command, requestId));
     }
     @GetMapping("/{analysisId}")
-    public ApiResponse<RunJevService.AnalysisView> get(@RequestHeader("X-User-Id") UUID userId,
-                                                    @PathVariable UUID analysisId) {
-        return ApiResponse.ok(service.get(userId, analysisId));
+    public ApiResponse<RunJevService.AnalysisView> get(@RequestAttribute("jevActor") Actor actor,
+                                                    @PathVariable UUID analysisId,
+                                                    @RequestAttribute("jevRequestId") UUID requestId) {
+        return ApiResponse.ok(service.get(actor.userId(), analysisId, requestId));
     }
 }

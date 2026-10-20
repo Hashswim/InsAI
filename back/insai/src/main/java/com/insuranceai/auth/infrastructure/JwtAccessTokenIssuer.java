@@ -18,7 +18,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -70,20 +69,36 @@ public class JwtAccessTokenIssuer implements AccessTokenIssuer {
 	public ParsedToken parse(String token) {
 		try {
 			SignedJWT jwt = SignedJWT.parse(token);
+			if (!JWSAlgorithm.RS256.equals(jwt.getHeader().getAlgorithm())) {
+				throw new InvalidTokenException("허용되지 않는 서명 알고리즘입니다.");
+			}
 			JWSVerifier verifier = new RSASSAVerifier(rsaKey.toRSAPublicKey());
 			if (!jwt.verify(verifier)) {
 				throw new InvalidTokenException("서명이 유효하지 않습니다.");
 			}
 			JWTClaimsSet claims = jwt.getJWTClaimsSet();
+			Instant now = clock.instant();
+			if (!issuer.equals(claims.getIssuer())) throw new InvalidTokenException("발급자가 유효하지 않습니다.");
 			Date expiration = claims.getExpirationTime();
-			if (expiration == null || expiration.toInstant().isBefore(clock.instant())) {
+			if (expiration == null || !expiration.toInstant().isAfter(now)) {
 				throw new InvalidTokenException("만료된 토큰입니다.");
 			}
+			Date issuedAt = claims.getIssueTime();
+			if (issuedAt == null || issuedAt.toInstant().isAfter(now)
+					|| !issuedAt.before(expiration)
+					|| (claims.getNotBeforeTime() != null && claims.getNotBeforeTime().toInstant().isAfter(now))) {
+				throw new InvalidTokenException("토큰 시간이 유효하지 않습니다.");
+			}
 			List<String> roles = claims.getStringListClaim("roles");
-			Set<String> roleSet = roles == null ? Set.of() : new LinkedHashSet<>(roles);
-			return new ParsedToken(UUID.fromString(claims.getSubject()), roleSet);
-		} catch (ParseException | JOSEException e) {
-			throw new InvalidTokenException("토큰을 해석할 수 없습니다.", e);
+			if (roles == null || roles.size() != 1
+					|| java.util.Arrays.stream(Role.values()).noneMatch(role -> role.authority().equals(roles.getFirst()))) {
+				throw new InvalidTokenException("역할이 유효하지 않습니다.");
+			}
+			UUID accountId = UUID.fromString(claims.getSubject());
+			if (!accountId.toString().equals(claims.getSubject())) throw new IllegalArgumentException();
+			return new ParsedToken(accountId, Set.copyOf(roles));
+		} catch (ParseException | JOSEException | IllegalArgumentException | NullPointerException e) {
+			throw new InvalidTokenException("토큰을 해석할 수 없습니다.");
 		}
 	}
 }

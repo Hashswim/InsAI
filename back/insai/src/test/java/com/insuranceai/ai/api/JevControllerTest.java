@@ -3,6 +3,9 @@ package com.insuranceai.ai.api;
 import com.insuranceai.ai.application.RunJevService;
 import com.insuranceai.common.error.BusinessException;
 import com.insuranceai.common.error.ErrorCode;
+import com.insuranceai.ai.infrastructure.JevSecurityConfig;
+import com.insuranceai.auth.application.AuthenticateAccessTokenService;
+import org.junit.jupiter.api.BeforeEach;
 import java.util.UUID;
 import com.insuranceai.common.config.SecurityConfig;
 import org.junit.jupiter.api.Test;
@@ -22,12 +25,17 @@ import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.*;
 
 @WebMvcTest(JevController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, JevSecurityConfig.class})
 class JevControllerTest {
     @Autowired MockMvc mvc;
     @MockitoBean RunJevService service;
+    @MockitoBean AuthenticateAccessTokenService authentication;
+    @BeforeEach void authenticateFixture() {
+        when(authentication.authenticate("test-jwt")).thenReturn(new AuthenticateAccessTokenService.Actor(
+            UUID.fromString("11111111-1111-1111-1111-111111111111"), "ROLE_CLAIMANT"));
+    }
     @Test void rejectsMissingDocuments() throws Exception {
-        mvc.perform(post("/ai/jev").header("X-User-Id","11111111-1111-1111-1111-111111111111")
+        mvc.perform(post("/ai/jev").header("Authorization","Bearer test-jwt")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"caseId\":\"22222222-2222-2222-2222-222222222222\",\"documents\":[]}"))
             .andExpect(status().isBadRequest())
@@ -49,7 +57,7 @@ class JevControllerTest {
         UUID requestId=UUID.randomUUID();
         when(service.run(any(),any(),eq(requestId))).thenThrow(new BusinessException(ErrorCode.AI_TIMEOUT));
         mvc.perform(post("/ai/jev").header("X-Request-ID",requestId.toString())
-            .header("X-User-Id","11111111-1111-1111-1111-111111111111")
+            .header("Authorization","Bearer test-jwt")
             .contentType(MediaType.APPLICATION_JSON).content(validRequest()))
             .andExpect(status().isGatewayTimeout())
             .andExpect(header().string("X-Request-ID",requestId.toString()))
@@ -67,7 +75,7 @@ class JevControllerTest {
     }
 
     @Test void unsupportedMediaHasStandardErrorAndRequestId() throws Exception {
-        mvc.perform(post("/ai/jev").header("X-User-Id","11111111-1111-1111-1111-111111111111")
+        mvc.perform(post("/ai/jev").header("Authorization","Bearer test-jwt")
             .contentType(MediaType.TEXT_PLAIN).content("SENTINEL_PATIENT"))
             .andExpect(status().isUnsupportedMediaType())
             .andExpect(header().exists("X-Request-ID"))
@@ -76,7 +84,7 @@ class JevControllerTest {
     }
 
     @Test void unsupportedMethodHasStandardError() throws Exception {
-        mvc.perform(put("/ai/jev"))
+        mvc.perform(put("/ai/jev").header("Authorization","Bearer test-jwt"))
             .andExpect(status().isMethodNotAllowed())
             .andExpect(header().exists("X-Request-ID"))
             .andExpect(jsonPath("$.error.code").value("METHOD_NOT_ALLOWED"));

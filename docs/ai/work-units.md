@@ -14,7 +14,7 @@
 | 06 | 환경설정 및 비밀정보 관리 | 완료 — [환경 분리·키 주입·마스킹·스텁 검증](configuration-secrets.md) |
 | 07 | 기본 운영 엔드포인트 구현 | 완료 — [live·ready·version 및 운영 검사](operations-endpoints.md) |
 | 08 | 공통 API 계약 및 오류 규격 정의 | 완료 — [요청 ID·오류 봉투·상태 매핑·공유 계약](api-contract-errors.md) |
-| 09 | 서비스 간 인증과 인가 구현 | 대기 |
+| 09 | 서비스 간 인증과 인가 구현 | 완료 — [사용자 JWT·내부 토큰·케이스 인가·접근 감사](service-auth-and-access.md) |
 | 10 | 공통 LLM 인터페이스 정의 | 대기 |
 | 11 | OpenAI 모델 어댑터 구현 | 대기 — 최초 실연결은 사용자 지정 Gemini |
 | 12 | Gemini 모델 어댑터 구현 | 대기 — 기존 구현 점검 필요 |

@@ -6,6 +6,7 @@ AI의 허용 범위와 개인정보·로그 처리 기준은 [권한 정책](ai-
 데이터 소유권, 실패 처리 책임과 동기·비동기 기준은 [서비스 책임 경계](service-boundaries.md)를 따른다.
 기능 우선순위와 MVP 완료 기준은 [유스케이스 우선순위](use-case-priorities.md)를 따른다.
 요청 ID 전달, 공통 오류 봉투, HTTP 상태 매핑과 입력 제한은 [공통 API 계약](api-contract-errors.md)을 따른다.
+JEV 사용자 JWT·내부 서비스 토큰·케이스 접근 검증은 [인증·인가 안내](service-auth-and-access.md)를 따른다.
 
 J = Judgment(항목 판정), E = Evidence(문서 근거), V = Verification(검증 및 신뢰도).
 세 단계는 현재 하나의 Gemini 구조화 응답에서 수행하며, 서버가 출력 형식과 문서/페이지 참조를 검증한다.
@@ -18,7 +19,7 @@ DIAGNOSIS(진단서), TREATMENT_CONFIRMATION(진료확인서), ITEMIZED_BILL(병
 Spring은 저장된 파일 ID와 케이스 소속을 확인하고, URL 대신 PDF 바이트를 내부 API로 전달한다.
 
 POST /ai/jev (Spring, :8080)
-X-User-Id: 청구인 또는 배정 사정사 UUID
+Authorization: Bearer 로그인 accessToken
 Content-Type: application/json
 
 ```json
@@ -33,7 +34,8 @@ Content-Type: application/json
 ```
 
 응답은 기존 success/data/error 봉투 안의 analysisId, result.
-GET /ai/jev/{analysisId} + X-User-Id 로 저장 결과를 조회한다.
+GET /ai/jev/{analysisId} + 동일한 사용자 Bearer JWT로 저장 결과를 조회한다.
+X-User-Id는 JEV의 사용자 식별에 사용하지 않는다.
 
 FastAPI POST /internal/jev 는 Bearer 서비스 토큰으로 보호한다.
 request_id, documents[{document_id,kind,content_base64}] 형태의 snake_case JSON.
@@ -62,6 +64,6 @@ PDF, 추출 텍스트, 프롬프트, 판정 내용, 근거, 파일명, 사용자
 LangSmith 기록 실패는 분석 결과 저장을 막지 않고 FAILED로 노출한다.
 
 ## 제한
-현재 Spring의 기존 X-User-Id 신뢰 방식은 사용자 인증을 대체하지 않는다.
-운영 공개 전 검증된 사용자 식별을 붙여야 한다. 이 구현은 내부/로컬 MVP 대상이다.
+JEV 경로는 JWT와 현재 계정·케이스 권한을 검증한다. 다른 기존 업무 API의 통합 인증과
+운영 영구 키·네트워크 구성은 별도 보강이 필요하다. 이 구현은 내부/로컬 MVP 대상이다.
 비동기 큐, 중복 실행 방지, 규정 주입, Gemini 외 실모델 공급자는 후속 범위다.

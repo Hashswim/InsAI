@@ -99,4 +99,65 @@ class JwtAccessTokenIssuerTest {
 	private static Clock fixedClock(Instant instant) {
 		return Clock.fixed(instant, ZoneOffset.UTC);
 	}
+
+	@Test void rejectsWrongIssuerEvenWithTrustedKey() {
+		var foreign=new JwtAccessTokenIssuer(signingKey,"other-issuer",Duration.ofMinutes(15),fixedClock(NOW));
+		assertThatThrownBy(() -> issuer.parse(foreign.issue(UUID.randomUUID(),Role.CLAIMANT).value()))
+			.isInstanceOf(AccessTokenIssuer.InvalidTokenException.class);
+	}
+
+	@Test void rejectsExpirationExactlyNow() {
+		String token=issuer.issue(UUID.randomUUID(),Role.CLAIMANT).value();
+		var verifier=new JwtAccessTokenIssuer(signingKey,ISSUER,Duration.ofMinutes(15),fixedClock(NOW.plusSeconds(900)));
+		assertThatThrownBy(() -> verifier.parse(token)).isInstanceOf(AccessTokenIssuer.InvalidTokenException.class);
+	}
+
+	@Test void rejectsFutureIssuedToken() {
+		var future=new JwtAccessTokenIssuer(signingKey,ISSUER,Duration.ofMinutes(15),fixedClock(NOW.plusSeconds(60)));
+		assertThatThrownBy(() -> issuer.parse(future.issue(UUID.randomUUID(),Role.CLAIMANT).value()))
+			.isInstanceOf(AccessTokenIssuer.InvalidTokenException.class);
+	}
+
+	@Test void rejectsUnsupportedAlgorithmAndNotBefore() throws Exception {
+		var claims=new com.nimbusds.jwt.JWTClaimsSet.Builder()
+			.subject(UUID.randomUUID().toString()).issuer(ISSUER)
+			.issueTime(java.util.Date.from(NOW)).expirationTime(java.util.Date.from(NOW.plusSeconds(900)))
+			.claim("roles",java.util.List.of("ROLE_CLAIMANT"));
+		var wrongAlgorithm=new SignedJWT(new com.nimbusds.jose.JWSHeader(com.nimbusds.jose.JWSAlgorithm.RS512),claims.build());
+		wrongAlgorithm.sign(new com.nimbusds.jose.crypto.RSASSASigner(signingKey));
+		assertThatThrownBy(() -> issuer.parse(wrongAlgorithm.serialize())).isInstanceOf(AccessTokenIssuer.InvalidTokenException.class);
+		var premature=new SignedJWT(new com.nimbusds.jose.JWSHeader(com.nimbusds.jose.JWSAlgorithm.RS256),
+			claims.notBeforeTime(java.util.Date.from(NOW.plusSeconds(30))).build());
+		premature.sign(new com.nimbusds.jose.crypto.RSASSASigner(signingKey));
+		assertThatThrownBy(() -> issuer.parse(premature.serialize())).isInstanceOf(AccessTokenIssuer.InvalidTokenException.class);
+	}
+
+	@Test void rejectsMalformedSubjectWithoutEcho() throws Exception {
+		var claims=new com.nimbusds.jwt.JWTClaimsSet.Builder().subject("SENTINEL_PATIENT")
+			.issuer(ISSUER).issueTime(java.util.Date.from(NOW))
+			.expirationTime(java.util.Date.from(NOW.plusSeconds(900)))
+			.claim("roles",java.util.List.of("ROLE_CLAIMANT")).build();
+		var token=new SignedJWT(new com.nimbusds.jose.JWSHeader(com.nimbusds.jose.JWSAlgorithm.RS256),claims);
+		token.sign(new com.nimbusds.jose.crypto.RSASSASigner(signingKey));
+		assertThatThrownBy(() -> issuer.parse(token.serialize()))
+			.isInstanceOf(AccessTokenIssuer.InvalidTokenException.class).hasMessageNotContaining("SENTINEL");
+	}
+
+	@Test void rejectsMissingOrUnknownRolesAndMissingIssueTime() throws Exception {
+		for (java.util.List<String> roles : java.util.List.of(java.util.List.<String>of(),
+			java.util.List.of("ROLE_SUPERUSER"),java.util.List.of("ROLE_CLAIMANT","ROLE_ADMIN"))) {
+			var claims=new com.nimbusds.jwt.JWTClaimsSet.Builder().subject(UUID.randomUUID().toString())
+				.issuer(ISSUER).issueTime(java.util.Date.from(NOW))
+				.expirationTime(java.util.Date.from(NOW.plusSeconds(900))).claim("roles",roles).build();
+			var token=new SignedJWT(new com.nimbusds.jose.JWSHeader(com.nimbusds.jose.JWSAlgorithm.RS256),claims);
+			token.sign(new com.nimbusds.jose.crypto.RSASSASigner(signingKey));
+			assertThatThrownBy(() -> issuer.parse(token.serialize())).isInstanceOf(AccessTokenIssuer.InvalidTokenException.class);
+		}
+		var missingTime=new com.nimbusds.jwt.JWTClaimsSet.Builder().subject(UUID.randomUUID().toString())
+			.issuer(ISSUER).expirationTime(java.util.Date.from(NOW.plusSeconds(900)))
+			.claim("roles",java.util.List.of("ROLE_CLAIMANT")).build();
+		var token=new SignedJWT(new com.nimbusds.jose.JWSHeader(com.nimbusds.jose.JWSAlgorithm.RS256),missingTime);
+		token.sign(new com.nimbusds.jose.crypto.RSASSASigner(signingKey));
+		assertThatThrownBy(() -> issuer.parse(token.serialize())).isInstanceOf(AccessTokenIssuer.InvalidTokenException.class);
+	}
 }

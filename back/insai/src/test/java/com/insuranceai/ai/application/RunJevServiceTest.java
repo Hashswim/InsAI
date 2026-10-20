@@ -15,7 +15,8 @@ class RunJevServiceTest {
     final ReadClaimPdfService files = mock(ReadClaimPdfService.class);
     final JevGateway gateway = mock(JevGateway.class);
     final JevAnalysisRepository repository = mock(JevAnalysisRepository.class);
-    final RunJevService service = new RunJevService(access, files, gateway, repository, new ObjectMapper());
+    final JevAccessAuditService audit = mock(JevAccessAuditService.class);
+    final RunJevService service = new RunJevService(access, files, gateway, repository, new ObjectMapper(), audit);
 
     @Test void forbiddenCaseNeverCallsModel() {
         UUID user = UUID.randomUUID(), caseId=UUID.randomUUID();
@@ -39,5 +40,16 @@ class RunJevServiceTest {
         assertThrows(BusinessException.class, () -> service.run(UUID.randomUUID(),
             new RunJevCommand(UUID.randomUUID(),refs)));
         verifyNoInteractions(repository);
+    }
+
+    @Test void missingAuditPersistenceNeverCallsModel() {
+        var refs=Arrays.stream(RunJevCommand.Kind.values())
+            .map(kind -> new RunJevCommand.FileRef(UUID.randomUUID(),kind)).toList();
+        when(files.read(any(),any(),any())).thenReturn("%PDF-synthetic".getBytes());
+        doThrow(new IllegalStateException("audit unavailable")).when(audit)
+            .record(any(),any(),any(),isNull(),any(),eq(com.insuranceai.ai.domain.JevAccessAudit.Outcome.ALLOWED),any());
+        assertThrows(IllegalStateException.class,() -> service.run(UUID.randomUUID(),
+            new RunJevCommand(UUID.randomUUID(),refs)));
+        verifyNoInteractions(gateway,repository);
     }
 }

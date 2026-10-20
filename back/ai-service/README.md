@@ -69,3 +69,5 @@ readiness는 로컬 설정·프롬프트 조건만 검사하고 외부 모델 �
 Docker 생존 검사와 응답 형식은 [운영 엔드포인트 안내](../../docs/ai/operations-endpoints.md)를 따른다.
 요청 ID와 오류 규격은 [공통 API 계약](../../docs/ai/api-contract-errors.md),
 내부 요청·응답의 기계 판독 스키마는 실행 중인 서비스의 `/openapi.json`을 참고한다.
+내부 분석 API는 PDF 본문을 읽기 전에 서버 전용 Bearer 토큰을 검증한다.
+사용자 JWT와 케이스 권한은 Spring에서 검증하며, [인증 안내](../../docs/ai/service-auth-and-access.md)를 따른다.

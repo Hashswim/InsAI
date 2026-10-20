@@ -28,6 +28,11 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def validate_configuration(self) -> Self:
         token = self.jev_service_token.get_secret_value()
+        if token and token in {
+            self.google_api_key.get_secret_value(),
+            self.langsmith_api_key.get_secret_value(),
+        }:
+            raise ValueError("Service and provider credentials must be different")
         for key in (self.google_api_key, self.langsmith_api_key):
             if any(char.isspace() for char in key.get_secret_value()):
                 raise ValueError("API keys must not contain whitespace")

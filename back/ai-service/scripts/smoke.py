@@ -9,6 +9,7 @@ import tempfile
 import time
 from importlib.resources import files
 from urllib.error import HTTPError, URLError
+from urllib.request import Request as HttpRequest
 from urllib.request import urlopen
 from uuid import UUID
 
@@ -92,7 +93,29 @@ def main() -> None:
                     raise RuntimeError("Unexpected error contract") from None
                 if str(UUID(failure["request_id"])) != error.headers["X-Request-ID"]:
                     raise RuntimeError("Error correlation ID mismatch") from None
-            print("Smoke OK: installed prompt, HTTP operations, OpenAPI, error/request-ID contract")
+            for token, status in [
+                (None, 401),
+                ("wrong-token", 401),
+                ("synthetic-smoke-token", 422),
+            ]:
+                headers = {"Content-Type": "application/json"}
+                if token is not None:
+                    headers["Authorization"] = "Bearer " + token
+                probe = HttpRequest(
+                    f"http://127.0.0.1:{port}/internal/jev",
+                    data=b'{"incomplete":',
+                    headers=headers,
+                    method="POST",
+                )
+                try:
+                    urlopen(probe, timeout=2)
+                    raise RuntimeError("Authentication probe unexpectedly succeeded")
+                except HTTPError as error:
+                    failure = json.load(error)
+                    expected = "UNAUTHORIZED" if status == 401 else "INVALID_INPUT"
+                    if error.code != status or failure["error"]["code"] != expected:
+                        raise RuntimeError("Unexpected authentication contract") from None
+            print("Smoke OK: HTTP operations, request IDs, service auth before validation")
         finally:
             process.terminate()
             try:

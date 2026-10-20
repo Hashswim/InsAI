@@ -65,9 +65,12 @@ JEV는 FastAPI 경로를 사용하며, 기존 기능의 전환은 별도 작업�
 | | 현재 | 목표 |
 |---|---|---|
 | 토큰 | auth 가 RS256 JWT 발급, JWKS 노출 | 동일 |
-| 검증 | 각 서비스가 `SecurityConfig` permitAll (검증 안 함) | 게이트웨이가 JWKS로 검증 |
-| 행위자 식별 | 클라이언트가 `X-User-Id` 헤더 직접 전송 (신뢰) | 게이트웨이가 검증 후 주입, 다운스트림은 헤더 신뢰 |
+| 검증 | JEV는 별도 JWT 필터·현재 계정 검증. 다른 기존 업무 API는 아직 permitAll | 게이트웨이가 JWKS로 통합 검증 |
+| 행위자 식별 | JEV는 JWT의 sub와 현재 DB 역할. 다른 기존 업무 경로는 X-User-Id 신뢰가 남아 있음 | 게이트웨이가 검증한 사용자만 전달 |
 | refresh 저장 | `InMemoryRefreshTokenStore` | Redis |
+
+JEV의 내부 FastAPI 호출은 별도 서버 토큰으로 인증하며, 접근 감사는 Spring에 기록한다.
+[09번 인증·인가 안내](../docs/ai/service-auth-and-access.md)를 참고한다.
 
 ## 관측성 (예정)
 
