@@ -13,6 +13,7 @@ from app.core.errors import (
     ProviderTimeout,
     TransientProviderFailure,
 )
+from app.core.resources import load_jev_prompt
 from app.providers.base import Provider, ProviderDocument, ProviderRequest
 from app.providers.gemini_provider import GeminiProvider
 
@@ -46,6 +47,7 @@ def test_pdf_and_schema_are_passed_to_langchain(monkeypatch, sample_request):
     )
     assert result.input_tokens == 12
     messages = structured.invoke.call_args.args[0]
+    assert messages[0].content == load_jev_prompt()
     files = [block for block in messages[1].content if block["type"] == "file"]
     assert len(files) == 3
     assert all(block["mime_type"] == "application/pdf" for block in files)

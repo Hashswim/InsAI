@@ -10,6 +10,8 @@ public record JevResult(
     @JsonProperty("regulations_status") String regulationsStatus,
     String reason, List<Item> items, String provider, String model,
     @JsonProperty("prompt_version") String promptVersion,
+    @JsonProperty("prompt_sha256") String promptSha256,
+    @JsonProperty("chain_version") String chainVersion,
     @JsonProperty("trace_id") UUID traceId,
     @JsonProperty("trace_status") String traceStatus,
     @JsonProperty("input_tokens") int inputTokens,

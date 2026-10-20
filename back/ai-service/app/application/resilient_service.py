@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from app.application.jev_service import JevService
 from app.application.resilient_execution import ExecutionFailure, ResilientExecutor
+from app.chains.release import ACTIVE_RELEASE
 from app.core.errors import InvalidProviderResponse
 from app.observability.langsmith import SafeTrace
 from app.providers.base import Provider
@@ -56,6 +57,7 @@ class ResilientJevService(JevService):
                     "items": result.findings.items,
                     "provider": route.profile.provider,
                     "model": route.profile.model,
+                    **ACTIVE_RELEASE.metadata(),
                     "trace_id": trace_id,
                     "trace_status": trace_status,
                     "input_tokens": result.input_tokens,

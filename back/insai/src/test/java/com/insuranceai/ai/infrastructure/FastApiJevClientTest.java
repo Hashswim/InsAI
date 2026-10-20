@@ -29,8 +29,9 @@ class FastApiJevClientTest {
                  "reason":"rules missing","items":[{"item":"date","judgment":"UNVERIFIABLE","evidence":[],
                  "confidence":0,"verification_reason":"unreadable","supplement":"rescan"}],
                  "provider":"%s","model":"fake","prompt_version":"jev-v1","trace_id":"%s",
+                 "prompt_sha256":"%s","chain_version":"jev-chain-v1",
                  "trace_status":"RECORDED","input_tokens":10,"output_tokens":20}
-                """.formatted(requestId,provider,traceId);
+                """.formatted(requestId,provider,traceId,"a".repeat(64));
             byte[] bytes=response.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type","application/json");
             exchange.sendResponseHeaders(200,bytes.length);
@@ -46,6 +47,8 @@ class FastApiJevClientTest {
             assertEquals(provider,result.provider());
             assertEquals("ON_HOLD",result.submissionStatus());
             assertEquals(10,result.inputTokens());
+            assertEquals("a".repeat(64),result.promptSha256());
+            assertEquals("jev-chain-v1",result.chainVersion());
         } finally { server.stop(0); }
     }
 
@@ -53,6 +56,37 @@ class FastApiJevClientTest {
         var client=new FastApiJevClient(new FastApiJevProperties("http://localhost:1","",1));
         assertThrows(BusinessException.class, () -> client.analyze(
             new JevGateway.Request(UUID.randomUUID(),List.of())));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"prompt_version,true", "prompt_sha256,true", "chain_version,true",
+        "prompt_version,false", "prompt_sha256,false", "chain_version,false"})
+    void rejectsMissingOrInvalidReleaseIdentity(String field, boolean missing) throws Exception {
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(
+            java.nio.file.Files.readString(java.nio.file.Path.of(
+                "../../docs/ai/contracts/jev-response-example.json")));
+        UUID requestId = UUID.randomUUID();
+        payload.put("request_id", requestId.toString());
+        if (missing) payload.remove(field);
+        else payload.put(field, field.equals("prompt_sha256") ? "not-a-sha256" : " ");
+        byte[] bytes = mapper.writeValueAsBytes(payload);
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/internal/jev", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+        server.start();
+        try {
+            var client = new FastApiJevClient(new FastApiJevProperties(
+                "http://127.0.0.1:" + server.getAddress().getPort(), "token", 5));
+            var error = assertThrows(BusinessException.class, () -> client.analyze(
+                new JevGateway.Request(requestId, List.of())));
+            assertEquals(ErrorCode.AI_INVALID_RESPONSE, error.getErrorCode());
+        } finally { server.stop(0); }
     }
 
     @Test void configurationDoesNotExposeServiceToken() {
@@ -78,8 +112,9 @@ class FastApiJevClientTest {
                 {"request_id":"%s","submission_status":"ON_HOLD","regulations_status":"NOT_REGISTERED",
                 "items":[{"item":"offline","judgment":"UNVERIFIABLE","evidence":[],"confidence":0,
                 "verification_reason":"stub","supplement":"configure Gemini"}],
-                "provider":"stub","model":"stub-v1","trace_status":"DISABLED"}
-                """).formatted(requestId).getBytes(StandardCharsets.UTF_8);
+                "provider":"stub","model":"stub-v1","trace_status":"DISABLED",
+                "prompt_version":"jev-v1","prompt_sha256":"%s","chain_version":"jev-chain-v1"}
+                """).formatted(requestId,"a".repeat(64)).getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, bytes.length);
             exchange.getResponseBody().write(bytes);

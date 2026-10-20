@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from app.application.resilient_execution import ExecutionStats
+from app.chains.release import ACTIVE_RELEASE
 from app.core.config import Settings
 from app.providers.routing_policy import RouteDecision
 
@@ -51,7 +52,7 @@ class SafeTrace:
                     "metadata": {
                         "provider": provider,
                         "model": model,
-                        "prompt_version": "jev-v1",
+                        **ACTIVE_RELEASE.metadata(),
                         "input_tokens": input_tokens,
                         "output_tokens": output_tokens,
                         **(route.metadata() if route else {}),

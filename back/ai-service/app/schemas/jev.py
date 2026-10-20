@@ -97,7 +97,9 @@ class JevResponse(StrictModel):
     items: list[Item] = Field(min_length=1, max_length=100)
     provider: Literal["gemini", "stub", "openai"]
     model: str = Field(min_length=1, max_length=200)
-    prompt_version: str = Field(default="jev-v1", min_length=1, max_length=100)
+    prompt_version: str = Field(min_length=1, max_length=100)
+    prompt_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    chain_version: str = Field(min_length=1, max_length=100)
     trace_id: UUID | None
     trace_status: Literal["RECORDED", "DISABLED", "FAILED"]
     input_tokens: int = Field(default=0, ge=0)

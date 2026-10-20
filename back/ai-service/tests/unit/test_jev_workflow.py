@@ -90,6 +90,8 @@ def test_trace_only_receives_allowlisted_metadata(monkeypatch):
         "provider",
         "model",
         "prompt_version",
+        "prompt_sha256",
+        "chain_version",
         "input_tokens",
         "output_tokens",
     }

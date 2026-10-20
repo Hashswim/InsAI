@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.application.resilient_execution import ResilientExecutor
 from app.application.resilient_service import ResilientJevService
+from app.chains.release import ACTIVE_RELEASE
 from app.core.config import Settings
 from app.core.errors import TransientProviderFailure
 from app.main import app
@@ -76,6 +77,8 @@ def test_fallback_response_trace_and_circuit_skip(
             assert body["submission_status"] == "ON_HOLD"
             assert body["trace_status"] == "RECORDED"
             metadata = client.create_run.call_args.kwargs["extra"]["metadata"]
+            for key, value in ACTIVE_RELEASE.metadata().items():
+                assert response.json()[key] == metadata[key] == value
             assert metadata["model"] == "second"
             assert metadata["routing_reason"] == "SAME_PROVIDER_FALLBACK"
             assert metadata["execution_attempts"] == expected_attempts

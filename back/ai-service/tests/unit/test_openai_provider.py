@@ -19,6 +19,7 @@ from app.core.errors import (
     TransientProviderFailure,
 )
 from app.core.logging import install_secret_redaction
+from app.core.resources import load_jev_prompt
 from app.main import app
 from app.providers.base import Provider
 from app.providers.openai_provider import OpenAIProvider
@@ -76,6 +77,7 @@ def test_pdf_schema_and_stateless_single_request(sample_request):
         body = json.loads(request.content)
         assert body["store"] is body["stream"] is False
         assert body["model"] == "fake-openai-model"
+        assert body["instructions"] == load_jev_prompt()
         assert body["text"]["format"]["strict"] is True
         assert body["text"]["format"]["schema"]["additionalProperties"] is False
         files = [p for p in body["input"][0]["content"] if p["type"] == "input_file"]

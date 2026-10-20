@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from httpx import TimeoutException
 
 from app.chains.jev_workflow import run_workflow
+from app.chains.release import ACTIVE_RELEASE
 from app.core.errors import (
     CircuitOpen,
     InvalidProviderResponse,
@@ -10,6 +11,7 @@ from app.core.errors import (
     ProviderTimeout,
     TransientProviderFailure,
 )
+from app.core.resources import load_jev_prompt
 from app.observability.langsmith import SafeTrace
 from app.providers.base import Provider
 from app.providers.routing_policy import RouteDecision
@@ -20,6 +22,7 @@ class JevService:
     def __init__(
         self, provider: Provider, trace: SafeTrace, route: RouteDecision | None = None
     ) -> None:
+        load_jev_prompt()
         if route and (provider.name, provider.model) != (
             route.profile.provider,
             route.profile.model,
@@ -78,6 +81,7 @@ class JevService:
                     "items": result.findings.items,
                     "provider": self.provider.name,
                     "model": self.provider.model,
+                    **ACTIVE_RELEASE.metadata(),
                     "trace_id": trace_id,
                     "trace_status": trace_status,
                     "input_tokens": result.input_tokens,

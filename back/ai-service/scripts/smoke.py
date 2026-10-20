@@ -7,7 +7,6 @@ import subprocess
 import sys
 import tempfile
 import time
-from importlib.resources import files
 from urllib.error import HTTPError, URLError
 from urllib.request import Request as HttpRequest
 from urllib.request import urlopen
@@ -15,7 +14,9 @@ from uuid import UUID
 
 
 def main() -> None:
-    prompt = files("app").joinpath("chains/prompts/jev.txt").read_text(encoding="utf-8")
+    from app.core.resources import load_jev_prompt
+
+    prompt = load_jev_prompt()
     if "Judgment" not in prompt:
         raise RuntimeError("Packaged JEV prompt is missing")
     with socket.socket() as sock:

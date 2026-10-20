@@ -8,6 +8,7 @@ from app.application.resilient_execution import ResilientExecutor
 from app.application.resilient_service import ResilientJevService
 from app.core.config import settings
 from app.core.errors import ApiError
+from app.core.resources import load_jev_prompt
 from app.core.security import authenticate
 from app.core.usage import usage_guard, validate_cost_profiles
 from app.observability.langsmith import SafeTrace
@@ -23,6 +24,7 @@ router = APIRouter()
 def service() -> JevService:
     config = settings()
     try:
+        load_jev_prompt()
         routes = route_candidates(config)
         validate_cost_profiles(config, routes)
         provider = build_adapter(config, routes[0])

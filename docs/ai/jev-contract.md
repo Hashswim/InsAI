@@ -50,7 +50,9 @@ JEV_ALLOW_STUB=true가 필요하며 기본값은 false다. 운영 환경에서�
 - evidence: document_id, page(1부터), description.
 - 판정 근거가 없으면 SUITABLE/NEEDS_SUPPLEMENT 불가. UNVERIFIABLE의 신뢰도는 0.
 - 존재하지 않는 문서/페이지 참조는 응답 실패 처리. 근거 내용의 사실성까지 서버가 보증하지 않는다.
-- provider, model, prompt_version, input_tokens, output_tokens.
+- provider, model, prompt_version, prompt_sha256, chain_version, input_tokens, output_tokens.
+  새 응답의 버전 세 필드는 필수이며, SHA-256은 소문자 16진수 64자리다.
+  [프롬프트·체인 버전 관리](prompt-chain-versions.md)의 배포·과거 결과 호환 정책을 따른다.
 - 개발용 provider=stub/model=stub-v1 결과는 실제 판정이 아니라 모두 확인 불가인 연결 확인용 결과다.
 - trace_id: 기록 성공 시 UUID, 미설정 또는 전송 실패 시 null.
 - trace_status: RECORDED / DISABLED / FAILED.
