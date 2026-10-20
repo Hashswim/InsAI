@@ -46,9 +46,10 @@ const NAV_CLAIMANT = [
   { k: 'info', label: '청구 정보', icon: 'ℹ️' },
 ]
 const NAV_ADJUSTER = [
-  { k: 'requests', label: '서류 요청·검토', icon: '📄' },
-  { k: 'inquiry', label: '문의', icon: '💬' },
-  { k: 'result', label: '사정 결과', icon: '⚖️' },
+  { k: 'overview', label: '개요', icon: '📊' },
+  { k: 'requests', label: '서류 검토', icon: '📄' },
+  { k: 'result', label: '심사·결정', icon: '⚖️' },
+  { k: 'inquiry', label: '청구인과 소통', icon: '💬' },
   { k: 'info', label: '청구 정보', icon: 'ℹ️' },
 ]
 const navItems = computed(() => (isAdj.value ? NAV_ADJUSTER : NAV_CLAIMANT))
@@ -82,7 +83,7 @@ const loadTimeline = async () => (timeline.value = await casesApi.getTimeline(pr
 
 onMounted(async () => {
   await loadCase()
-  nav.value = isAdj.value ? 'requests' : 'todo'
+  nav.value = isAdj.value ? 'overview' : 'todo'
   await Promise.all([loadDocs(), loadMessages(), loadTimeline()])
 })
 
@@ -150,6 +151,41 @@ async function sendInquiry() {
     inquiryErr.value = e.message
   }
 }
+
+/* ---------- 개요 (사정사) ---------- */
+const pendingReviewDocs = computed(() => docs.value.filter((d) => d.status === 'SUBMITTED'))
+const acceptedDocs = computed(() => docs.value.filter((d) => d.status === 'ACCEPTED'))
+const rejectedDocs = computed(() => docs.value.filter((d) => d.status === 'REJECTED'))
+const daysOpen = computed(() => {
+  if (!caseData.value?.createdAt) return null
+  const ms = Date.now() - new Date(caseData.value.createdAt).getTime()
+  return Math.max(0, Math.floor(ms / 86400000))
+})
+const actionNeeded = computed(() => {
+  if (!caseData.value) return null
+  if (pendingReviewDocs.value.length) {
+    return {
+      text: `제출된 서류 ${pendingReviewDocs.value.length}건이 검토를 기다리고 있습니다.`,
+      cta: '서류 검토하기',
+      go: 'requests',
+    }
+  }
+  switch (caseData.value.status) {
+    case 'DOCS_REQUESTED':
+      return { text: '청구인의 서류 제출을 기다리는 중입니다.', cta: null }
+    case 'DOCS_SUBMITTED':
+      return { text: '서류 제출이 완료되었습니다. 심사를 시작할 수 있습니다.', cta: '심사·결정으로 가기', go: 'result' }
+    case 'UNDER_REVIEW':
+      return { text: '심사가 진행 중입니다. 결정을 등록하세요.', cta: '심사·결정으로 가기', go: 'result' }
+    case 'DECISION_MADE':
+      return { text: '결정이 등록되었습니다. 청구 건을 종결할 수 있습니다.', cta: '심사·결정으로 가기', go: 'result' }
+    case 'CLOSED':
+      return { text: '종결된 청구 건입니다.', cta: null }
+    default:
+      return { text: '지금 처리할 항목이 없습니다.', cta: null }
+  }
+})
+const recentActivity = computed(() => [...timeline.value].slice(-4).reverse())
 
 /* ---------- 서류 요청·검토 (사정사) ---------- */
 const adding = ref(false)
@@ -298,6 +334,7 @@ const statusLabel = {
             >
               <span>{{ n.icon }}</span> {{ n.label }}
               <span v-if="n.k === 'todo' && todoDocs.length" class="pill">{{ todoDocs.length }}</span>
+              <span v-if="n.k === 'requests' && pendingReviewDocs.length" class="pill">{{ pendingReviewDocs.length }}</span>
               <span v-if="n.k === 'notice' && unreadNotices" class="dot" />
             </button>
           </nav>
@@ -313,8 +350,47 @@ const statusLabel = {
             <span v-if="myRole" class="badge b-muted">{{ roleLabel[myRole] }}</span>
           </div>
 
+          <!-- 개요 (사정사) -->
+          <section v-if="nav === 'overview'" class="stack">
+            <div class="ov-summary card">
+              <dl class="kv">
+                <dt>청구인</dt>
+                <dd>{{ caseData.claimantName || '—' }}</dd>
+                <dt>청구 유형</dt>
+                <dd>{{ claimTypeLabel(caseData.claimType) }}</dd>
+                <dt>경과일</dt>
+                <dd>{{ daysOpen != null ? `개설 ${daysOpen}일째` : '—' }}</dd>
+              </dl>
+            </div>
+
+            <div class="ov-action card" :class="{ warn: actionNeeded?.cta }">
+              <p>{{ actionNeeded?.text }}</p>
+              <button v-if="actionNeeded?.cta" class="btn sm" @click="goNav(actionNeeded.go)">
+                {{ actionNeeded.cta }}
+              </button>
+            </div>
+
+            <div class="ov-stats">
+              <div class="ov-stat">
+                <b>{{ pendingReviewDocs.length }}</b><span>검토 대기</span>
+              </div>
+              <div class="ov-stat">
+                <b>{{ acceptedDocs.length }}</b><span>승인</span>
+              </div>
+              <div class="ov-stat">
+                <b>{{ rejectedDocs.length }}</b><span>반려</span>
+              </div>
+              <div class="ov-stat">
+                <b>{{ messages.length }}</b><span>주고받은 메시지</span>
+              </div>
+            </div>
+
+            <h2>최근 활동</h2>
+            <CaseTimeline :events="recentActivity" />
+          </section>
+
           <!-- 해야 할 일 -->
-          <section v-if="nav === 'todo'" class="stack">
+          <section v-else-if="nav === 'todo'" class="stack">
             <h2>해야 할 일 <span class="muted small">({{ todoDocs.length }})</span></h2>
             <p v-if="!todoDocs.length" class="card muted">지금 작성하실 서류가 없습니다.</p>
 
@@ -357,10 +433,12 @@ const statusLabel = {
             </template>
           </section>
 
-          <!-- 문의 -->
+          <!-- 문의 / 소통 -->
           <section v-else-if="nav === 'inquiry'" class="stack">
-            <h2>문의</h2>
-            <p v-if="!messages.length" class="card muted">주고받은 문의가 없습니다.</p>
+            <h2>{{ isAdj ? '청구인과 소통' : '문의' }}</h2>
+            <p v-if="!messages.length" class="card muted">
+              {{ isAdj ? '아직 주고받은 메시지가 없습니다.' : '주고받은 문의가 없습니다.' }}
+            </p>
             <div
               v-for="m in messages"
               :key="m.id"
@@ -376,7 +454,7 @@ const statusLabel = {
               <textarea
                 v-model="inquiryText"
                 class="textarea"
-                :placeholder="isAdj ? '청구인에게 문의/안내를 남기세요' : '손해사정사에게 문의하세요'"
+                :placeholder="isAdj ? '청구인에게 진행 상황이나 안내를 남기세요' : '손해사정사에게 문의하세요'"
               />
               <div v-if="inquiryErr" class="alert err">{{ inquiryErr }}</div>
               <button class="btn sm" type="submit" :disabled="!inquiryText.trim()">보내기</button>
@@ -582,7 +660,6 @@ const statusLabel = {
           </section>
 
           <section v-else />
-          <!-- (사정사 기본 진입은 requests 이므로 여기 도달하지 않음) -->
 
           <p v-if="!isAdj" class="guide small">
             온라인으로 진행되므로 “안내 사항”을 확인하고 “해야 할 일”의 서류를 정확히 작성·제출해 주세요.
@@ -712,5 +789,50 @@ const statusLabel = {
   border-radius: var(--radius-sm);
   background: #fff8e6;
   color: #8a6d1f;
+}
+.ov-summary .kv {
+  margin: 0;
+}
+.ov-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-left: 4px solid var(--brand);
+}
+.ov-action.warn {
+  border-left-color: var(--warn, #d97706);
+  background: #fff8e6;
+}
+.ov-action p {
+  margin: 0;
+  font-weight: 600;
+}
+.ov-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.ov-stat {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ov-stat b {
+  font-size: 20px;
+}
+.ov-stat span {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+@media (max-width: 520px) {
+  .ov-stats {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 </style>

@@ -1,0 +1,6 @@
+{
+  "description": "실제 의료정보를 넣지 않는 청구 예제 명세. 유효한 PDF 바이트는 테스트 fixture가 메모리에서 생성합니다.",
+  "document_kinds": ["DIAGNOSIS", "TREATMENT_CONFIRMATION", "ITEMIZED_BILL"],
+  "expected_submission_status": "ON_HOLD",
+  "expected_regulations_status": "NOT_REGISTERED"
+}

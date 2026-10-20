@@ -8,7 +8,8 @@ AI 중립 청구 협업 플랫폼 — 청구인과 손해사정사가 같은 공
 ```
 InsuranceAI/
 ├── back/
-│   └── insai/     Spring Boot 백엔드
+│   ├── insai/     Spring Boot 업무 백엔드
+│   └── ai-service/ FastAPI · Gemini · JEV 분석 서비스
 └── front/
     └── insai/     Vue 3 SPA (JavaScript)
 ```
@@ -29,4 +30,6 @@ InsuranceAI/
 
 ## 개발
 
-작성 예정.
+JEV 의료 청구 서류 분석의 설정과 실행은 [실행 안내](docs/ai/jev-cycle-acceptance.md),
+요청·응답 및 개인정보 추적 정책은 [API 계약](docs/ai/jev-contract.md)을 참고하세요.
+규정은 미등록 상태이며 최종 제출 판정은 보류합니다.
