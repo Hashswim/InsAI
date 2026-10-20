@@ -9,6 +9,7 @@ from app.core.config import Settings
 from app.core.errors import InvalidProviderResponse, ProviderFailure, ProviderTimeout
 from app.core.resources import load_jev_prompt
 from app.providers.base import ProviderRequest, ProviderResult
+from app.providers.catalog import JEV_OUTPUT_TOKENS
 from app.schemas.jev import Findings
 
 
@@ -26,7 +27,7 @@ class GeminiProvider:
             timeout=90,
             # Google/LangChain counts total attempts here, not extra attempts.
             max_retries=1,
-            max_output_tokens=16000,
+            max_output_tokens=JEV_OUTPUT_TOKENS,
             vertexai=False,
             base_url="https://generativelanguage.googleapis.com",
             client_args={"trust_env": False, "follow_redirects": False},

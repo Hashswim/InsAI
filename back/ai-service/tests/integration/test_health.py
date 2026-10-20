@@ -1,6 +1,7 @@
 from importlib.metadata import version
 from unittest.mock import Mock
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -38,7 +39,11 @@ def test_stub_is_ready_without_external_connections(monkeypatch):
     smith.assert_not_called()
 
 
-def test_gemini_readiness_does_not_claim_connection_or_expose_config(monkeypatch):
+def test_gemini_readiness_does_not_claim_connection_or_expose_config(
+    monkeypatch, catalog_entry, catalog_path
+):
+    path = catalog_path([catalog_entry()])
+    monkeypatch.setenv("JEV_MODEL_CATALOG_PATH", str(path))
     monkeypatch.setenv("APP_ENV", "local")
     monkeypatch.setenv("JEV_PROVIDER", "gemini")
     monkeypatch.setenv("JEV_SERVICE_TOKEN", "SENTINEL_TOKEN")
@@ -103,3 +108,39 @@ def test_uninstalled_source_version_is_explicit_unknown(monkeypatch):
 
     monkeypatch.setattr("app.version.version", Mock(side_effect=PackageNotFoundError()))
     assert package_version() == "0+unknown"
+
+
+@pytest.mark.parametrize("declaration", ["missing", "disabled", "incompatible", "invalid"])
+def test_catalog_blocks_readiness_and_analysis_without_sdk(
+    monkeypatch, catalog_entry, catalog_path, sample_request, declaration
+):
+    monkeypatch.setenv("APP_ENV", "local")
+    monkeypatch.setenv("JEV_PROVIDER", "gemini")
+    monkeypatch.setenv("JEV_SERVICE_TOKEN", "test-token")
+    monkeypatch.setenv("GOOGLE_API_KEY", "synthetic-key")
+    monkeypatch.setenv("GEMINI_MODEL", "private-test-model")
+    if declaration != "missing":
+        changes = {
+            "disabled": {"enabled": False},
+            "incompatible": {"max_pdf_documents": 1},
+            "invalid": {"provider": "SENTINEL_UNSUPPORTED"},
+        }[declaration]
+        path = catalog_path([catalog_entry(**changes)])
+        monkeypatch.setenv("JEV_MODEL_CATALOG_PATH", str(path))
+    factory = Mock(side_effect=AssertionError("No SDK initialization allowed"))
+    monkeypatch.setattr("app.providers.router.GeminiProvider", factory)
+    with TestClient(app) as client:
+        readiness = client.get("/health/ready")
+        assert client.get("/health/live").status_code == 200
+        result = client.post(
+            "/internal/jev",
+            headers={"Authorization": "Bearer test-token"},
+            json=sample_request.model_dump(mode="json"),
+        )
+    assert readiness.status_code == 503
+    assert readiness.json()["checks"]["model_catalog"] == "UNAVAILABLE"
+    assert result.status_code == 503
+    assert result.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+    assert "SENTINEL" not in readiness.text + result.text
+    assert "private-" not in readiness.text + result.text
+    factory.assert_not_called()

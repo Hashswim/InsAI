@@ -28,6 +28,7 @@ APP_ENV는 프로세스 환경에서 선택한다. 로컬 .env의 APP_ENV 항목
 | JEV_SERVICE_TOKEN | 빈 값. Gemini/OpenAI 모드는 필수; staging/production은 32자 이상. 공백 없는 ASCII |
 | GOOGLE_API_KEY | 빈 비밀값. gemini 선택 시 필수 |
 | GEMINI_MODEL | 빈 값. gemini 선택 시 계정에서 사용 가능한 모델 ID 필요 |
+| JEV_MODEL_CATALOG_PATH | 선택적 서버 측 JSON 파일 경로. 실모델은 정확한 공급자·모델 등록과 JEV 기능/한도 적합성 필요. 기본 등록은 stub만 존재 |
 | OPENAI_API_KEY | 빈 비밀값. openai 선택 시 필수. 실제 키는 아직 입력하지 않음 |
 | OPENAI_MODEL | 빈 값. openai 선택 시 PDF·구조화 출력 지원 모델 ID 필요 |
 | LANGSMITH_ENABLED | false. true이면 LANGSMITH_API_KEY 필수 |

@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     openai_model: str = Field(default="", pattern=r"^[A-Za-z0-9._/-]*$", max_length=200)
     gemini_model: str = Field(default="", pattern=r"^[A-Za-z0-9._/-]*$", max_length=200)
     jev_provider: Literal["stub", "gemini", "openai"] = "stub"
+    jev_model_catalog_path: Path | None = Field(default=None, repr=False)
     langsmith_enabled: bool = False
     langsmith_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
     langsmith_project: str = Field(default="insai-jev", min_length=1, max_length=200)

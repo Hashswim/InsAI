@@ -26,6 +26,7 @@ OpenAPI에는 /health/ready의 200 및 503 응답 스키마를 등록했다.
     "service_auth": "CONFIGURED",
     "provider": "STUB",
     "prompt": "AVAILABLE",
+    "model_catalog": "COMPATIBLE",
     "langsmith": "DISABLED"
   },
   "external_connections": "NOT_PROBED"
@@ -36,7 +37,9 @@ Gemini를 선택한 경우 provider는 CONFIGURED다. 이는 설정 구조가 �
 실제 키 인증 성공·모델 접근 권한·공급자 연결 성공을 의미하지 않는다.
 준비 상태 조회는 공급자 SDK를 초기화하거나 테스트 추론·유료 모델 호출을 수행하지 않는다.
 공급자 장애를 능동적으로 탐지하는 기능은 아니며 실제 호출·폴백·관측 작업에서 보강한다.
-현재 지원하는 Gemini/stub만 다루며 미구현 OpenAI/Bedrock 연결 상태를 만들어 반환하지 않는다.
+현재 Gemini/OpenAI/stub의 로컬 설정과 카탈로그 적합성을 검사하며 외부 연결을 추측하지 않는다.
+미등록·비활성·요구 기능/한도가 부족한 모델이나 잘못된 카탈로그 파일이면
+ready는 503, model_catalog=UNAVAILABLE이다. 상세 모델·파일 경로는 노출하지 않는다.
 
 서비스 토큰이 없으면 live는 200이지만 ready는 503이고 service_auth=MISSING이다.
 프롬프트가 없거나 비어 있거나 읽을 수 없으면 ready는 503이고 prompt=UNAVAILABLE이다.

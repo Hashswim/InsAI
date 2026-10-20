@@ -77,3 +77,6 @@ OpenAI는 선택적 로컬 어댑터로 추가했다. 기본 공급자와 운영
 [OpenAI 어댑터 안내](../../docs/ai/openai-adapter.md)를 참고한다.
 Gemini의 단일 시도·정상 종료 검사·SDK 모의 검증은
 [Gemini 어댑터 안내](../../docs/ai/gemini-adapter.md)를 참고한다.
+실제 모델 사용에는 키·모델 ID 외에 검토한 모델 카탈로그 등록이 필요하다.
+모델명에서 기능을 추측하지 않으며 미등록 모델은 SDK 생성 전에 차단한다.
+[모델 카탈로그 안내](../../docs/ai/model-catalog.md)를 참고한다.

@@ -8,6 +8,7 @@ from app.core.config import Settings
 from app.core.errors import InvalidProviderResponse, ProviderFailure, ProviderTimeout
 from app.core.resources import load_jev_prompt
 from app.providers.base import ProviderRequest, ProviderResult
+from app.providers.catalog import JEV_OUTPUT_TOKENS
 from app.schemas.jev import Findings
 
 
@@ -44,7 +45,7 @@ class OpenAIProvider:
             "input": [{"role": "user", "content": content}],
             "store": False,
             "stream": False,
-            "max_output_tokens": 16000,
+            "max_output_tokens": JEV_OUTPUT_TOKENS,
             "text": {
                 "format": {
                     "type": "json_schema",

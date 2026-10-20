@@ -183,8 +183,9 @@ def test_credentials_are_required(missing):
         config(**{missing: ""})
 
 
-def test_local_selection_and_production_guard():
-    provider: Provider = build_provider(config())
+def test_local_selection_and_production_guard(catalog_entry, catalog_path):
+    path = catalog_path([catalog_entry("openai", "fake-openai-model")])
+    provider: Provider = build_provider(config(jev_model_catalog_path=path))
     assert isinstance(provider, OpenAIProvider)
     with pytest.raises(ValidationError):
         config(app_env="production", jev_service_token="x" * 32)

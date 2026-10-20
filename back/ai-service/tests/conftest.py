@@ -1,4 +1,5 @@
 import base64
+import json
 from io import BytesIO
 from uuid import uuid4
 
@@ -7,6 +8,33 @@ from pypdf import PdfWriter
 
 from app.providers.base import ProviderResult
 from app.schemas.jev import DocumentKind, Findings, JevRequest
+
+
+@pytest.fixture
+def catalog_entry():
+    def entry(provider="gemini", model="private-test-model", **changes):
+        return {
+            "provider": provider,
+            "model": model,
+            "enabled": True,
+            "capabilities": ["pdf_input", "structured_output", "token_usage"],
+            "max_pdf_documents": 3,
+            "max_output_tokens": 16000,
+            "source": "synthetic test declaration; not a real model",
+            **changes,
+        }
+
+    return entry
+
+
+@pytest.fixture
+def catalog_path(tmp_path):
+    def write(entries):
+        path = tmp_path / "model-catalog.json"
+        path.write_text(json.dumps({"schema_version": 1, "models": entries}), encoding="utf-8")
+        return path
+
+    return write
 
 
 @pytest.fixture(autouse=True)
@@ -25,6 +53,7 @@ def isolated_settings(monkeypatch, tmp_path):
         "JEV_SERVICE_TOKEN",
         "JEV_SECRETS_DIR",
         "GEMINI_MODEL",
+        "JEV_MODEL_CATALOG_PATH",
         "LANGSMITH_ENDPOINT",
         "PYDANTIC_SETTINGS_DEBUG",
     ):

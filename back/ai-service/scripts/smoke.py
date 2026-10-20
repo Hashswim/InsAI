@@ -23,7 +23,15 @@ def main() -> None:
         port = sock.getsockname()[1]
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
-    for name in ("JEV_SECRETS_DIR", "GOOGLE_API_KEY", "LANGSMITH_API_KEY", "JEV_SERVICE_TOKEN"):
+    for name in (
+        "JEV_SECRETS_DIR",
+        "GOOGLE_API_KEY",
+        "OPENAI_API_KEY",
+        "OPENAI_MODEL",
+        "JEV_MODEL_CATALOG_PATH",
+        "LANGSMITH_API_KEY",
+        "JEV_SERVICE_TOKEN",
+    ):
         env.pop(name, None)
     env.update(
         {
@@ -78,6 +86,7 @@ def main() -> None:
                 readiness["status"] != "READY"
                 or readiness["mode"] != "stub"
                 or readiness["external_connections"] != "NOT_PROBED"
+                or readiness["checks"].get("model_catalog") != "COMPATIBLE"
             ):
                 raise RuntimeError("Unexpected readiness response")
             with urlopen(f"http://127.0.0.1:{port}/version", timeout=2) as response:

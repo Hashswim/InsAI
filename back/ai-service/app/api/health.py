@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 from app.core.config import Settings, settings
 from app.core.resources import load_jev_prompt
+from app.providers.catalog import load_catalog, selected_profile
 from app.version import SERVICE_NAME, SERVICE_VERSION
 
 router = APIRouter()
@@ -45,10 +46,18 @@ def ready(request: Request, response: Response, config: Settings = Depends(setti
         checks["prompt"] = "AVAILABLE"
     except Exception:
         checks["prompt"] = "UNAVAILABLE"
+    try:
+        catalog = load_catalog(config.jev_model_catalog_path)
+        model = config.openai_model if config.jev_provider == "openai" else config.gemini_model
+        selected_profile(catalog, config.jev_provider, model)
+        checks["model_catalog"] = "COMPATIBLE"
+    except Exception:
+        checks["model_catalog"] = "UNAVAILABLE"
     is_ready = (
         checks["startup"] == "COMPLETE"
         and checks["service_auth"] == "CONFIGURED"
         and checks["prompt"] == "AVAILABLE"
+        and checks["model_catalog"] == "COMPATIBLE"
     )
     # LangSmith is optional. No network, model SDK initialization, or paid probes.
     checks["langsmith"] = "CONFIGURED" if config.langsmith_enabled else "DISABLED"

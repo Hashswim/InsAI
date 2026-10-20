@@ -18,8 +18,8 @@
 | 10 | 공통 LLM 인터페이스 정의 | 완료 — [내부 입력·구조화 결과·공통 오류 포트](llm-interface.md) |
 | 11 | OpenAI 모델 어댑터 구현 | 완료 — [Responses 어댑터·모의 검증](openai-adapter.md); 최초 실연결은 Gemini 유지 |
 | 12 | Gemini 모델 어댑터 구현 | 완료 — [단일 시도·정상 종료 검증·실제 SDK 모의 전송](gemini-adapter.md) |
-| 13 | AWS Bedrock 어댑터 구현 | 대기 |
-| 14 | 모델 카탈로그와 Capability Registry 구현 | 대기 |
+| 13 | AWS Bedrock 도입 | 보류 — 사용자 결정. 관련 실행 코드·전용 의존성 없음 확인 |
+| 14 | 모델 카탈로그와 Capability Registry 구현 | 완료 — [선언형 등록·JEV 호환성·SDK 생성 전 차단](model-catalog.md) |
 | 15 | 모델 Router 정책 구현 | 대기 |
 | 16 | 폴백·재시도·서킷 브레이커 구현 | 대기 |
 | 17 | 비용·속도 제한 정책 구현 | 대기 |
