@@ -7,16 +7,23 @@ os.environ["LANGSMITH_TRACING"] = "false"
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 
 from fastapi import FastAPI, Request
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import RequestValidationError, ResponseValidationError
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import RequestResponseEndpoint
-from starlette.responses import Response
+from starlette.exceptions import HTTPException
 
 from app.api.health import router as health
 from app.api.jev import router as jev
+from app.api.middleware import http_context
 from app.core.config import settings
-from app.core.errors import ProviderFailure
+from app.core.errors import (
+    ApiError,
+    InvalidProviderResponse,
+    ProviderFailure,
+    ProviderTimeout,
+    error_response,
+)
 from app.core.logging import install_secret_redaction
+from app.schemas.errors import ErrorCode
 from app.version import SERVICE_VERSION
 
 
@@ -40,23 +47,44 @@ app.include_router(jev)
 @app.exception_handler(RequestValidationError)
 async def invalid_input(request: Request, exc: RequestValidationError) -> JSONResponse:
     # FastAPI's default errors contain the rejected input, including PDF bytes.
-    return JSONResponse(status_code=422, content={"detail": "Invalid JEV request"})
+    return error_response(request, ErrorCode.INVALID_INPUT)
 
 
 @app.exception_handler(ProviderFailure)
 async def provider_failure(request: Request, exc: ProviderFailure) -> JSONResponse:
-    return JSONResponse(status_code=502, content={"detail": "AI analysis failed"})
+    if isinstance(exc, ProviderTimeout):
+        code = ErrorCode.AI_TIMEOUT
+    elif isinstance(exc, InvalidProviderResponse):
+        code = ErrorCode.INVALID_AI_RESPONSE
+    else:
+        code = ErrorCode.AI_ANALYSIS_FAILED
+    return error_response(request, code)
 
 
-@app.middleware("http")
-async def bound_body(request: Request, call_next: RequestResponseEndpoint) -> Response:
-    limit = 43_000_000
-    size = 0
-    chunks = []
-    async for chunk in request.stream():
-        size += len(chunk)
-        if size > limit:
-            return JSONResponse(status_code=413, content={"detail": "Request too large"})
-        chunks.append(chunk)
-    request._body = b"".join(chunks)
-    return await call_next(request)
+@app.exception_handler(ApiError)
+async def api_error(request: Request, exc: ApiError) -> JSONResponse:
+    return error_response(request, exc.code)
+
+
+@app.exception_handler(ResponseValidationError)
+async def invalid_output(request: Request, exc: ResponseValidationError) -> JSONResponse:
+    return error_response(request, ErrorCode.INVALID_AI_RESPONSE)
+
+
+@app.exception_handler(HTTPException)
+async def http_error(request: Request, exc: HTTPException) -> JSONResponse:
+    codes = {
+        401: ErrorCode.UNAUTHORIZED,
+        403: ErrorCode.FORBIDDEN,
+        404: ErrorCode.NOT_FOUND,
+        405: ErrorCode.METHOD_NOT_ALLOWED,
+        429: ErrorCode.RATE_LIMITED,
+        503: ErrorCode.SERVICE_UNAVAILABLE,
+    }
+    response = error_response(request, codes.get(exc.status_code, ErrorCode.INTERNAL_ERROR))
+    if exc.status_code == 405 and exc.headers and "Allow" in exc.headers:
+        response.headers["Allow"] = exc.headers["Allow"]
+    return response
+
+
+app.middleware("http")(http_context)

@@ -2,6 +2,9 @@ package com.insuranceai.ai.infrastructure;
 
 import com.insuranceai.ai.application.JevGateway;
 import com.insuranceai.common.error.BusinessException;
+import com.insuranceai.common.error.ErrorCode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
@@ -16,6 +19,7 @@ class FastApiJevClientTest {
         var server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
         server.createContext("/internal/jev", exchange -> {
             assertEquals("Bearer test-token",exchange.getRequestHeaders().getFirst("Authorization"));
+            assertEquals(requestId.toString(), exchange.getRequestHeaders().getFirst("X-Request-ID"));
             String request=new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             assertTrue(request.contains("request_id"));
             String response="""
@@ -89,5 +93,68 @@ class FastApiJevClientTest {
         } finally {
             server.stop(0);
         }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"401,AI_SERVICE_UNAVAILABLE", "403,AI_SERVICE_UNAVAILABLE", "429,AI_SERVICE_UNAVAILABLE",
+        "503,AI_SERVICE_UNAVAILABLE", "400,INVALID_INPUT", "422,INVALID_INPUT", "415,INVALID_INPUT",
+        "413,PAYLOAD_TOO_LARGE", "500,AI_UPSTREAM_ERROR", "502,AI_UPSTREAM_ERROR", "504,AI_TIMEOUT"})
+    void mapsRemoteStatusWithoutLeakingBody(int status, ErrorCode expected) throws Exception {
+        var server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/internal/jev", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            byte[] bytes="SENTINEL_PATIENT_REMOTE_ERROR".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(status,bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+        server.start();
+        try {
+            var client=new FastApiJevClient(new FastApiJevProperties(
+                "http://127.0.0.1:"+server.getAddress().getPort(),"test-token",5));
+            var error=assertThrows(BusinessException.class, () -> client.analyze(
+                new JevGateway.Request(UUID.randomUUID(),List.of())));
+            assertEquals(expected,error.getErrorCode());
+            assertFalse(error.getMessage().contains("SENTINEL"));
+            assertNull(error.getCause());
+        } finally { server.stop(0); }
+    }
+
+    @Test void malformedSuccessfulResponseIsBadGateway() throws Exception {
+        var server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/internal/jev", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            byte[] bytes="SENTINEL_PATIENT_NOT_JSON".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type","application/json");
+            exchange.sendResponseHeaders(200,bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+        server.start();
+        try {
+            var client=new FastApiJevClient(new FastApiJevProperties(
+                "http://127.0.0.1:"+server.getAddress().getPort(),"token",5));
+            var error=assertThrows(BusinessException.class, () -> client.analyze(
+                new JevGateway.Request(UUID.randomUUID(),List.of())));
+            assertEquals(ErrorCode.AI_INVALID_RESPONSE,error.getErrorCode());
+            assertFalse(error.getMessage().contains("SENTINEL"));
+        } finally { server.stop(0); }
+    }
+
+    @Test void actualReadTimeoutIsClassified() throws Exception {
+        var server=HttpServer.create(new InetSocketAddress("127.0.0.1",0),0);
+        server.createContext("/internal/jev", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            try { Thread.sleep(1600); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            exchange.close();
+        });
+        server.start();
+        try {
+            var client=new FastApiJevClient(new FastApiJevProperties(
+                "http://127.0.0.1:"+server.getAddress().getPort(),"token",1));
+            var error=assertThrows(BusinessException.class, () -> client.analyze(
+                new JevGateway.Request(UUID.randomUUID(),List.of())));
+            assertEquals(ErrorCode.AI_TIMEOUT,error.getErrorCode());
+        } finally { server.stop(0); }
     }
 }

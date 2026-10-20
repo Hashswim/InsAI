@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import pytest
 from conftest import FakeProvider
+from httpx import ReadTimeout
 
 from app.application.jev_service import JevService
 from app.chains.jev_workflow import run_workflow
@@ -49,6 +50,29 @@ def test_suitable_requires_evidence():
             verification_reason="present",
             supplement="",
         )
+
+
+@pytest.mark.parametrize("timeout_type", [TimeoutError, ReadTimeout])
+def test_builtin_timeout_is_classified_without_raw_error(sample_request, timeout_type):
+    from app.core.errors import ProviderTimeout
+
+    provider = FakeProvider()
+    provider.analyze = Mock(side_effect=timeout_type("SENTINEL_TIMEOUT"))
+    trace = Mock()
+    with pytest.raises(ProviderTimeout) as error:
+        JevService(provider, trace).run(sample_request)
+    assert "SENTINEL" not in str(error.value)
+    assert provider.analyze.call_count == 1
+
+
+def test_invalid_model_output_is_classified(sample_request):
+    from app.core.errors import InvalidProviderResponse
+
+    provider = FakeProvider()
+    provider.analyze = Mock(side_effect=ValueError("SENTINEL_INVALID_JSON"))
+    with pytest.raises(InvalidProviderResponse) as error:
+        JevService(provider, Mock()).run(sample_request)
+    assert "SENTINEL" not in str(error.value)
 
 
 def test_trace_only_receives_allowlisted_metadata(monkeypatch):

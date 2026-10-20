@@ -11,6 +11,9 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -50,6 +53,26 @@ public class GlobalExceptionHandler {
 		log.error("Unhandled exception", e);
 		return ResponseEntity.status(ErrorCode.INTERNAL_ERROR.status())
 				.body(ApiResponse.fail(ErrorCode.INTERNAL_ERROR.name(), ErrorCode.INTERNAL_ERROR.defaultMessage()));
+	}
+
+	@ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+	public ResponseEntity<ApiResponse<Void>> handleMediaType(HttpMediaTypeNotSupportedException e) {
+		return ResponseEntity.status(ErrorCode.UNSUPPORTED_MEDIA_TYPE.status()).body(ApiResponse.fail(
+				ErrorCode.UNSUPPORTED_MEDIA_TYPE.name(), ErrorCode.UNSUPPORTED_MEDIA_TYPE.defaultMessage()));
+	}
+
+	@ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+	public ResponseEntity<ApiResponse<Void>> handleMethod(HttpRequestMethodNotSupportedException e) {
+		var response = ResponseEntity.status(ErrorCode.METHOD_NOT_ALLOWED.status());
+		if (e.getSupportedMethods() != null) response.header("Allow", String.join(", ", e.getSupportedMethods()));
+		return response.body(ApiResponse.fail(ErrorCode.METHOD_NOT_ALLOWED.name(),
+				ErrorCode.METHOD_NOT_ALLOWED.defaultMessage()));
+	}
+
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleNotFound(NoResourceFoundException e) {
+		return ResponseEntity.status(ErrorCode.NOT_FOUND.status()).body(ApiResponse.fail(
+				ErrorCode.NOT_FOUND.name(), ErrorCode.NOT_FOUND.defaultMessage()));
 	}
 
 	private String formatFieldError(FieldError fe) {

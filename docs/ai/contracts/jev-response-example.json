@@ -1,0 +1,29 @@
+{
+  "request_id": "11111111-1111-4111-8111-111111111111",
+  "submission_status": "ON_HOLD",
+  "regulations_status": "NOT_REGISTERED",
+  "reason": "규정 미등록: 최종 제출 가능 여부는 판정 보류입니다.",
+  "items": [
+    {
+      "item": "진료일자 작성 상태",
+      "judgment": "SUITABLE",
+      "evidence": [
+        {
+          "document_id": "22222222-2222-4222-8222-222222222222",
+          "page": 1,
+          "description": "합성 예제: 날짜 항목을 확인함"
+        }
+      ],
+      "confidence": 0.8,
+      "verification_reason": "합성 예제의 날짜 항목을 판독할 수 있음",
+      "supplement": ""
+    }
+  ],
+  "provider": "gemini",
+  "model": "synthetic-contract-model",
+  "prompt_version": "jev-v1",
+  "trace_id": "33333333-3333-4333-8333-333333333333",
+  "trace_status": "RECORDED",
+  "input_tokens": 10,
+  "output_tokens": 20
+}

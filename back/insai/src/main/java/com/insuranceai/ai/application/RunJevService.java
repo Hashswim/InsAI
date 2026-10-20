@@ -23,6 +23,9 @@ public class RunJevService {
     }
     public record AnalysisView(UUID analysisId, JevResult result) {}
     public AnalysisView run(UUID userId, RunJevCommand command) {
+        return run(userId, command, UUID.randomUUID());
+    }
+    public AnalysisView run(UUID userId, RunJevCommand command, UUID requestId) {
         access.requireParticipant(command.caseId(), userId);
         var refs = command.documents();
         if (refs == null || refs.size()!=3
@@ -33,7 +36,7 @@ public class RunJevService {
             ref.fileId(), ref.kind().name(),
             Base64.getEncoder().encodeToString(files.read(command.caseId(), userId, ref.fileId()))
         )).toList();
-        var result = gateway.analyze(new JevGateway.Request(UUID.randomUUID(), documents));
+        var result = gateway.analyze(new JevGateway.Request(requestId, documents));
         try {
             var saved = analyses.save(JevAnalysis.create(command.caseId(), userId, mapper.writeValueAsString(result)));
             return new AnalysisView(saved.getId(), result);

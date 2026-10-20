@@ -67,3 +67,5 @@ Docker는 동일한 pyproject.toml로 설치한다. 빌드 시점의 의존성 �
 운영 조회는 `/health/live`, `/health/ready`, `/version`을 사용한다.
 readiness는 로컬 설정·프롬프트 조건만 검사하고 외부 모델 연결 성공을 보장하지 않는다.
 Docker 생존 검사와 응답 형식은 [운영 엔드포인트 안내](../../docs/ai/operations-endpoints.md)를 따른다.
+요청 ID와 오류 규격은 [공통 API 계약](../../docs/ai/api-contract-errors.md),
+내부 요청·응답의 기계 판독 스키마는 실행 중인 서비스의 `/openapi.json`을 참고한다.

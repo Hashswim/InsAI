@@ -4,10 +4,12 @@ on:
   pull_request:
     paths:
       - 'back/ai-service/**'
+      - 'docs/ai/contracts/**'
       - '.github/workflows/ai-service.yml'
   push:
     paths:
       - 'back/ai-service/**'
+      - 'docs/ai/contracts/**'
       - '.github/workflows/ai-service.yml'
   workflow_dispatch:
 

@@ -8,8 +8,9 @@ import sys
 import tempfile
 import time
 from importlib.resources import files
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
+from uuid import UUID
 
 
 def main() -> None:
@@ -82,7 +83,16 @@ def main() -> None:
                 info = json.load(response)
             if info["version"] != schema["info"]["version"]:
                 raise RuntimeError("Version and OpenAPI metadata disagree")
-            print("Smoke OK: installed prompt, HTTP live/ready/version, OpenAPI JEV route")
+            try:
+                urlopen(f"http://127.0.0.1:{port}/missing", timeout=2)
+                raise RuntimeError("Missing route unexpectedly succeeded")
+            except HTTPError as error:
+                failure = json.load(error)
+                if error.code != 404 or failure["error"]["code"] != "NOT_FOUND":
+                    raise RuntimeError("Unexpected error contract") from None
+                if str(UUID(failure["request_id"])) != error.headers["X-Request-ID"]:
+                    raise RuntimeError("Error correlation ID mismatch") from None
+            print("Smoke OK: installed prompt, HTTP operations, OpenAPI, error/request-ID contract")
         finally:
             process.terminate()
             try:

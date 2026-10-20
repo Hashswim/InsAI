@@ -14,8 +14,9 @@ public class JevController {
 
     @PostMapping
     public ApiResponse<RunJevService.AnalysisView> run(@RequestHeader("X-User-Id") UUID userId,
-                                                    @Valid @RequestBody RunJevCommand command) {
-        return ApiResponse.ok(service.run(userId, command));
+                                                    @Valid @RequestBody RunJevCommand command,
+                                                    @RequestAttribute("jevRequestId") UUID requestId) {
+        return ApiResponse.ok(service.run(userId, command, requestId));
     }
     @GetMapping("/{analysisId}")
     public ApiResponse<RunJevService.AnalysisView> get(@RequestHeader("X-User-Id") UUID userId,

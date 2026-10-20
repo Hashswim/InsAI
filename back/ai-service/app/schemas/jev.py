@@ -1,7 +1,7 @@
 import base64
 from enum import Enum
 from io import BytesIO
-from typing import Self
+from typing import Literal, Self
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -21,7 +21,11 @@ class DocumentKind(str, Enum):
 class PdfDocument(StrictModel):
     document_id: UUID
     kind: DocumentKind
-    content_base64: str = Field(min_length=1, max_length=14_000_000)
+    content_base64: str = Field(
+        min_length=1,
+        max_length=14_000_000,
+        description="Raw PDF bytes as base64, without a data URL prefix",
+    )
 
     def pdf_bytes(self) -> bytes:
         return base64.b64decode(self.content_base64, validate=True)
@@ -44,7 +48,7 @@ class PdfDocument(StrictModel):
 
 
 class JevRequest(StrictModel):
-    request_id: UUID
+    request_id: UUID = Field(description="Correlation ID; must match X-Request-ID when supplied")
     documents: list[PdfDocument] = Field(min_length=3, max_length=3)
 
     @model_validator(mode="after")
@@ -64,7 +68,7 @@ class Evidence(StrictModel):
 
 class Item(StrictModel):
     item: str = Field(min_length=1, max_length=200)
-    judgment: str = Field(pattern="^(SUITABLE|NEEDS_SUPPLEMENT|UNVERIFIABLE)$")
+    judgment: Literal["SUITABLE", "NEEDS_SUPPLEMENT", "UNVERIFIABLE"]
     evidence: list[Evidence] = Field(max_length=20)
     confidence: float = Field(ge=0, le=1)
     verification_reason: str = Field(min_length=1, max_length=2000)
@@ -87,14 +91,20 @@ class Findings(StrictModel):
 
 class JevResponse(StrictModel):
     request_id: UUID
-    submission_status: str = "ON_HOLD"
-    regulations_status: str = "NOT_REGISTERED"
+    submission_status: Literal["ON_HOLD"] = "ON_HOLD"
+    regulations_status: Literal["NOT_REGISTERED"] = "NOT_REGISTERED"
     reason: str = "규정 미등록: 최종 제출 가능 여부는 판정 보류입니다."
-    items: list[Item]
-    provider: str
-    model: str
-    prompt_version: str = "jev-v1"
+    items: list[Item] = Field(min_length=1, max_length=100)
+    provider: Literal["gemini", "stub"]
+    model: str = Field(min_length=1, max_length=200)
+    prompt_version: str = Field(default="jev-v1", min_length=1, max_length=100)
     trace_id: UUID | None
-    trace_status: str
-    input_tokens: int = 0
-    output_tokens: int = 0
+    trace_status: Literal["RECORDED", "DISABLED", "FAILED"]
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def trace_consistency(self) -> Self:
+        if (self.trace_status == "RECORDED") != (self.trace_id is not None):
+            raise ValueError("Trace ID must be present exactly when trace is recorded")
+        return self

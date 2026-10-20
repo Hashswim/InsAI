@@ -4,6 +4,8 @@
 기존 업무 백엔드는 유지하고 AI 실행을 별도 Python 서비스에 맡긴다.
 [JEV 명세](jev-model-spec.md), [권한 정책](ai-authority-policy.md), [API 계약](jev-contract.md)을 따른다.
 이 문서는 현재 구현과 후속 목표를 구분한다.
+08번에서 요청 ID 전달과 오류 매핑을 보완했다. 아래 초기 동작과 차이가 있는 경우
+[공통 API 계약](api-contract-errors.md)의 최신 매핑을 따른다.
 
 ## 1. 서비스 구조
 
