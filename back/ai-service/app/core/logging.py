@@ -30,6 +30,17 @@ def install_secret_redaction(config: Settings) -> Callable[[], None]:
 
     def factory(*args: Any, **kwargs: Any) -> logging.LogRecord:
         record = previous(*args, **kwargs)
+        if record.name == "google.genai" or record.name.startswith(
+            ("google.genai.", "langchain_google_genai")
+        ):
+            # SDK diagnostics can embed raw model feedback. Keep severity/name,
+            # never their payload or traceback in standard logs.
+            record.msg = "Provider SDK diagnostic suppressed"
+            record.args = ()
+            record.exc_info = None
+            record.exc_text = None
+            record.stack_info = None
+            return record
         record.msg = redact(record.getMessage())
         record.args = ()
         if record.exc_info:

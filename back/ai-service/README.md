@@ -33,7 +33,7 @@ Gemini를 선택하면 필수 설정이 없을 때 시작 시 실패한다.
 | app/schemas | 입력·출력 스키마 |
 | app/application | 분석 실행과 응답 조립 |
 | app/chains | JEV 워크플로·프롬프트 |
-| app/providers | 공급자 인터페이스·라우팅·Gemini 어댑터 |
+| app/providers | 공급자 인터페이스·선택·Gemini/OpenAI/스텁 어댑터 |
 | app/observability | 원문 없는 LangSmith 추적 |
 | app/rules/medical.yaml | 비워 둔 규정 자리; 현재 로딩하지 않음 |
 | tests/unit, tests/integration | 가짜 모델 기반 테스트 |
@@ -75,3 +75,5 @@ Docker 생존 검사와 응답 형식은 [운영 엔드포인트 안내](../../d
 OpenAI는 선택적 로컬 어댑터로 추가했다. 기본 공급자와 운영의 Gemini 제한은 유지한다.
 구현 방식, 모의 검증, 실제 의료 문서 사용 전 확인 사항은
 [OpenAI 어댑터 안내](../../docs/ai/openai-adapter.md)를 참고한다.
+Gemini의 단일 시도·정상 종료 검사·SDK 모의 검증은
+[Gemini 어댑터 안내](../../docs/ai/gemini-adapter.md)를 참고한다.

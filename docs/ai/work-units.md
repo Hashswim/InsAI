@@ -17,7 +17,7 @@
 | 09 | 서비스 간 인증과 인가 구현 | 완료 — [사용자 JWT·내부 토큰·케이스 인가·접근 감사](service-auth-and-access.md) |
 | 10 | 공통 LLM 인터페이스 정의 | 완료 — [내부 입력·구조화 결과·공통 오류 포트](llm-interface.md) |
 | 11 | OpenAI 모델 어댑터 구현 | 완료 — [Responses 어댑터·모의 검증](openai-adapter.md); 최초 실연결은 Gemini 유지 |
-| 12 | Gemini 모델 어댑터 구현 | 대기 — 기존 구현 점검 필요 |
+| 12 | Gemini 모델 어댑터 구현 | 완료 — [단일 시도·정상 종료 검증·실제 SDK 모의 전송](gemini-adapter.md) |
 | 13 | AWS Bedrock 어댑터 구현 | 대기 |
 | 14 | 모델 카탈로그와 Capability Registry 구현 | 대기 |
 | 15 | 모델 Router 정책 구현 | 대기 |
