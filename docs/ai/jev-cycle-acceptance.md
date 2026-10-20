@@ -42,6 +42,9 @@ Spring 시작 시 Flyway V6가 jev_analyses 테이블을 추가한다.
 FastAPI 문서는 http://localhost:8085/docs 에서 확인한다.
 local/stub에서는 모델 키 없이 시작할 수 있다. 서비스 토큰이 없으면 분석 API는 503이다.
 gemini를 선택하고 필수 설정이 없거나 운영 환경 설정이 불완전하면 시작 자체가 실패한다.
+운영 조회는 /health/live, /health/ready, /version을 사용한다.
+토큰 미설정 시 ready는 503이며, 준비 결과가 200이어도 외부 모델 인증을 확인한 것은 아니다.
+자세한 의미는 [운영 엔드포인트 안내](operations-endpoints.md)를 참고한다.
 
 ## 실제 한 사이클
 1. 기존 로그인/청구 생성 API로 사용자와 케이스를 준비한다.

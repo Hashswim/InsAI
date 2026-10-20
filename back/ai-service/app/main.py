@@ -17,19 +17,22 @@ from app.api.jev import router as jev
 from app.core.config import settings
 from app.core.errors import ProviderFailure
 from app.core.logging import install_secret_redaction
+from app.version import SERVICE_VERSION
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     config = settings()
     restore_logging = install_secret_redaction(config)
+    application.state.ready = True
     try:
         yield
     finally:
+        application.state.ready = False
         restore_logging()
 
 
-app = FastAPI(title="InsuranceAI JEV", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="InsuranceAI JEV", version=SERVICE_VERSION, lifespan=lifespan)
 app.include_router(health)
 app.include_router(jev)
 

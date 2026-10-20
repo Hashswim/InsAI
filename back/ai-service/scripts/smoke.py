@@ -31,6 +31,7 @@ def main() -> None:
             "JEV_PROVIDER": "stub",
             "LANGSMITH_ENABLED": "false",
             "PYDANTIC_SETTINGS_DEBUG": "false",
+            "JEV_SERVICE_TOKEN": "synthetic-smoke-token",
         }
     )
     with tempfile.TemporaryDirectory(prefix="insai-smoke-") as directory:
@@ -69,7 +70,19 @@ def main() -> None:
                 schema = json.load(response)
             if "/internal/jev" not in schema["paths"]:
                 raise RuntimeError("JEV route is missing")
-            print("Smoke OK: installed prompt, HTTP health, OpenAPI JEV route")
+            with urlopen(f"http://127.0.0.1:{port}/health/ready", timeout=2) as response:
+                readiness = json.load(response)
+            if (
+                readiness["status"] != "READY"
+                or readiness["mode"] != "stub"
+                or readiness["external_connections"] != "NOT_PROBED"
+            ):
+                raise RuntimeError("Unexpected readiness response")
+            with urlopen(f"http://127.0.0.1:{port}/version", timeout=2) as response:
+                info = json.load(response)
+            if info["version"] != schema["info"]["version"]:
+                raise RuntimeError("Version and OpenAPI metadata disagree")
+            print("Smoke OK: installed prompt, HTTP live/ready/version, OpenAPI JEV route")
         finally:
             process.terminate()
             try:

@@ -42,7 +42,7 @@ Gemini를 선택하면 필수 설정이 없을 때 시작 시 실패한다.
 
 `make check`는 Ruff lint, mypy 타입 검사, pytest, 포맷 검사를 수행한다.
 `make format`은 포맷을 적용하고 `make build`는 wheel/sdist를 만든다.
-`make smoke`는 설치된 패키지의 프롬프트와 실제 HTTP 서버의 health·OpenAPI를 확인한다.
+`make smoke`는 설치된 프롬프트와 실제 HTTP 서버의 live·ready·version·OpenAPI를 확인한다.
 이 검사는 별도 임시 작업 디렉터리에서 서버를 시작해 소스 폴더 의존을 확인한다.
 GitHub Actions 설정은 Python 3.11/3.14 검사와 런타임 이미지 검증을 포함한다.
 검사 설정은 pyproject.toml에서 관리한다.
@@ -63,3 +63,7 @@ docker run --rm -p 127.0.0.1:8085:8085 --env-file .env insai-ai-service:local
 이미지에는 개발 도구·테스트·.env를 넣지 않는다. .env 파일은 로컬에서 직접 준비한다.
 프로젝트 외부 규정은 번들에 넣지 않으며 프롬프트는 wheel의 package data에 포함한다.
 Docker는 동일한 pyproject.toml로 설치한다. 빌드 시점의 의존성 해석은 lock이 아니므로 달라질 수 있다.
+
+운영 조회는 `/health/live`, `/health/ready`, `/version`을 사용한다.
+readiness는 로컬 설정·프롬프트 조건만 검사하고 외부 모델 연결 성공을 보장하지 않는다.
+Docker 생존 검사와 응답 형식은 [운영 엔드포인트 안내](../../docs/ai/operations-endpoints.md)를 따른다.

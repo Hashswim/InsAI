@@ -1,10 +1,10 @@
-from pathlib import Path
 from typing import Any
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.core.config import Settings
+from app.core.resources import load_jev_prompt
 from app.providers.base import ProviderResult
 from app.schemas.jev import Findings, JevRequest
 
@@ -23,7 +23,7 @@ class GeminiProvider:
             timeout=90,
             max_retries=0,
         )
-        self.prompt = Path(__file__).parents[1].joinpath("chains/prompts/jev.txt").read_text()
+        self.prompt = load_jev_prompt()
 
     def analyze(self, request: JevRequest) -> ProviderResult:
         content: list[str | dict[str, Any]] = []

@@ -10,11 +10,13 @@ from app.schemas.jev import DocumentKind, Findings, JevRequest
 
 
 @pytest.fixture(autouse=True)
-def isolated_settings(monkeypatch):
+def isolated_settings(monkeypatch, tmp_path):
     from app.api.jev import service
     from app.core.config import settings
     from app.main import app
 
+    # Local-mode tests must never read a developer's real .env file.
+    monkeypatch.chdir(tmp_path)
     for name in (
         "GOOGLE_API_KEY",
         "LANGSMITH_API_KEY",
