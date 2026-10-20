@@ -24,6 +24,14 @@ class JevService:
         except ValueError:
             self.trace.record(started, self.provider.name, self.provider.model, False)
             raise InvalidProviderResponse() from None
+        except ProviderFailure as error:
+            self.trace.record(started, self.provider.name, self.provider.model, False)
+            # Preserve the portable error category, never adapter exception text.
+            if isinstance(error, ProviderTimeout):
+                raise ProviderTimeout() from None
+            if isinstance(error, InvalidProviderResponse):
+                raise InvalidProviderResponse() from None
+            raise ProviderFailure() from None
         except Exception:
             self.trace.record(started, self.provider.name, self.provider.model, False)
             raise ProviderFailure() from None

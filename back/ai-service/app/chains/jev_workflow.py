@@ -1,18 +1,25 @@
 from langsmith import tracing_context
 
-from app.providers.base import Provider, ProviderResult
+from app.providers.base import Provider, ProviderDocument, ProviderRequest, ProviderResult
 from app.schemas.jev import Findings, JevRequest
 
 
 def run_workflow(request: JevRequest, provider: Provider) -> ProviderResult:
     # Force off even when the host has automatic tracing enabled.
+    model_request = ProviderRequest(
+        request_id=request.request_id,
+        documents=tuple(
+            ProviderDocument(d.document_id, d.kind, d.content_base64) for d in request.documents
+        ),
+    )
     with tracing_context(enabled=False):
-        result = provider.analyze(request)
+        result = provider.analyze(model_request)
+    if not isinstance(result, ProviderResult):
+        raise ValueError("Invalid provider result type")
     findings = Findings.model_validate(result.findings.model_dump())
     pages = {d.document_id: d.page_count() for d in request.documents}
     for item in findings.items:
         for evidence in item.evidence:
             if evidence.document_id not in pages or evidence.page > pages[evidence.document_id]:
                 raise ValueError("Evidence refers to an unknown document or page")
-    result.findings = findings
-    return result
+    return ProviderResult(findings, result.input_tokens, result.output_tokens)

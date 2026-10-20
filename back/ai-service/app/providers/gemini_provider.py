@@ -5,8 +5,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.core.config import Settings
 from app.core.resources import load_jev_prompt
-from app.providers.base import ProviderResult
-from app.schemas.jev import Findings, JevRequest
+from app.providers.base import ProviderRequest, ProviderResult
+from app.schemas.jev import Findings
 
 
 class GeminiProvider:
@@ -25,7 +25,7 @@ class GeminiProvider:
         )
         self.prompt = load_jev_prompt()
 
-    def analyze(self, request: JevRequest) -> ProviderResult:
+    def analyze(self, request: ProviderRequest) -> ProviderResult:
         content: list[str | dict[str, Any]] = []
         for document in request.documents:
             content.extend(

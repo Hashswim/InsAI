@@ -1,5 +1,5 @@
-from app.providers.base import ProviderResult
-from app.schemas.jev import Findings, Item, JevRequest
+from app.providers.base import ProviderRequest, ProviderResult
+from app.schemas.jev import Findings, Item
 
 
 class StubProvider:
@@ -8,7 +8,7 @@ class StubProvider:
     name = "stub"
     model = "stub-v1"
 
-    def analyze(self, request: JevRequest) -> ProviderResult:
+    def analyze(self, request: ProviderRequest) -> ProviderResult:
         return ProviderResult(
             Findings(
                 items=[

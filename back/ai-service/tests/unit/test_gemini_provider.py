@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from conftest import FakeProvider
 
 from app.core.config import Settings
+from app.providers.base import Provider, ProviderDocument, ProviderRequest
 from app.providers.gemini_provider import GeminiProvider
 
 
@@ -19,7 +20,16 @@ def test_pdf_and_schema_are_passed_to_langchain(monkeypatch, sample_request):
         "app.providers.gemini_provider.ChatGoogleGenerativeAI", Mock(return_value=client)
     )
     provider = GeminiProvider(Settings(google_api_key="test-key", gemini_model="test-model"))
-    result = provider.analyze(sample_request)
+    port: Provider = provider
+    result = port.analyze(
+        ProviderRequest(
+            sample_request.request_id,
+            tuple(
+                ProviderDocument(d.document_id, d.kind, d.content_base64)
+                for d in sample_request.documents
+            ),
+        )
+    )
     assert result.input_tokens == 12
     messages = structured.invoke.call_args.args[0]
     files = [block for block in messages[1].content if block["type"] == "file"]
