@@ -39,6 +39,33 @@ class JevWireResponseDecoderTest {
         assertFalse(request.documents().toString().contains("SENTINEL"));
     }
 
+    ObjectNode rules() throws Exception {
+        var root = fixture();
+        root.put("provider", "rules").put("model", "jev-rules-v1").put("input_tokens", 0).put("output_tokens", 0);
+        ((ObjectNode) root.get("verification")).put("confidence_basis", "RULE_PRESENCE_CHECK");
+        return root;
+    }
+
+    @Test void acceptsRuleOnlyResultWithoutModelUsage() throws Exception {
+        var root = rules();
+        var result = decoder.decode(mapper.writeValueAsBytes(root), request(root), false);
+        assertEquals("rules", result.provider());
+        assertEquals("RULE_PRESENCE_CHECK", result.verification().confidenceBasis());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"tokens", "model_basis", "rules_basis_on_model"})
+    void rejectsInconsistentRuleOnlyResult(String mutation) throws Exception {
+        var root = rules();
+        switch (mutation) {
+            case "tokens" -> root.put("input_tokens", 1);
+            case "model_basis" -> ((ObjectNode) root.get("verification")).put("confidence_basis", "MODEL_SELF_ASSESSMENT");
+            case "rules_basis_on_model" -> root.put("provider", "gemini");
+            default -> fail("unknown mutation");
+        }
+        assertThrows(Exception.class, () -> decoder.decode(mapper.writeValueAsBytes(root), request(root), false));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"missing_tokens", "null_tokens", "string_tokens", "fraction_tokens", "negative_tokens",
         "overflow_tokens", "unknown_field", "missing_confidence", "null_confidence", "string_confidence",

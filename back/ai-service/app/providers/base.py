@@ -7,11 +7,10 @@ from app.schemas.jev import DocumentKind, Findings
 
 @dataclass(frozen=True)
 class ProviderDocument:
-    """Validated document input; never log its contents."""
+    """Document identity only. PDF bytes never reach a model adapter."""
 
     document_id: UUID
     kind: DocumentKind
-    content_base64: str = field(repr=False)
 
 
 @dataclass(frozen=True)
@@ -20,6 +19,8 @@ class ProviderRequest:
 
     request_id: UUID
     documents: tuple[ProviderDocument, ...] = field(repr=False)
+    # Extracted text form (app.chains.precheck); the only document content a model sees.
+    form: str = field(default="", repr=False)
 
 
 @dataclass(frozen=True)

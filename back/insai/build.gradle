@@ -66,5 +66,15 @@ dependencies {
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform { excludeTags 'cross-service' }
+}
+
+// Explicit opt-in: launches no external model; the Python harness owns the local stub server.
+tasks.register('crossServiceTest', Test) {
+	description = 'Real Spring HTTP -> FastAPI stub -> H2 cycle, via scripts.cross_service'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform { includeTags 'cross-service' }
+	outputs.upToDateWhen { false }
 }

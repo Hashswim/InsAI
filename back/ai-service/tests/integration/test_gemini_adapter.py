@@ -1,4 +1,3 @@
-import base64
 import json
 import logging
 from unittest.mock import Mock
@@ -58,7 +57,7 @@ def successful_response(request, finish="STOP"):
     }
 
 
-def test_real_sdk_pdf_conversion_and_api_contract(monkeypatch, sample_request):
+def test_real_sdk_text_form_and_api_contract(monkeypatch, sample_request):
     calls = []
 
     def handler(request):
@@ -88,11 +87,12 @@ def test_real_sdk_pdf_conversion_and_api_contract(monkeypatch, sample_request):
     assert sent.headers["x-goog-api-key"] == "synthetic-google-key"
     body = json.loads(sent.content)
     parts = body["contents"][0]["parts"]
-    files = [p["inlineData"] for p in parts if "inlineData" in p]
-    assert len(files) == 3
-    for file, document in zip(files, sample_request.documents, strict=True):
-        assert file.get("mimeType", file.get("mime_type")) == "application/pdf"
-        assert base64.urlsafe_b64decode(file["data"]) == document.pdf_bytes()
+    # The wire request carries the extracted text form only; never a PDF.
+    assert not [p for p in parts if "inlineData" in p or "fileData" in p]
+    assert [p["text"][:14] for p in parts] == ["JEV_TEXT_FORM="]
+    assert "%PDF" not in sent.content.decode()
+    for document in sample_request.documents:
+        assert document.content_base64 not in sent.content.decode()
     assert body["generationConfig"]["responseMimeType"] == "application/json"
     assert body["generationConfig"]["maxOutputTokens"] == 16000
     assert body["systemInstruction"]["parts"][0]["text"]

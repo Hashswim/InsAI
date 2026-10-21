@@ -36,4 +36,9 @@
 | 28 | LangSmith 추적·평가·운영 대시보드 구축 | 백엔드 구현 완료 — [추적 전송 경계·합성 평가·권한별 통계 API](observability-dashboard.md); 실제 계정 차트 설정·프론트·실연결 검증 보류 |
 
 현재 사용자 결정: 규정은 비워 둔다. 규정·약관을 임의로 채우지 않는다.
-Gemini를 최초 연결 모델로 사용하고 LangSmith에 원문을 저장하지 않는다.
+사용자 변경(2026-10-21): 로컬 최초 연결은 OpenAI `gpt-6-luna`를 선택했다.
+[모델 선택·저비용 설정](openai-local-model.md)을 따르며 LangSmith에 원문을 저장하지 않는다.
+기존 staging/production Gemini-only 가드는 별도 운영 전환 전까지 유지한다.
+
+28개 단위 이후: [실제 Spring ↔ FastAPI 스텁 HTTP 통합 검증](jev-cycle-acceptance.md)을 추가했다.
+합성 PDF·임시 저장소·H2만 사용한다. 실제 Gemini/LangSmith·운영 PostgreSQL 검증과 프론트는 보류다.

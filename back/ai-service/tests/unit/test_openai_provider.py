@@ -67,7 +67,7 @@ def service_for(handler):
     return JevService(provider, trace)
 
 
-def test_pdf_schema_and_stateless_single_request(sample_request):
+def test_text_form_schema_and_stateless_single_request(sample_request):
     calls = []
 
     def handler(request):
@@ -80,11 +80,11 @@ def test_pdf_schema_and_stateless_single_request(sample_request):
         assert body["instructions"] == load_jev_prompt()
         assert body["text"]["format"]["strict"] is True
         assert body["text"]["format"]["schema"]["additionalProperties"] is False
-        files = [p for p in body["input"][0]["content"] if p["type"] == "input_file"]
-        assert len(files) == 3
-        for file, document in zip(files, sample_request.documents, strict=True):
-            assert file["file_data"] == f"data:application/pdf;base64,{document.content_base64}"
-            assert file["filename"] == f"{document.document_id}.pdf"
+        # The extracted text form is the only input; never a PDF.
+        assert [p["type"] for p in body["input"][0]["content"]] == ["input_text"]
+        assert body["input"][0]["content"][0]["text"].startswith("JEV_TEXT_FORM=")
+        for document in sample_request.documents:
+            assert document.content_base64 not in request.content.decode()
         assert "SENTINEL_OPENAI_KEY" not in request.content.decode()
         return httpx.Response(200, json=response_data(sample_request))
 
@@ -96,6 +96,46 @@ def test_pdf_schema_and_stateless_single_request(sample_request):
     assert result.submission_status == "ON_HOLD"
     assert result.regulations_status == "NOT_REGISTERED"
     assert sample_request.documents[0].content_base64 not in str(service.trace.mock_calls)
+
+
+def test_luna_low_token_settings_preserve_schema_and_text_form(sample_request):
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["model"] == "gpt-6-luna"
+        assert body["reasoning"] == {"effort": "none"}
+        assert body["text"]["verbosity"] == "low"
+        assert body["text"]["format"]["strict"] is True
+        assert body["max_output_tokens"] == 16000
+        assert [p["type"] for p in body["input"][0]["content"]] == ["input_text"]
+        return httpx.Response(200, json=response_data(sample_request))
+
+    provider = OpenAIProvider(
+        config(openai_model="gpt-6-luna", openai_reasoning_effort="none", openai_verbosity="low"),
+        transport=httpx.MockTransport(handler),
+    )
+    assert run_workflow(sample_request, provider).output_tokens == 45
+
+
+def test_generic_models_do_not_receive_unsupported_reasoning_options(sample_request):
+    def handler(request):
+        body = json.loads(request.content)
+        assert "reasoning" not in body
+        assert "verbosity" not in body["text"]
+        return httpx.Response(200, json=response_data(sample_request))
+
+    run_workflow(sample_request, OpenAIProvider(config(), transport=httpx.MockTransport(handler)))
+
+
+def test_reviewed_luna_catalog_is_compatible():
+    from pathlib import Path
+
+    from app.providers.catalog import load_catalog
+
+    profile = load_catalog(
+        Path(__file__).resolve().parents[2] / "config/model-catalog.openai.json"
+    ).require("openai", "gpt-6-luna")
+    assert profile.context_window_tokens == 1050000
+    assert profile.pricing is None  # Tier/cache pricing needs a conservative cost-policy review.
 
 
 @pytest.mark.parametrize("status", [301, 400, 401, 403, 429, 500, 503])

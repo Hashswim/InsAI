@@ -8,7 +8,7 @@ from app.chains.release import ACTIVE_RELEASE
 
 CONSTANTS = {
     **{key: {value} for key, value in ACTIVE_RELEASE.metadata().items()},
-    "provider": {"gemini", "openai", "stub"},
+    "provider": {"gemini", "openai", "stub", "rules"},
     "routing_policy": {"pinned", "priority"},
     "routing_reason": {
         "OFFLINE_STUB",
@@ -20,7 +20,11 @@ CONSTANTS = {
     "cost_accounting": {"DISABLED", "RESERVED_BOUND", "USAGE_ESTIMATE"},
     "verification_method": {"STRUCTURAL"},
     "verification_factual_consistency": {"NOT_VERIFIED"},
-    "verification_confidence_basis": {"OFFLINE_STUB", "MODEL_SELF_ASSESSMENT"},
+    "verification_confidence_basis": {
+        "OFFLINE_STUB",
+        "MODEL_SELF_ASSESSMENT",
+        "RULE_PRESENCE_CHECK",
+    },
     "verification_human_review": {"REQUIRED"},
     "orchestrator_version": {"jev-orchestrator-v1"},
     "last_workflow_completed_stages": {"", "PREPARE", "PREPARE,J", "PREPARE,J,E", "PREPARE,J,E,V"},

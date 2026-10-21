@@ -25,6 +25,8 @@ class ResilientJevService(JevService):
 
     def run(self, request: JevRequest) -> JevResponse:
         started = datetime.now(timezone.utc)
+        if (response := self.rule_response(request, started)) is not None:
+            return response
         try:
             outcome = self.executor.execute(request)
         except ExecutionFailure as failure:

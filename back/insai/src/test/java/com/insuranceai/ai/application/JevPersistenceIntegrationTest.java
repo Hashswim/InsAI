@@ -26,7 +26,7 @@ class JevPersistenceIntegrationTest {
     @Test void storesAndReloadsGroundsModelAndTrace() {
         var account=accounts.save(Account.create(UUID.randomUUID()+"@test.invalid","hash","test",Role.CLAIMANT));
         var claim=cases.save(Case.open(account.getId(),"synthetic medical claim"));
-        var refs=Arrays.stream(RunJevCommand.Kind.values())
+        var refs=Arrays.stream(RunJevCommand.Kind.legacyValues())
             .map(kind -> new RunJevCommand.FileRef(UUID.randomUUID(),kind)).toList();
         UUID traceId=UUID.randomUUID();
         when(files.read(any(),any(),any())).thenReturn("%PDF-synthetic".getBytes());

@@ -54,7 +54,7 @@ class JevJobIntegrationTest {
         user=accounts.save(Account.create(UUID.randomUUID()+"@test.invalid","hash","synthetic",Role.CLAIMANT));
         outsider=accounts.save(Account.create(UUID.randomUUID()+"@test.invalid","hash","synthetic",Role.CLAIMANT));
         claim=cases.save(Case.open(user.getId(),"synthetic job"));
-        command=new RunJevCommand(claim.getId(),Arrays.stream(RunJevCommand.Kind.values())
+        command=new RunJevCommand(claim.getId(),Arrays.stream(RunJevCommand.Kind.legacyValues())
             .map(k -> new RunJevCommand.FileRef(UUID.randomUUID(),k)).toList());
         when(files.read(any(),any(),any())).thenReturn("%PDF-synthetic".getBytes());
         when(gateway.analyze(any())).thenAnswer(call -> result(((JevGateway.Request) call.getArgument(0)).requestId()));
@@ -311,6 +311,8 @@ class JevJobIntegrationTest {
             .andExpect(jsonPath("$.data.traceStatuses.UNKNOWN").value(1))
             .andExpect(jsonPath("$.data.traceStatuses.FAILED").value(0))
             .andExpect(jsonPath("$.data.jobStatuses.SUCCEEDED").value(1))
+            .andExpect(jsonPath("$.data.providers.UNKNOWN").value(1))
+            .andExpect(jsonPath("$.data.providers.rules").value(0))
             .andReturn().getResponse().getContentAsString();
         assertFalse(response.contains("SENTINEL")); assertFalse(response.contains("analysisId"));
         assertFalse(response.contains(claim.getId().toString())); assertFalse(response.contains(user.getId().toString()));

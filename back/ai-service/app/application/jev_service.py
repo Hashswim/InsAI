@@ -2,8 +2,10 @@ from datetime import datetime, timezone
 
 from httpx import TimeoutException
 
+from app.chains.evidence import EvidenceChain
 from app.chains.jev_workflow import run_workflow
 from app.chains.orchestrator import WorkflowProgress
+from app.chains.precheck import RULES_MODEL, precheck
 from app.chains.release import ACTIVE_RELEASE
 from app.core.errors import (
     CircuitOpen,
@@ -14,9 +16,9 @@ from app.core.errors import (
 )
 from app.core.resources import load_jev_prompt
 from app.observability.langsmith import SafeTrace
-from app.providers.base import Provider
+from app.providers.base import Provider, ProviderResult
 from app.providers.routing_policy import RouteDecision
-from app.schemas.jev import JevRequest, JevResponse
+from app.schemas.jev import JevRequest, JevResponse, VerificationSummary
 
 
 class JevService:
@@ -33,8 +35,43 @@ class JevService:
         self.trace = trace
         self.route = route
 
+    def rule_response(self, request: JevRequest, started: datetime) -> JevResponse | None:
+        """Answer without a model call when rules suffice or nothing is readable."""
+        # ponytail: the model path extracts the PDFs again in PREPARE; pass the
+        # Precheck through the executor if extraction time ever matters.
+        try:
+            check = precheck(request)
+            if check.readable and not check.confident:
+                return None
+            findings = EvidenceChain().run(request, ProviderResult(check.findings())).findings
+            verification = VerificationSummary(
+                method="STRUCTURAL",
+                factual_consistency="NOT_VERIFIED",
+                confidence_basis="RULE_PRESENCE_CHECK",
+                human_review="REQUIRED",
+            )
+        except Exception:
+            raise InvalidProviderResponse() from None
+        trace_id, trace_status = self.trace.record(
+            started, "rules", RULES_MODEL, True, verification=verification
+        )
+        return JevResponse.model_validate(
+            {
+                "request_id": request.request_id,
+                "items": findings.items,
+                "provider": "rules",
+                "model": RULES_MODEL,
+                **ACTIVE_RELEASE.metadata(),
+                "trace_id": trace_id,
+                "trace_status": trace_status,
+                "verification": verification,
+            }
+        )
+
     def run(self, request: JevRequest) -> JevResponse:
         started = datetime.now(timezone.utc)
+        if (response := self.rule_response(request, started)) is not None:
+            return response
         progress = WorkflowProgress()
         try:
             result = run_workflow(request, self.provider, progress=progress)

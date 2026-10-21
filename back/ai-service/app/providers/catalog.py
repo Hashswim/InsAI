@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator
 
 ProviderName = Literal["stub", "gemini", "openai"]
 Capability = Literal["pdf_input", "structured_output", "token_usage"]
-JEV_CAPABILITIES: frozenset[Capability] = frozenset({"pdf_input", "structured_output"})
+JEV_CAPABILITIES: frozenset[Capability] = frozenset({"structured_output"})
 JEV_OUTPUT_TOKENS = 16000
 
 

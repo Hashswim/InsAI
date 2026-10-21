@@ -4,7 +4,7 @@ from langsmith import tracing_context
 
 from app.chains.structured_output import validate_findings
 from app.providers.base import Provider, ProviderDocument, ProviderRequest, ProviderResult
-from app.schemas.jev import DocumentKind
+from app.schemas.jev import supported_document_kinds
 
 
 class JudgmentChain:
@@ -23,7 +23,9 @@ class JudgmentChain:
             or len(request.documents) != 3
             or not all(isinstance(document, ProviderDocument) for document in request.documents)
             or len({document.document_id for document in request.documents}) != 3
-            or {document.kind for document in request.documents} != set(DocumentKind)
+            or not supported_document_kinds({document.kind for document in request.documents})
+            or not isinstance(request.form, str)
+            or not request.form
         ):
             raise ValueError("Invalid J-stage document scope")
         # A direct J invocation must be as private as the complete workflow.

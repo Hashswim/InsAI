@@ -42,22 +42,7 @@ class GeminiProvider:
         self.prompt = load_jev_prompt()
 
     def analyze(self, request: ProviderRequest) -> ProviderResult:
-        content: list[str | dict[str, Any]] = []
-        for document in request.documents:
-            content.extend(
-                [
-                    {
-                        "type": "text",
-                        "text": f"document_id={document.document_id}; kind={document.kind.value}",
-                    },
-                    {
-                        "type": "file",
-                        "source_type": "base64",
-                        "mime_type": "application/pdf",
-                        "data": document.content_base64,
-                    },
-                ]
-            )
+        content: list[str | dict[str, Any]] = [{"type": "text", "text": request.form}]
         try:
             result = self.client.with_structured_output(
                 Findings, method="json_schema", include_raw=True

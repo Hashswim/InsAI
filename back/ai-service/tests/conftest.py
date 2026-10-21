@@ -5,9 +5,16 @@ from uuid import uuid4
 
 import pytest
 from pypdf import PdfWriter
+from pypdf.generic import (
+    ArrayObject,
+    DecodedStreamObject,
+    DictionaryObject,
+    NameObject,
+    NumberObject,
+)
 
 from app.providers.base import ProviderResult
-from app.schemas.jev import DocumentKind, Findings, JevRequest
+from app.schemas.jev import LEGACY_DOCUMENT_KINDS, Findings, JevRequest
 
 
 @pytest.fixture
@@ -50,6 +57,8 @@ def isolated_settings(monkeypatch, tmp_path):
         "GOOGLE_API_KEY",
         "OPENAI_API_KEY",
         "OPENAI_MODEL",
+        "OPENAI_REASONING_EFFORT",
+        "OPENAI_VERBOSITY",
         "LANGSMITH_API_KEY",
         "JEV_SERVICE_TOKEN",
         "JEV_SECRETS_DIR",
@@ -92,18 +101,65 @@ def isolated_settings(monkeypatch, tmp_path):
     usage_guard.cache_clear()
 
 
-@pytest.fixture
-def request_data():
+def text_pdf(*pages: list[str]) -> bytes:
+    """PDF whose text layer contains the given lines (no font program; extraction only)."""
     writer = PdfWriter()
-    writer.add_blank_page(width=300, height=300)
+    cmap = DecodedStreamObject()
+    ranges = "".join(f"<{h:02X}00> <{h:02X}FF> <{h:02X}00>\n" for h in range(256))
+    cmap.set_data(
+        (
+            "/CIDInit /ProcSet findresource begin 12 dict begin begincmap\n"
+            "1 begincodespacerange <0000> <FFFF> endcodespacerange\n"
+            f"256 beginbfrange\n{ranges}endbfrange\nendcmap end end"
+        ).encode()
+    )
+    descendant = DictionaryObject(
+        {
+            NameObject("/Type"): NameObject("/Font"),
+            NameObject("/Subtype"): NameObject("/CIDFontType2"),
+            NameObject("/BaseFont"): NameObject("/TestText"),
+            NameObject("/DW"): NumberObject(1000),
+        }
+    )
+    font = writer._add_object(
+        DictionaryObject(
+            {
+                NameObject("/Type"): NameObject("/Font"),
+                NameObject("/Subtype"): NameObject("/Type0"),
+                NameObject("/BaseFont"): NameObject("/TestText"),
+                NameObject("/Encoding"): NameObject("/Identity-H"),
+                NameObject("/DescendantFonts"): ArrayObject([writer._add_object(descendant)]),
+                NameObject("/ToUnicode"): writer._add_object(cmap),
+            }
+        )
+    )
+    for lines in pages:
+        page = writer.add_blank_page(width=595, height=842)
+        content = DecodedStreamObject()
+        content.set_data(
+            "".join(
+                f"BT /F1 10 Tf 40 {800 - 20 * i} Td <{line.encode('utf-16-be').hex()}> Tj ET\n"
+                for i, line in enumerate(lines)
+            ).encode()
+        )
+        page[NameObject("/Contents")] = writer._add_object(content)
+        page[NameObject("/Resources")] = DictionaryObject(
+            {NameObject("/Font"): DictionaryObject({NameObject("/F1"): font})}
+        )
     stream = BytesIO()
     writer.write(stream)
-    encoded = base64.b64encode(stream.getvalue()).decode()
+    return stream.getvalue()
+
+
+@pytest.fixture
+def request_data():
+    # Readable but not a recognizable form, so requests take the model path.
+    encoded = base64.b64encode(text_pdf(["SYNTHETIC TEST DOCUMENT"])).decode()
     return {
         "request_id": str(uuid4()),
         "documents": [
             {"document_id": str(uuid4()), "kind": kind.value, "content_base64": encoded}
-            for kind in DocumentKind
+            for kind in LEGACY_DOCUMENT_KINDS
         ],
     }
 

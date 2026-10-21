@@ -41,7 +41,6 @@ def test_exact_provider_model_lookup_and_optional_metadata(catalog_entry, catalo
     [
         {"enabled": False},
         {"capabilities": ["pdf_input"]},
-        {"capabilities": ["structured_output"]},
         {"max_pdf_documents": 2},
         {"max_output_tokens": 15999},
     ],

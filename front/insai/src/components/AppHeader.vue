@@ -17,9 +17,10 @@ async function onLogout() {
   <header class="hdr">
     <div class="hdr-inner">
       <RouterLink to="/cases" class="brand-word">Insurance<b>AI</b></RouterLink>
-      <nav v-if="auth.isClaimant" class="nav small">
+      <nav class="nav small">
         <RouterLink to="/cases">청구 관리</RouterLink>
-        <RouterLink to="/policies">내 보험</RouterLink>
+        <RouterLink v-if="auth.isClaimant" to="/policies">내 보험</RouterLink>
+        <RouterLink to="/dashboard">대시보드</RouterLink>
       </nav>
       <div class="grow" />
       <span class="badge b-brand">

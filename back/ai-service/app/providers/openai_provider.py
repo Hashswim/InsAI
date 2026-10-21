@@ -33,25 +33,13 @@ class OpenAIProvider:
         self._key = config.openai_api_key
         self._transport = transport
         self._timeout = config.jev_attempt_timeout_seconds
+        self._reasoning_effort = config.openai_reasoning_effort
+        self._verbosity = config.openai_verbosity
         self.prompt = load_jev_prompt()
 
     def analyze(self, request: ProviderRequest) -> ProviderResult:
-        content: list[dict[str, Any]] = []
-        for document in request.documents:
-            content.extend(
-                [
-                    {
-                        "type": "input_text",
-                        "text": f"document_id={document.document_id}; kind={document.kind.value}",
-                    },
-                    {
-                        "type": "input_file",
-                        "filename": f"{document.document_id}.pdf",
-                        "file_data": f"data:application/pdf;base64,{document.content_base64}",
-                    },
-                ]
-            )
-        payload = {
+        content: list[dict[str, Any]] = [{"type": "input_text", "text": request.form}]
+        payload: dict[str, Any] = {
             "model": self.model,
             "instructions": self.prompt,
             "input": [{"role": "user", "content": content}],
@@ -67,6 +55,10 @@ class OpenAIProvider:
                 }
             },
         }
+        if self._reasoning_effort is not None:
+            payload["reasoning"] = {"effort": self._reasoning_effort}
+        if self._verbosity is not None:
+            payload["text"]["verbosity"] = self._verbosity
         try:
             # Fixed origin, no redirects, no ambient proxies/credentials; one request.
             with httpx.Client(

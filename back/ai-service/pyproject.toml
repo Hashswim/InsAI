@@ -16,6 +16,7 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
 dev = ["ruff>=0.12,<1", "mypy>=1.15,<3", "build>=1.2,<2"]
+synthetic = ["Pillow>=11,<13", "reportlab>=4,<5"]
 [tool.setuptools.packages.find]
 include = ["app*"]
 [tool.setuptools.package-data]
@@ -42,3 +43,7 @@ check_untyped_defs = true
 disallow_untyped_defs = true
 warn_unused_ignores = true
 explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = ["PIL.*", "reportlab.*"]
+ignore_missing_imports = true

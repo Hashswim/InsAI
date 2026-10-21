@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     google_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
     openai_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
     openai_model: str = Field(default="", pattern=r"^[A-Za-z0-9._/-]*$", max_length=200)
+    openai_reasoning_effort: Literal["none", "low", "medium", "high", "xhigh", "max"] | None = None
+    openai_verbosity: Literal["low", "medium", "high"] | None = None
     gemini_model: str = Field(default="", pattern=r"^[A-Za-z0-9._/-]*$", max_length=200)
     jev_provider: Literal["stub", "gemini", "openai"] = "stub"
     jev_model_catalog_path: Path | None = Field(default=None, repr=False)

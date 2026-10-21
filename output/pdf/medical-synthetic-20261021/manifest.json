@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "is_synthetic": true,
+  "seed": 42,
+  "scenario": "consistent",
+  "patient": "테스트-김하늘",
+  "receipt_patient": "테스트-김하늘",
+  "patient_id": "SYN-00000042",
+  "visit_date": "2026-09-24",
+  "onset_date": "2026-09-21",
+  "issue_date": "2026-09-25",
+  "birth_date": "1997-03-15",
+  "institution": "가상 테스트의원",
+  "diagnosis_code": "J13.1",
+  "rows": [
+    {
+      "name": "초진 진찰료",
+      "code": "SYN001",
+      "unit": 9000,
+      "quantity": 1,
+      "days": 1,
+      "total": 9000,
+      "covered_patient": 2700,
+      "insurer": 6300,
+      "noncovered": 0
+    },
+    {
+      "name": "검사료",
+      "code": "SYN002",
+      "unit": 7700,
+      "quantity": 1,
+      "days": 1,
+      "total": 7700,
+      "covered_patient": 2310,
+      "insurer": 5390,
+      "noncovered": 0
+    },
+    {
+      "name": "처치료",
+      "code": "SYN003",
+      "unit": 4600,
+      "quantity": 3,
+      "days": 1,
+      "total": 13800,
+      "covered_patient": 0,
+      "insurer": 0,
+      "noncovered": 13800
+    },
+    {
+      "name": "비급여 검사",
+      "code": "SYN004",
+      "unit": 15900,
+      "quantity": 1,
+      "days": 1,
+      "total": 15900,
+      "covered_patient": 0,
+      "insurer": 0,
+      "noncovered": 15900
+    }
+  ],
+  "covered_patient": 5010,
+  "insurer": 11690,
+  "noncovered": 29700,
+  "gross": 46400,
+  "patient_due": 34710,
+  "receipt_due": 34710,
+  "expected_checks": {
+    "patient_match": true,
+    "amount_match": true,
+    "diagnosis_code_present": true
+  },
+  "documents": [
+    {
+      "document_id": "6623c683-ab01-5aab-a439-363a530cb81c",
+      "kind": "ITEMIZED_BILL",
+      "path": "itemized_bill.pdf",
+      "preview": "itemized_bill.png"
+    },
+    {
+      "document_id": "45053f5d-45b4-5cdd-9173-a0733f7c3f5f",
+      "kind": "INITIAL_VISIT_RECORD",
+      "path": "initial_visit_record.pdf",
+      "preview": "initial_visit_record.png"
+    },
+    {
+      "document_id": "b6ad6868-99de-595c-a32e-be376a4af8dd",
+      "kind": "MEDICAL_RECEIPT",
+      "path": "medical_receipt.pdf",
+      "preview": "medical_receipt.png"
+    }
+  ]
+}

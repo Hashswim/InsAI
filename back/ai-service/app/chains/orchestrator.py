@@ -7,6 +7,7 @@ from typing import TypeVar
 
 from app.chains.evidence import EvidenceChain
 from app.chains.judgment import JudgmentChain
+from app.chains.precheck import precheck
 from app.chains.verification import VerificationChain, VerifiedResult
 from app.core.errors import InvalidProviderResponse, TransientProviderFailure
 from app.providers.base import Provider, ProviderDocument, ProviderRequest, ProviderResult
@@ -133,10 +134,8 @@ class JevOrchestrator:
             snapshot = request.model_copy(deep=True)
             port = ProviderRequest(
                 snapshot.request_id,
-                tuple(
-                    ProviderDocument(d.document_id, d.kind, d.content_base64)
-                    for d in snapshot.documents
-                ),
+                tuple(ProviderDocument(d.document_id, d.kind) for d in snapshot.documents),
+                precheck(snapshot).form(),
             )
             return snapshot, port, provider.name == "stub"
 

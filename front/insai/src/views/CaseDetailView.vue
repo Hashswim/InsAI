@@ -10,6 +10,7 @@ import { isRead, markRead } from '@/lib/readState'
 import StatusBadge from '@/components/StatusBadge.vue'
 import CaseTimeline from '@/components/CaseTimeline.vue'
 import FeedCard from '@/components/FeedCard.vue'
+import JevPanel from '@/components/JevPanel.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const auth = useAuthStore()
@@ -42,12 +43,14 @@ const NAV_CLAIMANT = [
   { k: 'inquiry', label: '문의', icon: '💬' },
   { k: 'notice', label: '안내 사항', icon: '🔔' },
   { k: 'progress', label: '진행 상황', icon: '🗂' },
+  { k: 'jev', label: 'AI 서류 점검', icon: '🔎' },
   { k: 'result', label: '사정 결과', icon: '⚖️' },
   { k: 'info', label: '청구 정보', icon: 'ℹ️' },
 ]
 const NAV_ADJUSTER = [
   { k: 'overview', label: '개요', icon: '📊' },
   { k: 'requests', label: '서류 검토', icon: '📄' },
+  { k: 'jev', label: 'AI 서류 점검', icon: '🔎' },
   { k: 'result', label: '심사·결정', icon: '⚖️' },
   { k: 'inquiry', label: '청구인과 소통', icon: '💬' },
   { k: 'info', label: '청구 정보', icon: 'ℹ️' },
@@ -658,6 +661,8 @@ const statusLabel = {
               </div>
             </template>
           </section>
+
+          <JevPanel v-else-if="nav === 'jev'" :case-id="id" />
 
           <section v-else />
 

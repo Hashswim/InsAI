@@ -1,38 +1,34 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 
-const loading = ref('')
-const err = ref('')
-const role = ref('CLAIMANT')
-
-async function go(selectedRole, to) {
-  if (loading.value) return // 중복 클릭만 차단 (버튼 전체를 잠그지 않음)
-  err.value = ''
-  loading.value = `${selectedRole}:${to}`
-  try {
-    if (!auth.isAuthenticated) await auth.demoLogin(selectedRole)
-    router.push({ name: to })
-  } catch (e) {
-    console.error('[home] demo entry failed', e)
-    err.value = e.message || '입장에 실패했습니다. 잠시 후 다시 시도해 주세요.'
-  } finally {
-    loading.value = ''
-  }
-}
-
-function startByRole() {
-  if (role.value === 'ADJUSTER') return go('ADJUSTER', 'cases')
-  return go('CLAIMANT', 'cases')
+// 로그인 상태면 바로 이동, 아니면 로그인 후 돌아오도록 안내한다.
+function go(to) {
+  if (auth.isAuthenticated) return router.push({ name: to })
+  router.push({ name: 'login', query: { redirect: router.resolve({ name: to }).fullPath } })
 }
 
 function scrollTo(id) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
+
+// 이용 안내 (히어로 카드)
+const guide = [
+  ['로그인 · 회원가입', '청구인은 가입 후 바로, 손해사정사는 관리자 승인 후 이용합니다.'],
+  ['청구 건 만들기', '“청구 관리”에서 청구 유형을 골라 새 청구 건을 엽니다.'],
+  ['요청 서류 제출', '“해야 할 일”에 쌓인 서류를 양식에 맞춰 작성하고 PDF를 올립니다.'],
+  ['AI 서류 점검', '청구 건의 “AI 서류 점검”에서 PDF 3종을 골라 기재 상태를 확인합니다.'],
+  ['결과 확인', '손해사정사의 사정 결과를 쉬운 말로 풀어 전달받습니다.'],
+]
+const notices = [
+  'AI는 보험금 지급 여부를 결정하지 않습니다. 최종 판단은 손해사정사가 합니다.',
+  'PDF 원본은 AI로 전송되지 않습니다. 필요한 항목만 추출해 점검합니다.',
+  '스캔·사진 PDF는 글자를 읽을 수 없어 “확인 불가”로 표시될 수 있습니다.',
+]
 
 const steps = [
   ['역할 선택 · 내 보험 조회', '청구인/손해사정사로 입장하고, 청구인은 가입한 보험부터 확인합니다.'],
@@ -73,36 +69,30 @@ const values = [
 ]
 
 const faqs = [
-  ['로그인 없이도 써볼 수 있나요?', '네. 아래 “청구인으로 시작 / 손해사정사로 시작” 버튼으로 데모 계정에 바로 입장할 수 있습니다.'],
+  ['AI 서류 점검은 무엇을 보나요?', 'PDF에서 진단명·질병코드·날짜·병원명·금액 등을 읽어 빠진 항목과 문서 간 불일치를 짚습니다. 규칙으로 확인되면 AI를 호출하지 않습니다.'],
   ['어떤 보험을 다루나요?', '생명보험, 실손의료보험, 자동차보험, 상해·질병보험, 화재·재물보험까지 보험금 청구 전반을 다룹니다. 각 보험의 세부 청구 유형에 맞춰 서류를 안내합니다.'],
   ['서류 파일을 직접 올려야 하나요?', '텍스트 항목은 화면 안의 양식에서 바로 작성합니다. 첨부가 필요한 항목만 파일(PDF·이미지, 20MB 이하)을 올립니다.'],
   ['AI가 보험금 지급 여부를 결정하나요?', '아니요. AI는 정리·요약·번역만 돕고, 판단과 사정은 손해사정사가 합니다.'],
   ['내 보험 정보는 어디서 오나요?', '지금은 데모 데이터입니다. 정식 버전에서는 보험사 연동 또는 직접 등록으로 채워집니다.'],
 ]
 const openFaq = ref(0)
-
-// HMR/재진입 시 이전 상태가 남아 버튼이 잠기는 것 방지
-onMounted(() => {
-  loading.value = ''
-})
 </script>
 
 <template>
   <div class="lp">
-    <div v-if="err" class="lp-toast">{{ err }}</div>
-
     <!-- 상단 바 -->
     <header class="lp-bar">
       <div class="lp-bar-in">
         <span class="brand-word" style="font-size: 20px">Insurance<b>AI</b></span>
         <nav class="lp-bar-nav">
+          <button @click="scrollTo('guide')">이용 안내</button>
           <button @click="scrollTo('how')">진행 절차</button>
           <button @click="scrollTo('areas')">청구 유형</button>
           <button @click="scrollTo('faq')">자주 묻는 질문</button>
         </nav>
         <div class="grow" />
         <RouterLink v-if="!auth.isAuthenticated" to="/login" class="lp-login">로그인</RouterLink>
-        <button class="btn" @click="go('CLAIMANT', 'cases')">시작하기</button>
+        <button class="btn" @click="go('cases')">시작하기</button>
       </div>
     </header>
 
@@ -117,7 +107,7 @@ onMounted(() => {
             그 사이를 AI가 중개해 옮겨 적고, 빠진 곳을 짚고, 결정을 쉬운 말로 풀어 줍니다.
           </p>
           <div class="lp-hero-actions">
-            <button class="btn lg" @click="go('CLAIMANT', 'policies')">
+            <button class="btn lg" @click="go('policies')">
               🛡️ 내 보험 조회하기
             </button>
             <button class="btn lg ghost" @click="scrollTo('how')">
@@ -126,24 +116,23 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 빠른 시작 카드 -->
-        <div id="start" class="lp-quick">
-          <h3>빠른 시작</h3>
-          <p class="small muted">역할을 고르고 바로 입장하세요. 자격 증명은 필요 없습니다.</p>
-          <div class="lp-roles">
-            <button :class="['lp-role', { on: role === 'CLAIMANT' }]" @click="role = 'CLAIMANT'">
-              <b>청구인</b><span class="small muted">보험금을 청구합니다</span>
-            </button>
-            <button :class="['lp-role', { on: role === 'ADJUSTER' }]" @click="role = 'ADJUSTER'">
-              <b>손해사정사</b><span class="small muted">청구를 검토·사정합니다</span>
-            </button>
-          </div>
-          <button class="btn block lg" @click="startByRole">
-            {{ loading.startsWith(role) ? '입장 중…' : (role === 'ADJUSTER' ? '손해사정사로 입장' : '청구인으로 입장') }}
-          </button>
-          <button v-if="role === 'CLAIMANT'" class="btn block ghost" @click="go('CLAIMANT', 'policies')">
-            먼저 내 보험부터 보기
-          </button>
+        <!-- 이용 안내 카드 -->
+        <div id="guide" class="lp-guide">
+          <h3>이용 안내</h3>
+          <ol class="lp-guide-steps">
+            <li v-for="(g, i) in guide" :key="i">
+              <span class="lp-guide-no">{{ i + 1 }}</span>
+              <div>
+                <b>{{ g[0] }}</b>
+                <p class="small muted">{{ g[1] }}</p>
+              </div>
+            </li>
+          </ol>
+          <ul class="lp-guide-notes small">
+            <li v-for="n in notices" :key="n">{{ n }}</li>
+          </ul>
+          <RouterLink v-if="!auth.isAuthenticated" to="/login" class="btn block">로그인하고 시작하기</RouterLink>
+          <button v-else class="btn block" @click="go('cases')">내 청구 건으로 이동</button>
         </div>
       </div>
     </section>
@@ -238,14 +227,10 @@ onMounted(() => {
     <section class="lp-cta">
       <div class="lp-inner" style="text-align: center">
         <h2>지금 바로 둘러보세요</h2>
-        <p class="small">데모 계정으로 두 역할을 모두 체험할 수 있습니다.</p>
+        <p class="small">청구인은 회원가입 후 바로, 손해사정사는 관리자 승인 후 이용할 수 있습니다.</p>
         <div class="lp-cta-btns">
-          <button class="btn lg" @click="go('CLAIMANT', 'cases')">
-            {{ loading === 'CLAIMANT:cases' ? '입장 중…' : '🧾 청구인으로 시작' }}
-          </button>
-          <button class="btn lg ghost" @click="go('ADJUSTER', 'cases')">
-            {{ loading === 'ADJUSTER:cases' ? '입장 중…' : '🔎 손해사정사로 시작' }}
-          </button>
+          <button class="btn lg" @click="go('cases')">🧾 로그인하고 시작하기</button>
+          <RouterLink v-if="!auth.isAuthenticated" to="/signup" class="btn lg ghost">회원가입</RouterLink>
         </div>
       </div>
     </section>
@@ -270,20 +255,6 @@ onMounted(() => {
 <style scoped>
 .lp {
   color: var(--ink);
-}
-.lp-toast {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 50;
-  background: var(--danger);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 10px 16px;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 .lp-inner {
   max-width: 1000px;
@@ -392,8 +363,8 @@ onMounted(() => {
   background: rgba(255, 255, 255, 0.26);
 }
 
-/* 빠른 시작 카드 */
-.lp-quick {
+/* 이용 안내 카드 */
+.lp-guide {
   background: #fff;
   border-radius: 16px;
   padding: 24px;
@@ -403,36 +374,43 @@ onMounted(() => {
   flex-direction: column;
   gap: 12px;
 }
-.lp-roles {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.lp-role {
+.lp-guide-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
+}
+.lp-guide-steps li {
+  display: flex;
+  gap: 10px;
   align-items: flex-start;
-  text-align: left;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  cursor: pointer;
-  transition:
-    border-color 0.12s,
-    background 0.12s;
 }
-.lp-role:hover {
-  border-color: var(--brand);
-}
-.lp-role.on {
-  border-color: var(--brand);
-  background: var(--brand-tint);
-  box-shadow: 0 0 0 3px var(--brand-tint);
-}
-.lp-role b {
+.lp-guide-steps b {
   font-size: 14px;
+}
+.lp-guide-no {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--brand-tint);
+  color: var(--brand-deep);
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+.lp-guide-notes {
+  margin: 0;
+  padding: 10px 12px 10px 28px;
+  background: var(--surface);
+  border-radius: 10px;
+  color: var(--ink-2);
+}
+.lp-guide-notes li + li {
+  margin-top: 4px;
 }
 
 /* 지표 */

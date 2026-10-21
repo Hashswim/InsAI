@@ -37,7 +37,7 @@ class RunJevServiceTest {
     @org.junit.jupiter.params.provider.EnumSource(value = ErrorCode.class,
         names = {"INTERNAL_ERROR", "AI_INVALID_RESPONSE", "AI_TIMEOUT", "AI_SERVICE_UNAVAILABLE", "AI_RATE_LIMITED"})
     void failureDoesNotSaveResult(ErrorCode code) {
-        var refs=Arrays.stream(RunJevCommand.Kind.values())
+        var refs=Arrays.stream(RunJevCommand.Kind.legacyValues())
             .map(kind -> new RunJevCommand.FileRef(UUID.randomUUID(),kind)).toList();
         when(files.read(any(),any(),any())).thenReturn("%PDF-fake".getBytes());
         when(gateway.analyze(any())).thenThrow(new BusinessException(code));
@@ -47,7 +47,7 @@ class RunJevServiceTest {
     }
 
     @Test void missingAuditPersistenceNeverCallsModel() {
-        var refs=Arrays.stream(RunJevCommand.Kind.values())
+        var refs=Arrays.stream(RunJevCommand.Kind.legacyValues())
             .map(kind -> new RunJevCommand.FileRef(UUID.randomUUID(),kind)).toList();
         when(files.read(any(),any(),any())).thenReturn("%PDF-synthetic".getBytes());
         doThrow(new IllegalStateException("audit unavailable")).when(audit)

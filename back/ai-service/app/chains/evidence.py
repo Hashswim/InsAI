@@ -5,7 +5,7 @@ No OCR, network access, model invocation, or claim of factual verification.
 
 from app.chains.structured_output import validate_findings
 from app.providers.base import ProviderResult
-from app.schemas.jev import DocumentKind, JevRequest
+from app.schemas.jev import JevRequest, supported_document_kinds
 
 
 class EvidenceChain:
@@ -14,7 +14,7 @@ class EvidenceChain:
             not isinstance(request, JevRequest)
             or len(request.documents) != 3
             or len({document.document_id for document in request.documents}) != 3
-            or {document.kind for document in request.documents} != set(DocumentKind)
+            or not supported_document_kinds({document.kind for document in request.documents})
         ):
             raise ValueError("Invalid E-stage document scope")
         if not isinstance(draft, ProviderResult):

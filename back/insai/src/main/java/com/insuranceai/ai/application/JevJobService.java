@@ -43,7 +43,7 @@ public class JevJobService {
         var refs = command.documents();
         if (refs == null || refs.size()!=3 || refs.stream().anyMatch(r -> r == null || r.fileId()==null || r.kind()==null)
             || refs.stream().map(RunJevCommand.FileRef::fileId).distinct().count()!=3
-            || refs.stream().map(RunJevCommand.FileRef::kind).distinct().count()!=3)
+            || !RunJevCommand.validKinds(refs))
             throw new BusinessException(ErrorCode.INVALID_INPUT);
         String json;
         try {

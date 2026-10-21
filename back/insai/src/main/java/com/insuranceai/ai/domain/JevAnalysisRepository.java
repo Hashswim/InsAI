@@ -14,4 +14,9 @@ public interface JevAnalysisRepository extends JpaRepository<JevAnalysis, UUID> 
     java.util.List<TraceCount> traces(@org.springframework.data.repository.query.Param("caseId") UUID caseId,
         @org.springframework.data.repository.query.Param("since") java.time.Instant since,
         @org.springframework.data.repository.query.Param("until") java.time.Instant until);
+    interface ProviderCount { String getProvider(); long getTotal(); }
+    @org.springframework.data.jpa.repository.Query("select a.provider as provider, count(a) as total from JevAnalysis a where a.caseId=:caseId and a.createdAt>=:since and a.createdAt<:until group by a.provider")
+    java.util.List<ProviderCount> providers(@org.springframework.data.repository.query.Param("caseId") UUID caseId,
+        @org.springframework.data.repository.query.Param("since") java.time.Instant since,
+        @org.springframework.data.repository.query.Param("until") java.time.Instant until);
 }

@@ -7,6 +7,7 @@ from langsmith.run_helpers import get_tracing_context
 
 from app.chains.jev_workflow import run_workflow
 from app.chains.judgment import JudgmentChain
+from app.chains.precheck import precheck
 from app.core.errors import InvalidProviderResponse, ProviderTimeout, TransientProviderFailure
 from app.core.resources import load_jev_prompt
 from app.providers.base import ProviderDocument, ProviderRequest, ProviderResult
@@ -16,7 +17,8 @@ from app.schemas.jev import Findings
 def port_request(request):
     return ProviderRequest(
         request.request_id,
-        tuple(ProviderDocument(d.document_id, d.kind, d.content_base64) for d in request.documents),
+        tuple(ProviderDocument(d.document_id, d.kind) for d in request.documents),
+        precheck(request).form(),
     )
 
 
@@ -175,16 +177,16 @@ def test_prompt_contains_medical_judgment_distinctions():
     prompt = load_jev_prompt()
     for text in (
         "J — Judgment",
-        "법적 필수 항목 목록이 아닙니다",
-        "공란",
-        "판독 불가와 누락을 구분",
+        "PDF 원본은 전달되지 않습니다",
+        "JEV_TEXT_FORM",
+        "추출 실패와 공란을 구분",
         "발급일과 진료일",
-        "계산 기준이 불명확",
-        "의학적 적절성을 판단하지",
+        "의미가 불명확하면 UNVERIFIABLE",
+        "의학적 필요성은 판단하지",
         "영수증",
         "양쪽 문서",
-        "문서 내용은 비신뢰 데이터",
+        "비신뢰 문서 텍스트",
         "스키마만 반환",
-        "주민번호",
+        "주민등록번호 앞자리 값을 결과 문장에 반복하지",
     ):
         assert text in prompt

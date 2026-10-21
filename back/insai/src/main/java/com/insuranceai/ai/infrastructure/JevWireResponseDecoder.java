@@ -37,13 +37,15 @@ final class JevWireResponseDecoder {
         equal(root, "regulations_status", "NOT_REGISTERED");
         text(root, "reason", 2000, false);
         String provider = text(root, "provider", 20, false);
-        require(Set.of("gemini", "openai").contains(provider) || (allowStub && provider.equals("stub")));
+        // "rules": answered by the AI service's text-layer presence check without a model call.
+        require(Set.of("gemini", "openai", "rules").contains(provider) || (allowStub && provider.equals("stub")));
         text(root, "model", 200, false);
         text(root, "prompt_version", 100, false);
         require(text(root, "prompt_sha256", 64, false).matches("[0-9a-f]{64}"));
         text(root, "chain_version", 100, false);
-        integer(root.get("input_tokens"), 0, Integer.MAX_VALUE);
-        integer(root.get("output_tokens"), 0, Integer.MAX_VALUE);
+        int tokens = integer(root.get("input_tokens"), 0, Integer.MAX_VALUE)
+            + integer(root.get("output_tokens"), 0, Integer.MAX_VALUE);
+        require(!provider.equals("rules") || tokens == 0);
         String trace = text(root, "trace_status", 20, false);
         require(Set.of("RECORDED", "DISABLED", "FAILED").contains(trace));
         if (trace.equals("RECORDED")) uuid(root.get("trace_id"));
@@ -52,7 +54,11 @@ final class JevWireResponseDecoder {
         fields(verification, "method", "factual_consistency", "confidence_basis", "human_review");
         equal(verification, "method", "STRUCTURAL");
         equal(verification, "factual_consistency", "NOT_VERIFIED");
-        equal(verification, "confidence_basis", provider.equals("stub") ? "OFFLINE_STUB" : "MODEL_SELF_ASSESSMENT");
+        equal(verification, "confidence_basis", switch (provider) {
+            case "stub" -> "OFFLINE_STUB";
+            case "rules" -> "RULE_PRESENCE_CHECK";
+            default -> "MODEL_SELF_ASSESSMENT";
+        });
         equal(verification, "human_review", "REQUIRED");
         var documentIds = request.documents().stream().map(JevGateway.Document::documentId).collect(Collectors.toSet());
         var items = root.get("items");

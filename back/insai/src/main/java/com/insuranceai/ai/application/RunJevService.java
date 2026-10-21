@@ -54,7 +54,7 @@ public class RunJevService {
             if (refs == null || refs.size()!=3
                 || refs.stream().anyMatch(ref -> ref == null || ref.fileId() == null || ref.kind() == null)
                 || refs.stream().map(RunJevCommand.FileRef::fileId).distinct().count()!=3
-                || refs.stream().map(RunJevCommand.FileRef::kind).distinct().count()!=3)
+                || !RunJevCommand.validKinds(refs))
                 throw new BusinessException(ErrorCode.INVALID_INPUT, "각 종류별 PDF 한 개씩 필요합니다.");
             documents = refs.stream().map(ref -> new JevGateway.Document(
                 ref.fileId(), ref.kind().name(),

@@ -58,7 +58,7 @@ def test_preflight_skips_unknown_disabled_and_incompatible(catalog_entry, catalo
     path = catalog_path(
         [
             catalog_entry(model="disabled", enabled=False),
-            catalog_entry(model="no-pdf", capabilities=["structured_output"]),
+            catalog_entry(model="no-schema", capabilities=["pdf_input"]),
             catalog_entry(model="chosen-model"),
         ]
     )
@@ -66,7 +66,7 @@ def test_preflight_skips_unknown_disabled_and_incompatible(catalog_entry, catalo
         configured(
             path,
             jev_routing_policy="priority",
-            jev_model_priority=("unknown", "disabled", "no-pdf", "chosen-model"),
+            jev_model_priority=("unknown", "disabled", "no-schema", "chosen-model"),
         )
     )
     assert decision.profile.model == "chosen-model"

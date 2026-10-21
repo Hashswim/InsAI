@@ -38,7 +38,7 @@ cd back/insai
 ./gradlew bootRun
 ```
 
-Spring 시작 시 Flyway V6가 jev_analyses 테이블을 추가한다.
+Spring 시작 시 Flyway V6~V10이 결과·접근 감사·작업·실행 이력·집계용 메타데이터를 추가한다.
 FastAPI 문서는 http://localhost:8085/docs 에서 확인한다.
 local/stub에서는 모델 키 없이 시작할 수 있다. 서비스 토큰이 없으면 분석 API는 503이다.
 gemini를 선택하고 필수 설정이 없거나 운영 환경 설정이 불완전하면 시작 자체가 실패한다.
@@ -63,6 +63,53 @@ LangSmith에는 수동 메타데이터 trace를 기록한다. 모델 내부 chil
 trace_status=FAILED이면 키/프로젝트/endpoint/네트워크 설정을 확인한다.
 
 ## 자동 검증
+
+### 실제 두 서비스의 로컬 HTTP 통합 검증
+
+프로젝트의 Python 가상환경과 Java 21/Gradle 의존성이 준비되어 있을 때:
+
+```sh
+cd back/ai-service
+make cross-service
+```
+
+이 명령은 환경변수 설정 보류 상태에서도 실제 모델 키 없이 실행한다.
+Python launcher가 loopback의 임시 포트에 실제 FastAPI(stub)를 띄우고,
+별도 Gradle `crossServiceTest`가 임시 포트의 실제 Spring HTTP 서버를 시작한다.
+인증된 Spring 요청 → 실제 파일 읽기 → FastAPI HTTP → 엄격한 응답 검증 →
+H2 결과/감사/작업 저장 → 공개 결과·상태·이력·통계 조회를 검사한다.
+모델·HTTP 서버·파일 저장소·업무 repository는 mock으로 대체하지 않는다.
+
+검증 4건:
+
+- 동기 분석의 저장·재조회 동일성, ON_HOLD/NOT_REGISTERED, 메타데이터·이력·통계 연결.
+- 비동기 202 접수·동일 키 재사용·worker 실행·상태/결과·실행 사건 4개 확인.
+- 잘못된 PDF의 실제 FastAPI 거절과 Spring 오류 매핑·결과 미저장·실패 이력.
+- 실제 Spring HTTP의 미인증 401·다른 케이스 사용자 403·거절 감사.
+
+데이터는 내장 빈 1페이지 PDF를 세 파일 ID로 등록한 합성 입력이다.
+스텁은 문서 내용을 판독하지 않으며 항목은 UNVERIFIABLE/신뢰도 0, trace는 DISABLED다.
+trace ID가 없다는 사실을 실제 LangSmith 연결 성공으로 바꾸어 해석하지 않는다.
+사용자/케이스/파일 등록은 테스트에서 직접 준비하며 로그인·업로드 HTTP API는 이 검사 범위 밖이다.
+비동기 스케줄러는 켜지 않고 worker.tick으로 실행하므로 스케줄링·재시작 복구 시험도 별도다.
+
+launcher는 필요한 실행 환경만 자식 프로세스에 넘기고 기존 모델/추적 키·설정·JVM agent를 상속하지 않는다.
+APP_ENV=test로 .env 읽기를 막고 stub/추적 비활성을 고정한다.
+임시 서비스 토큰을 생성하며 원래 환경변수나 .env를 수정하지 않는다.
+합성 PDF·업무 파일은 전용 임시 디렉터리, 업무 DB는 전용 in-memory H2다.
+완료/실패 시 launcher 소유 FastAPI 프로세스를 종료하고 임시 파일은 정리한다.
+기존 서버·사용자 파일·실제 DB에는 연결하거나 종료 명령을 보내지 않는다.
+
+일반 `./gradlew test`에서는 cross-service 태그를 제외하여 Python/로컬 포트 의존성을 추가하지 않는다.
+명시적 crossServiceTest는 캐시로 생략하지 않고 실행한다.
+launcher는 Gradle 성공뿐 아니라 JUnit 보고서의 4건 실행/실패·오류·skip 0을 확인한다.
+결과는 `back/insai/build/reports/tests/crossServiceTest/index.html`에 남는다.
+Java/Python 미설치, 의존성 미준비, 로컬 포트 제한 시 준비가 필요하며 조용히 성공 처리하지 않는다.
+
+실제 Gemini 판독·근거 정확도, LangSmith 저장/차트, PostgreSQL/Flyway, 운영 부하·장애는 여전히 미검증이다.
+
+### 각 서비스 회귀 검사
+
 ```sh
 cd back/ai-service
 .venv/bin/pytest -q

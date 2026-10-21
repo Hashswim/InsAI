@@ -175,7 +175,7 @@ class JevSecurityIntegrationTest {
     }
     private String bearer(Account account) { return "Bearer "+tokens.issue(account.getId(),account.getRole()).value(); }
     private String body(List<StoredFile> selected) throws Exception {
-        var kinds=RunJevCommand.Kind.values();
+        var kinds=RunJevCommand.Kind.legacyValues();
         var refs=new ArrayList<Map<String,Object>>();
         for(int index=0;index<3;index++) refs.add(Map.of("fileId",selected.get(index).getId(),"kind",kinds[index]));
         return mapper.writeValueAsString(Map.of("caseId",claim.getId(),"documents",refs));

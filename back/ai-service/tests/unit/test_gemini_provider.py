@@ -7,6 +7,7 @@ from conftest import FakeProvider
 from google.genai.errors import ClientError, ServerError
 from langchain_core.messages import AIMessage
 
+from app.chains.precheck import precheck
 from app.core.config import Settings
 from app.core.errors import (
     InvalidProviderResponse,
@@ -19,7 +20,7 @@ from app.providers.base import Provider, ProviderDocument, ProviderRequest
 from app.providers.gemini_provider import GeminiProvider
 
 
-def test_pdf_and_schema_are_passed_to_langchain(monkeypatch, sample_request):
+def test_text_form_and_schema_are_passed_to_langchain(monkeypatch, sample_request):
     structured = Mock()
     client = Mock()
     client.with_structured_output.return_value = structured
@@ -40,25 +41,25 @@ def test_pdf_and_schema_are_passed_to_langchain(monkeypatch, sample_request):
     result = port.analyze(
         ProviderRequest(
             sample_request.request_id,
-            tuple(
-                ProviderDocument(d.document_id, d.kind, d.content_base64)
-                for d in sample_request.documents
-            ),
+            tuple(ProviderDocument(d.document_id, d.kind) for d in sample_request.documents),
+            precheck(sample_request).form(),
         )
     )
     assert result.input_tokens == 12
     messages = structured.invoke.call_args.args[0]
     assert messages[0].content == load_jev_prompt()
-    files = [block for block in messages[1].content if block["type"] == "file"]
-    assert len(files) == 3
-    assert all(block["mime_type"] == "application/pdf" for block in files)
+    # Only the extracted text form is sent; never a PDF.
+    assert [block["type"] for block in messages[1].content] == ["text"]
+    assert messages[1].content[0]["text"].startswith("JEV_TEXT_FORM=")
+    assert sample_request.documents[0].content_base64 not in str(messages)
     assert client.with_structured_output.call_args.kwargs["method"] == "json_schema"
 
 
 def port_request(request):
     return ProviderRequest(
         request.request_id,
-        tuple(ProviderDocument(d.document_id, d.kind, d.content_base64) for d in request.documents),
+        tuple(ProviderDocument(d.document_id, d.kind) for d in request.documents),
+        precheck(request).form(),
     )
 
 

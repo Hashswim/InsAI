@@ -21,8 +21,11 @@ def test_workflow_maps_http_input_to_private_port(sample_request):
     assert isinstance(received, ProviderRequest)
     assert received.request_id == sample_request.request_id
     assert isinstance(received.documents, tuple)
-    assert received.documents[0].content_base64 == sample_request.documents[0].content_base64
-    assert sample_request.documents[0].content_base64 not in repr(received.documents[0])
+    # The port carries document identity and the extracted text form, never PDF bytes.
+    assert not hasattr(received.documents[0], "content_base64")
+    assert received.form.startswith("JEV_TEXT_FORM=")
+    assert sample_request.documents[0].content_base64 not in received.form
+    assert received.form not in repr(received)
     assert "날짜 항목 확인" not in repr(result)
     with pytest.raises(FrozenInstanceError):
         received.request_id = sample_request.request_id

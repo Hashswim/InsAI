@@ -29,6 +29,8 @@ def main() -> None:
         "GOOGLE_API_KEY",
         "OPENAI_API_KEY",
         "OPENAI_MODEL",
+        "OPENAI_REASONING_EFFORT",
+        "OPENAI_VERBOSITY",
         "JEV_MODEL_CATALOG_PATH",
         "JEV_ROUTING_POLICY",
         "JEV_MODEL_PRIORITY",

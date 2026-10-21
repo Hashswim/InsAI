@@ -2,8 +2,11 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import DemoQuickStart from '@/components/DemoQuickStart.vue'
 
 const auth = useAuthStore()
+// 테스트용 데모 입장은 개발 서버에서만 노출 (배포 빌드에서는 제외)
+const showDemo = import.meta.env.DEV
 const route = useRoute()
 const router = useRouter()
 
@@ -64,6 +67,8 @@ async function onSubmit() {
         계정이 없으신가요?
         <RouterLink to="/signup" style="color: var(--brand); font-weight: 700">회원가입</RouterLink>
       </p>
+
+      <DemoQuickStart v-if="showDemo" />
     </div>
   </div>
 </template>

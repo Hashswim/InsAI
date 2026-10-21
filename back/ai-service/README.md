@@ -1,6 +1,7 @@
 # InsuranceAI AI service
 
-Python 3.11 기준의 FastAPI 서비스. Gemini로 의료 PDF 세 개를 JEV 분석한다.
+Python 3.11 기준의 FastAPI 서비스. 의료 PDF 세 개를 JEV 분석한다.
+사용자 변경에 따른 로컬 OpenAI `gpt-6-luna` 선택은 [설정 안내](../../docs/ai/openai-local-model.md)를 따른다.
 규정은 비워 두며 최종 제출 상태는 ON_HOLD다.
 
 ## 개발 환경
@@ -53,6 +54,8 @@ Spring의 결과 출처·실행 이력·원자적 감사 저장은 [결과·감�
 
 `make check`는 Ruff lint, mypy 타입 검사, pytest, 포맷 검사를 수행한다.
 `make evaluate`는 원격 호출 없이 내장 합성 JEV 구조 사례 5건을 평가하고 요약 JSON만 출력한다.
+`make cross-service`는 실제 Spring/FastAPI HTTP 서버와 합성 PDF·H2를 사용하는
+[통합 사이클 검사](../../docs/ai/jev-cycle-acceptance.md)다. Java 21과 준비된 Gradle 의존성이 필요하다.
 `make format`은 포맷을 적용하고 `make build`는 wheel/sdist를 만든다.
 `make smoke`는 설치된 프롬프트와 실제 HTTP 서버의 live·ready·version·OpenAPI를 확인한다.
 이 검사는 별도 임시 작업 디렉터리에서 서버를 시작해 소스 폴더 의존을 확인한다.

@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: install run lint format typecheck test check build smoke evaluate
+.PHONY: install run lint format typecheck test check build smoke evaluate cross-service
 
 install:
 	$(PYTHON) -m pip install -e '.[test,dev]'
@@ -31,3 +31,6 @@ smoke:
 
 evaluate:
 	$(PYTHON) -m scripts.evaluate
+
+cross-service:
+	$(PYTHON) -m scripts.cross_service

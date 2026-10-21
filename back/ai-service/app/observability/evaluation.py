@@ -11,7 +11,7 @@ from app.chains.jev_workflow import run_workflow
 from app.chains.orchestrator import WorkflowProgress, WorkflowStage
 from app.chains.release import ACTIVE_RELEASE
 from app.providers.base import ProviderRequest, ProviderResult
-from app.schemas.jev import DocumentKind, Findings, JevRequest
+from app.schemas.jev import LEGACY_DOCUMENT_KINDS, Findings, JevRequest
 
 
 @dataclass
@@ -39,7 +39,7 @@ def evaluate_synthetic() -> dict[str, object]:
                     "kind": kind.value,
                     "content_base64": encoded,
                 }
-                for index, kind in enumerate(DocumentKind)
+                for index, kind in enumerate(LEGACY_DOCUMENT_KINDS)
             ],
         }
     )

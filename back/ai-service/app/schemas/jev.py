@@ -28,6 +28,24 @@ class DocumentKind(str, Enum):
     DIAGNOSIS = "DIAGNOSIS"
     TREATMENT_CONFIRMATION = "TREATMENT_CONFIRMATION"
     ITEMIZED_BILL = "ITEMIZED_BILL"
+    INITIAL_VISIT_RECORD = "INITIAL_VISIT_RECORD"
+    MEDICAL_RECEIPT = "MEDICAL_RECEIPT"
+
+
+LEGACY_DOCUMENT_KINDS = (
+    DocumentKind.DIAGNOSIS,
+    DocumentKind.TREATMENT_CONFIRMATION,
+    DocumentKind.ITEMIZED_BILL,
+)
+OUTPATIENT_DOCUMENT_KINDS = (
+    DocumentKind.ITEMIZED_BILL,
+    DocumentKind.INITIAL_VISIT_RECORD,
+    DocumentKind.MEDICAL_RECEIPT,
+)
+
+
+def supported_document_kinds(kinds: set[DocumentKind]) -> bool:
+    return kinds in (set(LEGACY_DOCUMENT_KINDS), set(OUTPATIENT_DOCUMENT_KINDS))
 
 
 class PdfDocument(StrictModel):
@@ -68,8 +86,8 @@ class JevRequest(StrictModel):
     def unique_documents(self) -> Self:
         if len({d.document_id for d in self.documents}) != 3:
             raise ValueError("Duplicate document IDs")
-        if {d.kind for d in self.documents} != set(DocumentKind):
-            raise ValueError("Exactly one document of each kind is required")
+        if not supported_document_kinds({d.kind for d in self.documents}):
+            raise ValueError("Exactly one document of each kind in a supported bundle is required")
         return self
 
 
@@ -123,7 +141,7 @@ class VerificationSummary(StrictModel):
     model_config = ConfigDict(extra="forbid", frozen=True, revalidate_instances="always")
     method: Literal["STRUCTURAL"]
     factual_consistency: Literal["NOT_VERIFIED"]
-    confidence_basis: Literal["MODEL_SELF_ASSESSMENT", "OFFLINE_STUB"]
+    confidence_basis: Literal["MODEL_SELF_ASSESSMENT", "OFFLINE_STUB", "RULE_PRESENCE_CHECK"]
     human_review: Literal["REQUIRED"]
 
 
@@ -133,7 +151,7 @@ class JevResponse(StrictModel):
     regulations_status: Literal["NOT_REGISTERED"] = "NOT_REGISTERED"
     reason: str = "규정 미등록: 최종 제출 가능 여부는 판정 보류입니다."
     items: list[Item] = Field(min_length=1, max_length=100)
-    provider: Literal["gemini", "stub", "openai"]
+    provider: Literal["gemini", "stub", "openai", "rules"]
     model: str = Field(min_length=1, max_length=200)
     prompt_version: str = Field(min_length=1, max_length=100)
     prompt_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -148,11 +166,15 @@ class JevResponse(StrictModel):
     def trace_consistency(self) -> Self:
         if (self.trace_status == "RECORDED") != (self.trace_id is not None):
             raise ValueError("Trace ID must be present exactly when trace is recorded")
-        basis = "OFFLINE_STUB" if self.provider == "stub" else "MODEL_SELF_ASSESSMENT"
+        basis = {"stub": "OFFLINE_STUB", "rules": "RULE_PRESENCE_CHECK"}.get(
+            self.provider, "MODEL_SELF_ASSESSMENT"
+        )
         if self.verification.confidence_basis != basis:
             raise ValueError("Verification basis does not match execution mode")
         if self.provider == "stub" and any(
             item.judgment != "UNVERIFIABLE" or item.evidence for item in self.items
         ):
             raise ValueError("Offline stub cannot make grounded recommendations")
+        if self.provider == "rules" and (self.input_tokens or self.output_tokens):
+            raise ValueError("Rule-only results cannot report model token usage")
         return self
