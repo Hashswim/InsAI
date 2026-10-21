@@ -30,8 +30,18 @@ def install_secret_redaction(config: Settings) -> Callable[[], None]:
 
     def factory(*args: Any, **kwargs: Any) -> logging.LogRecord:
         record = previous(*args, **kwargs)
-        if record.name == "google.genai" or record.name.startswith(
-            ("google.genai.", "langchain_google_genai")
+        sensitive_roots = (
+            "google.genai",
+            "langchain_google_genai",
+            "langchain_core",
+            "langsmith",
+            "pypdf",
+            "httpx",
+            "httpcore",
+            "uvicorn.access",
+        )
+        if any(
+            record.name == root or record.name.startswith(root + ".") for root in sensitive_roots
         ):
             # SDK diagnostics can embed raw model feedback. Keep severity/name,
             # never their payload or traceback in standard logs.

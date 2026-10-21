@@ -9,7 +9,7 @@
 |---|---|
 | prompt_version | `jev-v2` — `chains/prompts/jev-v2.txt` |
 | prompt_sha256 | 패키지에 포함된 UTF-8 파일 원본 바이트의 SHA-256, 줄바꿈 포함 |
-| chain_version | `jev-chain-v6` — 오케스트레이터가 PREPARE→J→E→V 순서와 시도별 상태를 조정 |
+| chain_version | `jev-chain-v7` — 엄격한 HTTP/JSON·PDF 수용 정책과 PREPARE→J→E→V 실행 |
 
 프롬프트 v2에서 J 판정 지침을 구체화했다. 규정은 비어 있고 제출 여부는 계속 `ON_HOLD`다.
 J/E/V를 별도의 모델 호출 세 개로 구현했다는 뜻은 아니다. 재시도·라우팅은 별도 정책이며
@@ -25,6 +25,8 @@ v5에서는 [V 체인](verification-chain.md)과 서버 소유 verification 응�
 프롬프트는 바꾸지 않았고 사실 검증 완료나 신뢰도 보정을 주장하지 않는다.
 v6에서는 [JEV 오케스트레이터](jev-orchestrator.md)로 고정 순서·실패 중단·시도별 보고서를 명시했다.
 원문 없는 단계 상태만 추적하며 프롬프트 jev-v2와 해시는 그대로다.
+v7에서는 [입력 방어](input-defense.md)의 JSON/헤더·PDF 기능 수용 조건과 진단 로그 보호를 추가했다.
+프롬프트는 유지하며 의미적 프롬프트 주입 방어나 악성코드 검사를 완료했다는 뜻은 아니다.
 
 ## 실행·저장·추적
 

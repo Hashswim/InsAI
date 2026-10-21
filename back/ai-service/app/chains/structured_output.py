@@ -3,77 +3,21 @@
 Never log or propagate JSON/schema exceptions: they can contain medical text.
 """
 
-import json
-from math import isfinite
-from typing import Any, NoReturn
+from typing import Any
 
+from app.core.json_guard import MAX_JSON_DEPTH as MAX_JSON_DEPTH
+from app.core.json_guard import decode_json_object as guarded_json_object
 from app.schemas.jev import Findings
 
 MAX_FINDINGS_BYTES = 1024 * 1024
 MAX_PROVIDER_RESPONSE_BYTES = 4 * MAX_FINDINGS_BYTES
-MAX_JSON_DEPTH = 32
 INVALID_OUTPUT = "Invalid structured JEV output"
-
-
-def _reject_constant(value: str) -> NoReturn:
-    raise ValueError(INVALID_OUTPUT)
-
-
-def _finite_float(value: str) -> float:
-    number = float(value)
-    if not isfinite(number):
-        raise ValueError(INVALID_OUTPUT)
-    return number
-
-
-def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
-    result: dict[str, Any] = {}
-    for key, value in pairs:
-        if key in result:
-            raise ValueError(INVALID_OUTPUT)
-        result[key] = value
-    return result
-
-
-def _check_depth(text: str) -> None:
-    # Bound nesting before json.loads, ignoring braces inside JSON strings.
-    depth = 0
-    in_string = escaped = False
-    for char in text:
-        if in_string:
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == '"':
-                in_string = False
-        elif char == '"':
-            in_string = True
-        elif char in "[{":
-            depth += 1
-            if depth > MAX_JSON_DEPTH:
-                raise ValueError(INVALID_OUTPUT)
-        elif char in "]}":
-            depth -= 1
 
 
 def decode_json_object(text: object, *, max_bytes: int = MAX_FINDINGS_BYTES) -> dict[str, Any]:
     try:
-        if not isinstance(text, str) or len(text) > max_bytes:
-            raise ValueError()
-        if len(text.encode("utf-8")) > max_bytes:
-            raise ValueError()
-        _check_depth(text)
-        data = json.loads(
-            text,
-            object_pairs_hook=_unique_object,
-            parse_constant=_reject_constant,
-            parse_float=_finite_float,
-        )
-        if not isinstance(data, dict):
-            raise ValueError()
-        return data
-    except (ValueError, TypeError, RecursionError):
+        return guarded_json_object(text, max_bytes=max_bytes)
+    except ValueError:
         raise ValueError(INVALID_OUTPUT) from None
 
 

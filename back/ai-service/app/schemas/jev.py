@@ -7,6 +7,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pypdf import PdfReader
 
+from app.core.pdf_safety import require_passive_pdf
+
 
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -52,8 +54,9 @@ class PdfDocument(StrictModel):
             reader = PdfReader(BytesIO(raw))
             if reader.is_encrypted or not 1 <= len(reader.pages) <= 30:
                 raise ValueError()
+            require_passive_pdf(reader)
         except Exception:
-            raise ValueError("Invalid, encrypted, oversized, or over-30-page PDF") from None
+            raise ValueError("Invalid or unsupported PDF") from None
         return self
 
 

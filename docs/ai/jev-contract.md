@@ -16,6 +16,7 @@ J = Judgment(항목 판정), E = Evidence(문서 근거), V = Verification(검�
 기존 업로드 API로 같은 청구 건에 PDF 세 개를 등록한다.
 DIAGNOSIS(진단서), TREATMENT_CONFIRMATION(진료확인서), ITEMIZED_BILL(병원비 세부내역서) 각 한 개.
 파일당 최대 10MiB, 30페이지. 암호화 PDF 금지. 이미지 PDF도 Gemini에 직접 전달한다.
+JavaScript·첨부·실행 액션 등은 [PDF/HTTP 입력 수용 정책](input-defense.md)에 따라 거절한다.
 Spring은 저장된 파일 ID와 케이스 소속을 확인하고, URL 대신 PDF 바이트를 내부 API로 전달한다.
 
 POST /ai/jev (Spring, :8080)
@@ -39,6 +40,7 @@ X-User-Id는 JEV의 사용자 식별에 사용하지 않는다.
 
 FastAPI POST /internal/jev 는 Bearer 서비스 토큰으로 보호한다.
 request_id, documents[{document_id,kind,content_base64}] 형태의 snake_case JSON.
+UTF-8 JSON만 허용하며 중복 키·중첩 초과·압축 본문·모호한 중복 헤더는 거절한다.
 Spring과 FastAPI는 동일한 JEV_SERVICE_TOKEN을 사용한다.
 개발·테스트용 stub 모드는 외부 모델을 호출하지 않는다. Spring에서 그 결과를 받으려면
 JEV_ALLOW_STUB=true가 필요하며 기본값은 false다. 운영 환경에서는 stub을 허용하지 않는다.

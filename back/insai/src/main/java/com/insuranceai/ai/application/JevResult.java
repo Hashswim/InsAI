@@ -18,11 +18,16 @@ public record JevResult(
     @JsonProperty("output_tokens") int outputTokens,
     Verification verification
 ) {
+    @Override public String toString() { return "JevResult[REDACTED]"; }
     public record Verification(String method,
                                @JsonProperty("factual_consistency") String factualConsistency,
                                @JsonProperty("confidence_basis") String confidenceBasis,
                                @JsonProperty("human_review") String humanReview) {}
-    public record Evidence(@JsonProperty("document_id") UUID documentId, int page, String description) {}
+    public record Evidence(@JsonProperty("document_id") UUID documentId, int page, String description) {
+        @Override public String toString() { return "JevEvidence[REDACTED]"; }
+    }
     public record Item(String item, String judgment, List<Evidence> evidence, double confidence,
-                       @JsonProperty("verification_reason") String verificationReason, String supplement) {}
+                       @JsonProperty("verification_reason") String verificationReason, String supplement) {
+        @Override public String toString() { return "JevItem[REDACTED]"; }
+    }
 }

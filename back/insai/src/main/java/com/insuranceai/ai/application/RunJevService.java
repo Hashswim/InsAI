@@ -28,6 +28,17 @@ public class RunJevService {
         return run(userId, command, UUID.randomUUID());
     }
     public AnalysisView run(UUID userId, RunJevCommand command, UUID requestId) {
+        var result = analyze(userId, command, requestId);
+        try {
+            var saved = analyses.save(JevAnalysis.create(command.caseId(), userId, mapper.writeValueAsString(result)));
+            return new AnalysisView(saved.getId(), result);
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+        }
+    }
+
+    /** Worker entry point: does not persist; job completion owns the atomic result transaction. */
+    public JevResult analyze(UUID userId, RunJevCommand command, UUID requestId) {
         List<JevGateway.Document> documents;
         try {
             access.requireParticipant(command.caseId(), userId);
@@ -48,13 +59,7 @@ public class RunJevService {
         }
         audit.record(requestId, userId, command.caseId(), null, JevAccessAudit.Action.ANALYZE,
             JevAccessAudit.Outcome.ALLOWED, "AUTHORIZED");
-        var result = gateway.analyze(new JevGateway.Request(requestId, documents));
-        try {
-            var saved = analyses.save(JevAnalysis.create(command.caseId(), userId, mapper.writeValueAsString(result)));
-            return new AnalysisView(saved.getId(), result);
-        } catch (JsonProcessingException e) {
-            throw new BusinessException(ErrorCode.INTERNAL_ERROR);
-        }
+        return gateway.analyze(new JevGateway.Request(requestId, documents));
     }
     public AnalysisView get(UUID userId, UUID analysisId) {
         return get(userId, analysisId, UUID.randomUUID());

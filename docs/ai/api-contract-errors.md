@@ -28,7 +28,9 @@ Python 스키마 검증과 Java DTO 역직렬화·재직렬화가 동일 파일�
 | analysisId | 성공적으로 저장된 분석의 조회 UUID |
 | trace_id | LangSmith 기록 성공 시의 별도 UUID |
 
-작업 실행 전의 영구 job ID와 큐 상태는 아직 없으며 26번에서 구현한다.
+26번에서 [비동기 작업 API](async-jobs.md)를 추가했다. POST /ai/jev/jobs는 사용자별 UUID
+Idempotency-Key로 중복 접수를 막고 202와 jobId를 반환하며 GET /ai/jev/jobs/{jobId}로 상태를 조회한다.
+동기 POST /ai/jev는 기존 동작을 유지한다.
 request_id는 인증 정보나 중복 실행 방지 키가 아니다. 같은 ID로 재요청해도 재실행될 수 있다.
 
 ## 요청 ID 전달 규칙
@@ -52,9 +54,14 @@ Spring ID 필터는 JEV 경로에만 적용하며 다른 업무 API의 응답 �
 - 입력 문서 종류: DIAGNOSIS, TREATMENT_CONFIRMATION, ITEMIZED_BILL 각 한 개, ID 중복 금지.
 - PDF당 10MiB 이하, 1~30페이지, 암호화 금지. base64는 data URL 접두사 없는 PDF 바이트다.
 - base64 문자열당 최대 14,000,000자, 내부 HTTP 본문은 43,000,000바이트 이하.
+- [입력 방어 정책](input-defense.md)에 따라 중복 JSON/헤더·비 UTF-8·압축 본문과
+  지원하지 않는 PDF 활성 기능을 거절한다. 비 JEV 경로의 본문은 64KiB로 제한한다.
 - Content-Length뿐 아니라 실제 수신 바이트도 제한한다. JSON 구조·PDF 형식 실패는 422다.
 - Spring은 필수 UUID·종류·3개 문서 목록과 null 요소를 검증한다. 업무 권한·파일 소속도 확인한다.
 - FastAPI는 정의하지 않은 JSON 필드를 거부한다. Spring의 모든 미정의 필드 거부까지 보장하지는 않는다.
+- 25번부터 Spring 내부 RPC의 성공 응답은 미정의·누락·중복 필드와 암묵 숫자 변환도 거부한다.
+  [내부 클라이언트 정책](internal-client.md)의 2MiB 전송 상한·근거 범위·검증 메타데이터를 만족해야 저장한다.
+  공개 Spring 입력 전체나 기존 저장 결과에 이 엄격 파서를 소급 적용하는 것은 아니다.
 - 항목 판정은 SUITABLE / NEEDS_SUPPLEMENT / UNVERIFIABLE만 허용한다.
 - 결과 항목 1~100개, 토큰 수는 0 이상, 모델·프롬프트 버전은 비어 있을 수 없다.
 - 규정 미등록 응답은 ON_HOLD / NOT_REGISTERED다.

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
-import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import java.net.http.HttpClient;
 import java.time.Duration;
 
@@ -17,10 +17,13 @@ import java.time.Duration;
 public class FastApiJevClient implements JevGateway {
     private final RestClient client;
     private final FastApiJevProperties properties;
+    static final int MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
+    private final JevWireResponseDecoder decoder = new JevWireResponseDecoder();
 
     public FastApiJevClient(FastApiJevProperties properties) {
         this.properties = properties;
-        var http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+        var http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5))
+            .followRedirects(HttpClient.Redirect.NEVER).build();
         var factory = new JdkClientHttpRequestFactory(http);
         factory.setReadTimeout(Duration.ofSeconds(properties.timeoutSeconds()));
         this.client = RestClient.builder().baseUrl(properties.baseUrl()).requestFactory(factory).build();
@@ -29,41 +32,44 @@ public class FastApiJevClient implements JevGateway {
         if (properties.serviceToken().isBlank()) {
             throw new BusinessException(ErrorCode.AI_SERVICE_UNAVAILABLE);
         }
+        long started = System.nanoTime();
         try {
-            JevResult result = client.post().uri("/internal/jev")
+            return client.post().uri("/internal/jev")
                 .header("Authorization", "Bearer " + properties.serviceToken())
                 .header("X-Request-ID", request.requestId().toString())
-                .body(request).retrieve()
-                .onStatus(HttpStatusCode::isError, (sent, response) -> {
-                    throw new BusinessException(mapStatus(response.getStatusCode().value()));
-                }).body(JevResult.class);
-            if (result == null || !request.requestId().equals(result.requestId())
-                || !"ON_HOLD".equals(result.submissionStatus())
-                || !"NOT_REGISTERED".equals(result.regulationsStatus())
-                || result.items() == null || result.items().isEmpty()
-                || result.model() == null
-                || result.promptVersion() == null || result.promptVersion().isBlank()
-                || result.promptVersion().length() > 100
-                || result.promptSha256() == null || !result.promptSha256().matches("[0-9a-f]{64}")
-                || result.chainVersion() == null || result.chainVersion().isBlank()
-                || result.chainVersion().length() > 100
-                || result.verification() == null
-                || !"STRUCTURAL".equals(result.verification().method())
-                || !"NOT_VERIFIED".equals(result.verification().factualConsistency())
-                || !("stub".equals(result.provider()) ? "OFFLINE_STUB" : "MODEL_SELF_ASSESSMENT")
-                    .equals(result.verification().confidenceBasis())
-                || !"REQUIRED".equals(result.verification().humanReview())
-                || !("gemini".equals(result.provider())
-                     || "openai".equals(result.provider())
-                     || (properties.allowStub() && "stub".equals(result.provider())))) {
-                throw new IllegalStateException();
-            }
-            return result;
+                .contentType(MediaType.APPLICATION_JSON).accept(MediaType.APPLICATION_JSON)
+                .body(request).exchange((sent, response) -> {
+                    // Close the stream ourselves before Spring's response.close() can drain it.
+                    try (var body = response.getBody()) {
+                        int status = response.getStatusCode().value();
+                        if (status != 200) throw new BusinessException(mapStatus(status));
+                        var headers = response.getHeaders();
+                        var type = headers.getContentType();
+                        if (headers.getOrEmpty("Content-Type").size() != 1
+                            || headers.getOrEmpty("Content-Encoding").size() > 1
+                            || type == null || !"application".equals(type.getType()) || !"json".equals(type.getSubtype())
+                            || (type.getCharset() != null && !java.nio.charset.StandardCharsets.UTF_8.equals(type.getCharset()))
+                            || (headers.getFirst("Content-Encoding") != null
+                                && !"identity".equalsIgnoreCase(headers.getFirst("Content-Encoding")))
+                            || headers.getContentLength() > MAX_RESPONSE_BYTES) {
+                            throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE);
+                        }
+                        byte[] bytes = body.readNBytes(MAX_RESPONSE_BYTES + 1);
+                        if (bytes.length > MAX_RESPONSE_BYTES) throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE);
+                        try {
+                            return decoder.decode(bytes, request, properties.allowStub());
+                        } catch (java.io.IOException | IllegalArgumentException e) {
+                            throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE);
+                        }
+                    }
+                });
         } catch (BusinessException e) {
             throw e;
         } catch (ResourceAccessException e) {
-            throw new BusinessException(isTimeout(e) ? ErrorCode.AI_TIMEOUT : ErrorCode.AI_SERVICE_UNAVAILABLE);
-        } catch (RestClientException | IllegalStateException e) {
+            // Spring closes a timed-out streaming body with an ordinary IOException.
+            boolean deadlineReached = System.nanoTime() - started >= Duration.ofSeconds(properties.timeoutSeconds()).toNanos();
+            throw new BusinessException(isTimeout(e) || deadlineReached ? ErrorCode.AI_TIMEOUT : ErrorCode.AI_SERVICE_UNAVAILABLE);
+        } catch (RestClientException | IllegalStateException | IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.AI_INVALID_RESPONSE);
         }
     }

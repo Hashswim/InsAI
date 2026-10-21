@@ -153,7 +153,8 @@ class FastApiJevClientTest {
                 {"request_id":"%s","submission_status":"ON_HOLD","regulations_status":"NOT_REGISTERED",
                 "items":[{"item":"offline","judgment":"UNVERIFIABLE","evidence":[],"confidence":0,
                 "verification_reason":"stub","supplement":"configure Gemini"}],
-                "provider":"stub","model":"stub-v1","trace_status":"DISABLED",
+                "provider":"stub","model":"stub-v1","trace_status":"DISABLED","trace_id":null,
+                "reason":"offline","input_tokens":0,"output_tokens":0,
                 "prompt_version":"jev-v1","prompt_sha256":"%s","chain_version":"jev-chain-v1",
                 "verification":{"method":"STRUCTURAL","factual_consistency":"NOT_VERIFIED",
                 "confidence_basis":"OFFLINE_STUB","human_review":"REQUIRED"}}

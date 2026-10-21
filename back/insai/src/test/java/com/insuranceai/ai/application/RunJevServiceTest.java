@@ -32,11 +32,14 @@ class RunJevServiceTest {
         verifyNoInteractions(gateway, repository);
     }
 
-    @Test void failureDoesNotSaveResult() {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(value = ErrorCode.class,
+        names = {"INTERNAL_ERROR", "AI_INVALID_RESPONSE", "AI_TIMEOUT", "AI_SERVICE_UNAVAILABLE", "AI_RATE_LIMITED"})
+    void failureDoesNotSaveResult(ErrorCode code) {
         var refs=Arrays.stream(RunJevCommand.Kind.values())
             .map(kind -> new RunJevCommand.FileRef(UUID.randomUUID(),kind)).toList();
         when(files.read(any(),any(),any())).thenReturn("%PDF-fake".getBytes());
-        when(gateway.analyze(any())).thenThrow(new BusinessException(ErrorCode.INTERNAL_ERROR));
+        when(gateway.analyze(any())).thenThrow(new BusinessException(code));
         assertThrows(BusinessException.class, () -> service.run(UUID.randomUUID(),
             new RunJevCommand(UUID.randomUUID(),refs)));
         verifyNoInteractions(repository);

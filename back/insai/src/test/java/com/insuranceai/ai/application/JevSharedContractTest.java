@@ -16,7 +16,7 @@ class JevSharedContractTest {
         assertEquals("ON_HOLD", result.submissionStatus());
         assertEquals("RECORDED", result.traceStatus());
         assertEquals("jev-v2",result.promptVersion());
-        assertEquals("jev-chain-v6",result.chainVersion());
+        assertEquals("jev-chain-v7",result.chainVersion());
         assertEquals("STRUCTURAL",result.verification().method());
         assertEquals("NOT_VERIFIED",result.verification().factualConsistency());
         assertEquals("MODEL_SELF_ASSESSMENT",result.verification().confidenceBasis());

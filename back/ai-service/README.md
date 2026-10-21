@@ -29,6 +29,9 @@ Gemini를 선택하면 필수 설정이 없을 때 시작 시 실패한다.
 근거 연결·페이지 참조·중복 검사는 [E 체인 안내](../../docs/ai/evidence-chain.md)를 따른다.
 최종 구조 검증과 검증 한계 메타데이터는 [V 체인 안내](../../docs/ai/verification-chain.md)를 따른다.
 단계 순서·실패 중단·재시도 경계는 [오케스트레이터 안내](../../docs/ai/jev-orchestrator.md)를 따른다.
+JSON/HTTP·PDF 수용 조건과 로그 보호의 범위·한계는 [입력 방어 안내](../../docs/ai/input-defense.md)를 따른다.
+Spring의 저장 전 응답 검증·전송 상한·타임아웃은 [내부 클라이언트 안내](../../docs/ai/internal-client.md)를 따른다.
+Spring의 선택적 비동기 접수·상태 조회·DB 작업자는 [작업 큐 안내](../../docs/ai/async-jobs.md)를 따른다.
 
 ## 구성
 

@@ -25,6 +25,8 @@ insai:
     service-token: ${JEV_SERVICE_TOKEN:}
     timeout-seconds: ${JEV_TIMEOUT_SECONDS:120}
     allow-stub: ${JEV_ALLOW_STUB:false}
+    jobs:
+      worker-enabled: ${JEV_JOB_WORKER_ENABLED:false}
   ai:
     enabled: ${INSAI_AI_ENABLED:false}
     api-key: ${INSAI_AI_API_KEY:}
