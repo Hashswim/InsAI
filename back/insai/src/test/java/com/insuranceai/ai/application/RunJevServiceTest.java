@@ -16,7 +16,8 @@ class RunJevServiceTest {
     final JevGateway gateway = mock(JevGateway.class);
     final JevAnalysisRepository repository = mock(JevAnalysisRepository.class);
     final JevAccessAuditService audit = mock(JevAccessAuditService.class);
-    final RunJevService service = new RunJevService(access, files, gateway, repository, new ObjectMapper(), audit);
+    final RunJevService service = new RunJevService(access, files, gateway, repository, new ObjectMapper(), audit,
+        mock(JevResultStore.class),mock(JevExecutionAuditService.class));
 
     @Test void forbiddenCaseNeverCallsModel() {
         UUID user = UUID.randomUUID(), caseId=UUID.randomUUID();
@@ -51,7 +52,7 @@ class RunJevServiceTest {
         when(files.read(any(),any(),any())).thenReturn("%PDF-synthetic".getBytes());
         doThrow(new IllegalStateException("audit unavailable")).when(audit)
             .record(any(),any(),any(),isNull(),any(),eq(com.insuranceai.ai.domain.JevAccessAudit.Outcome.ALLOWED),any());
-        assertThrows(IllegalStateException.class,() -> service.run(UUID.randomUUID(),
+        assertThrows(BusinessException.class,() -> service.run(UUID.randomUUID(),
             new RunJevCommand(UUID.randomUUID(),refs)));
         verifyNoInteractions(gateway,repository);
     }

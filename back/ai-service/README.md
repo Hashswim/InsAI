@@ -32,6 +32,8 @@ Gemini를 선택하면 필수 설정이 없을 때 시작 시 실패한다.
 JSON/HTTP·PDF 수용 조건과 로그 보호의 범위·한계는 [입력 방어 안내](../../docs/ai/input-defense.md)를 따른다.
 Spring의 저장 전 응답 검증·전송 상한·타임아웃은 [내부 클라이언트 안내](../../docs/ai/internal-client.md)를 따른다.
 Spring의 선택적 비동기 접수·상태 조회·DB 작업자는 [작업 큐 안내](../../docs/ai/async-jobs.md)를 따른다.
+Spring의 결과 출처·실행 이력·원자적 감사 저장은 [결과·감사 안내](../../docs/ai/result-audit.md)를 따른다.
+추적 메타데이터 검사·케이스 통계 API·LangSmith 설정 한계는 [운영 관측 안내](../../docs/ai/observability-dashboard.md)를 따른다.
 
 ## 구성
 
@@ -50,6 +52,7 @@ Spring의 선택적 비동기 접수·상태 조회·DB 작업자는 [작업 큐
 ## 개발 검사
 
 `make check`는 Ruff lint, mypy 타입 검사, pytest, 포맷 검사를 수행한다.
+`make evaluate`는 원격 호출 없이 내장 합성 JEV 구조 사례 5건을 평가하고 요약 JSON만 출력한다.
 `make format`은 포맷을 적용하고 `make build`는 wheel/sdist를 만든다.
 `make smoke`는 설치된 프롬프트와 실제 HTTP 서버의 live·ready·version·OpenAPI를 확인한다.
 이 검사는 별도 임시 작업 디렉터리에서 서버를 시작해 소스 폴더 의존을 확인한다.

@@ -40,6 +40,9 @@ class JevJobIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired AccessTokenIssuer tokens;
     @Autowired PlatformTransactionManager transactions;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean JevExecutionEventRepository events;
+    @Autowired JevAccessAuditRepository audits;
     @MockitoBean ReadClaimPdfService files;
     @MockitoBean JevGateway gateway;
     Account user, outsider;
@@ -191,6 +194,151 @@ class JevJobIntegrationTest {
         }));
         assertEquals(before,analyses.count());
         assertEquals(JevJob.Status.RUNNING,jobs.findById(queued.jobId()).orElseThrow().getStatus());
+        assertEquals(2,events.findTop100ByJobIdOrderByCreatedAtAscIdAsc(queued.jobId()).size());
+    }
+
+    @Test void resultMetadataAndAuthorizedHistoryLinkTheWholeJob() throws Exception {
+        var queued=submit(UUID.randomUUID()); worker.tick();
+        var view=service.get(user.getId(),queued.jobId());
+        var analysis=analyses.findById(view.analysisId()).orElseThrow();
+        assertEquals(queued.requestId(),analysis.getRequestId()); assertEquals(queued.jobId(),analysis.getJobId());
+        assertEquals("gemini",analysis.getProvider()); assertEquals("synthetic-model",analysis.getModel());
+        assertEquals("jev-v2",analysis.getPromptVersion()); assertEquals("a".repeat(64),analysis.getPromptSha256());
+        assertEquals("jev-chain-v7",analysis.getChainVersion()); assertNull(analysis.getTraceId());
+        assertEquals("DISABLED",analysis.getTraceStatus());
+        var rows=events.findTop100ByJobIdOrderByCreatedAtAscIdAsc(queued.jobId());
+        assertEquals(4,rows.size());
+        assertEquals(Set.of(JevExecutionEvent.Type.ENQUEUED,JevExecutionEvent.Type.STARTED,
+            JevExecutionEvent.Type.RESULT_STORED,JevExecutionEvent.Type.SUCCEEDED),
+            rows.stream().map(JevExecutionEvent::getType).collect(java.util.stream.Collectors.toSet()));
+        for (String path : List.of("/ai/jev/jobs/"+queued.jobId()+"/history","/ai/jev/"+view.analysisId()+"/history")) {
+            var response=mvc.perform(get(path).header("Authorization",bearer(user)))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
+                .andExpect(jsonPath("$.data.length()").value(4)).andReturn().getResponse().getContentAsString();
+            assertFalse(response.contains("synthetic-model")); assertFalse(response.contains("confidence"));
+            assertFalse(response.contains("verification_reason")); assertFalse(response.contains("resultJson"));
+            mvc.perform(get(path)).andExpect(status().isUnauthorized());
+            UUID denied=UUID.randomUUID();
+            mvc.perform(get(path).header("Authorization",bearer(outsider)).header("X-Request-ID",denied))
+                .andExpect(status().isForbidden());
+            assertEquals(queued.jobId(),audits.findByRequestId(denied).getFirst().getJobId());
+        }
+    }
+
+    @Test void failedAndUnknownEventsAreNotRepeatedOrMixedWithAccessAudit() {
+        var queued=submit(UUID.randomUUID());
+        doThrow(new BusinessException(ErrorCode.AI_TIMEOUT,"SENTINEL_PATIENT")).when(gateway).analyze(any());
+        worker.tick(); worker.tick();
+        var failed=events.findTop100ByJobIdOrderByCreatedAtAscIdAsc(queued.jobId());
+        assertEquals(3,failed.size());
+        assertEquals(1,failed.stream().filter(e -> e.getType()==JevExecutionEvent.Type.FAILED).count());
+        assertTrue(failed.stream().noneMatch(e -> e.getType()==JevExecutionEvent.Type.RESULT_STORED));
+        assertTrue(failed.stream().allMatch(e -> e.getErrorCode()==null || e.getErrorCode().equals("AI_TIMEOUT")));
+        var second=submit(UUID.randomUUID()); store.claim();
+        store.expire(Instant.now().plusSeconds(901)); store.expire(Instant.now().plusSeconds(902));
+        var unknown=events.findTop100ByJobIdOrderByCreatedAtAscIdAsc(second.jobId());
+        assertEquals(3,unknown.size());
+        assertEquals(1,unknown.stream().filter(e -> e.getType()==JevExecutionEvent.Type.UNKNOWN).count());
+    }
+
+    @Test void sharedRequestIdDoesNotMergeDifferentJobsHistories() throws Exception {
+        UUID shared=UUID.randomUUID();
+        var first=service.submit(user.getId(),UUID.randomUUID(),shared,command);
+        var second=service.submit(user.getId(),UUID.randomUUID(),shared,command);
+        worker.tick(); worker.tick();
+        var analysis=service.get(user.getId(),first.jobId()).analysisId();
+        var response=mvc.perform(get("/ai/jev/"+analysis+"/history").header("Authorization",bearer(user)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(4))
+            .andReturn().getResponse().getContentAsString();
+        assertTrue(response.contains(first.jobId().toString())); assertFalse(response.contains(second.jobId().toString()));
+    }
+
+    @Test void synchronousSaveAndEventCommitTogetherAndFailureIsCodeOnly() {
+        UUID requestId=UUID.randomUUID();
+        var view=runner.run(user.getId(),command,requestId);
+        var analysis=analyses.findById(view.analysisId()).orElseThrow();
+        assertEquals(requestId,analysis.getRequestId()); assertNull(analysis.getJobId());
+        assertEquals(1,events.findTop100ByAnalysisIdOrderByCreatedAtAscIdAsc(view.analysisId()).size());
+        long count=analyses.count(); UUID failedRequest=UUID.randomUUID();
+        doThrow(new BusinessException(ErrorCode.AI_INVALID_RESPONSE,"SENTINEL_PATIENT")).when(gateway).analyze(any());
+        assertThrows(BusinessException.class,() -> runner.run(user.getId(),command,failedRequest));
+        assertEquals(count,analyses.count());
+        var failed=events.findTop100ByRequestIdOrderByCreatedAtAscIdAsc(failedRequest);
+        assertEquals(1,failed.size()); assertEquals(JevExecutionEvent.Type.FAILED,failed.getFirst().getType());
+        assertEquals("AI_INVALID_RESPONSE",failed.getFirst().getErrorCode()); assertNull(failed.getFirst().getAnalysisId());
+    }
+
+    @Test void synchronousResultIsRolledBackWhenItsAuditCannotBeSaved() {
+        long before=analyses.count(); UUID requestId=UUID.randomUUID();
+        doThrow(new IllegalStateException("SENTINEL_AUDIT_FAILURE")).when(events)
+            .save(argThat(e -> e!=null && e.getType()==JevExecutionEvent.Type.RESULT_STORED));
+        var error=assertThrows(BusinessException.class,() -> runner.run(user.getId(),command,requestId));
+        assertEquals(ErrorCode.INTERNAL_ERROR,error.getErrorCode()); assertNull(error.getCause());
+        assertFalse(error.getMessage().contains("SENTINEL")); assertEquals(before,analyses.count());
+        var rows=events.findTop100ByRequestIdOrderByCreatedAtAscIdAsc(requestId);
+        assertEquals(1,rows.size()); assertEquals(JevExecutionEvent.Type.FAILED,rows.getFirst().getType());
+    }
+
+    @Test void asynchronousResultIsRolledBackWhenItsAuditCannotBeSaved() {
+        var queued=submit(UUID.randomUUID()); long before=analyses.count();
+        doThrow(new IllegalStateException("SENTINEL_AUDIT_FAILURE")).when(events)
+            .save(argThat(e -> e!=null && e.getType()==JevExecutionEvent.Type.RESULT_STORED));
+        worker.tick();
+        assertEquals(before,analyses.count());
+        assertEquals(JevJob.Status.FAILED,jobs.findById(queued.jobId()).orElseThrow().getStatus());
+        var rows=events.findTop100ByJobIdOrderByCreatedAtAscIdAsc(queued.jobId());
+        assertEquals(3,rows.size()); assertTrue(rows.stream().noneMatch(e -> e.getType()==JevExecutionEvent.Type.RESULT_STORED));
+    }
+
+    @Test void historicalRowsDoNotAcquireInventedMetadataOrEvents() throws Exception {
+        var legacy=analyses.save(JevAnalysis.create(claim.getId(),user.getId(),"{\"prompt_version\":\"jev-v1\"}"));
+        assertNull(legacy.getRequestId()); assertNull(legacy.getPromptVersion()); assertNull(legacy.getChainVersion());
+        mvc.perform(get("/ai/jev/"+legacy.getId()+"/history").header("Authorization",bearer(user)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    @Test void metricsAreCaseScopedAggregateOnlyAndTraceDisabledIsNotFailure() throws Exception {
+        submit(UUID.randomUUID()); worker.tick();
+        analyses.save(JevAnalysis.create(claim.getId(),user.getId(),"SENTINEL_LEGACY_RESULT"));
+        var another=cases.save(Case.open(user.getId(),"other synthetic claim"));
+        analyses.save(JevAnalysis.create(another.getId(),user.getId(),"SENTINEL_OTHER_CASE"));
+        var response=mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/metrics").header("Authorization",bearer(user)))
+            .andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
+            .andExpect(jsonPath("$.data.storedAnalyses").value(2))
+            .andExpect(jsonPath("$.data.tokenMetadataRows").value(1))
+            .andExpect(jsonPath("$.data.inputTokens").value(0))
+            .andExpect(jsonPath("$.data.traceStatuses.DISABLED").value(1))
+            .andExpect(jsonPath("$.data.traceStatuses.UNKNOWN").value(1))
+            .andExpect(jsonPath("$.data.traceStatuses.FAILED").value(0))
+            .andExpect(jsonPath("$.data.jobStatuses.SUCCEEDED").value(1))
+            .andReturn().getResponse().getContentAsString();
+        assertFalse(response.contains("SENTINEL")); assertFalse(response.contains("analysisId"));
+        assertFalse(response.contains(claim.getId().toString())); assertFalse(response.contains(user.getId().toString()));
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/metrics").header("Authorization",bearer(outsider)))
+            .andExpect(status().isForbidden());
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/metrics")).andExpect(status().isUnauthorized());
+        for (int days : List.of(0,32)) mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/metrics?days="+days)
+            .header("Authorization",bearer(user))).andExpect(status().isBadRequest());
+    }
+
+    @Test void emptyCaseMetricsAreZeroRatherThanFabricatedUsage() throws Exception {
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/metrics?days=1").header("Authorization",bearer(user)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.storedAnalyses").value(0))
+            .andExpect(jsonPath("$.data.tokenMetadataRows").value(0))
+            .andExpect(jsonPath("$.data.inputTokens").value(0))
+            .andExpect(jsonPath("$.data.outputTokens").value(0));
+    }
+
+    @Test void metricsWindowExcludesOlderResultsAndSumsReportedTokens() throws Exception {
+        var base=result(UUID.randomUUID());
+        var first=analyses.save(JevAnalysis.captured(claim.getId(),user.getId(),new JevAnalysis.Provenance(
+            base.requestId(),null,"gemini","synthetic","jev-v2","a".repeat(64),"jev-chain-v7",null,"DISABLED",10,20),"{}"));
+        jdbc.update("update jev_analyses set created_at=? where id=?",java.sql.Timestamp.from(Instant.now().minusSeconds(172800)),first.getId());
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/metrics?days=1").header("Authorization",bearer(user)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.storedAnalyses").value(0));
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/metrics?days=7").header("Authorization",bearer(user)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.inputTokens").value(10))
+            .andExpect(jsonPath("$.data.outputTokens").value(20));
     }
 
     @Test void concurrentClaimsHaveOnlyOneWinner() throws Exception {

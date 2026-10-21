@@ -53,7 +53,7 @@ public class JevJobService {
         var existing=jobs.findByRequestedByAndIdempotencyKey(user,key);
         if (existing.isPresent()) {
             var view=same(existing.get(),json);
-            audit.record(requestId,user,command.caseId(),null,JevAccessAudit.Action.ANALYZE,
+            audit.recordJob(requestId,user,command.caseId(),existing.get().getAnalysisId(),existing.get().getId(),JevAccessAudit.Action.ANALYZE,
                 JevAccessAudit.Outcome.ALLOWED,"JOB_REUSED");
             return view;
         }
@@ -77,11 +77,11 @@ public class JevJobService {
             job=jobs.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
             access.requireParticipant(job.getCaseId(),user);
         } catch (BusinessException e) {
-            audit.record(requestId,user,job==null?null:job.getCaseId(),null,JevAccessAudit.Action.READ,
+            audit.recordJob(requestId,user,job==null?null:job.getCaseId(),null,id,JevAccessAudit.Action.READ,
                 JevAccessAudit.Outcome.DENIED,e.getErrorCode().name());
             throw e;
         }
-        audit.record(requestId,user,job.getCaseId(),job.getAnalysisId(),JevAccessAudit.Action.READ,
+        audit.recordJob(requestId,user,job.getCaseId(),job.getAnalysisId(),job.getId(),JevAccessAudit.Action.READ,
             JevAccessAudit.Outcome.ALLOWED,"JOB_READ_AUTHORIZED");
         return view(job);
     }

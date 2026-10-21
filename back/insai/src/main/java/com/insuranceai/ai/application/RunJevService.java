@@ -17,22 +17,30 @@ public class RunJevService {
     private final JevAnalysisRepository analyses;
     private final ObjectMapper mapper;
     private final JevAccessAuditService audit;
+    private final JevResultStore resultStore;
+    private final JevExecutionAuditService executionAudit;
 
     public RunJevService(CaseAccessService access, ReadClaimPdfService files, JevGateway gateway,
-                         JevAnalysisRepository analyses, ObjectMapper mapper, JevAccessAuditService audit) {
+                         JevAnalysisRepository analyses, ObjectMapper mapper, JevAccessAuditService audit,
+                         JevResultStore resultStore, JevExecutionAuditService executionAudit) {
         this.access=access; this.files=files; this.gateway=gateway; this.analyses=analyses; this.mapper=mapper;
         this.audit=audit;
+        this.resultStore=resultStore; this.executionAudit=executionAudit;
     }
     public record AnalysisView(UUID analysisId, JevResult result) {}
     public AnalysisView run(UUID userId, RunJevCommand command) {
         return run(userId, command, UUID.randomUUID());
     }
     public AnalysisView run(UUID userId, RunJevCommand command, UUID requestId) {
-        var result = analyze(userId, command, requestId);
         try {
-            var saved = analyses.save(JevAnalysis.create(command.caseId(), userId, mapper.writeValueAsString(result)));
+            var result = analyze(userId, command, requestId);
+            var saved = resultStore.save(command.caseId(),userId,requestId,null,result);
             return new AnalysisView(saved.getId(), result);
-        } catch (JsonProcessingException e) {
+        } catch (BusinessException e) {
+            executionAudit.synchronousFailure(requestId,userId,command.caseId(),e.getErrorCode());
+            throw e;
+        } catch (RuntimeException e) {
+            executionAudit.synchronousFailure(requestId,userId,command.caseId(),ErrorCode.INTERNAL_ERROR);
             throw new BusinessException(ErrorCode.INTERNAL_ERROR);
         }
     }
@@ -70,11 +78,12 @@ public class RunJevService {
             analysis = analyses.findById(analysisId).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
             access.requireParticipant(analysis.getCaseId(), userId);
         } catch (BusinessException e) {
-            audit.record(requestId, userId, analysis == null ? null : analysis.getCaseId(), analysisId,
+            audit.recordJob(requestId, userId, analysis == null ? null : analysis.getCaseId(), analysisId,
+                analysis == null ? null : analysis.getJobId(),
                 JevAccessAudit.Action.READ, JevAccessAudit.Outcome.DENIED, e.getErrorCode().name());
             throw e;
         }
-        audit.record(requestId, userId, analysis.getCaseId(), analysisId,
+        audit.recordJob(requestId, userId, analysis.getCaseId(), analysisId, analysis.getJobId(),
             JevAccessAudit.Action.READ, JevAccessAudit.Outcome.ALLOWED, "AUTHORIZED");
         try {
             return new AnalysisView(analysisId, mapper.readValue(analysis.getResultJson(), JevResult.class));

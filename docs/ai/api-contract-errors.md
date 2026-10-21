@@ -31,6 +31,10 @@ Python 스키마 검증과 Java DTO 역직렬화·재직렬화가 동일 파일�
 26번에서 [비동기 작업 API](async-jobs.md)를 추가했다. POST /ai/jev/jobs는 사용자별 UUID
 Idempotency-Key로 중복 접수를 막고 202와 jobId를 반환하며 GET /ai/jev/jobs/{jobId}로 상태를 조회한다.
 동기 POST /ai/jev는 기존 동작을 유지한다.
+27번의 [결과/작업 이력 API](result-audit.md)는 케이스 권한을 확인하고
+사건 타입·연결 ID·고정 오류 코드·시각만 반환한다. 분석 원문을 감사 응답에 포함하지 않는다.
+28번 GET /ai/jev/cases/{caseId}/metrics?days=7은 케이스 참여자에게 1~31일 범위의
+저장 결과·토큰 메타데이터·trace/작업 상태 집계만 반환한다. [집계 의미와 한계](observability-dashboard.md)를 따른다.
 request_id는 인증 정보나 중복 실행 방지 키가 아니다. 같은 ID로 재요청해도 재실행될 수 있다.
 
 ## 요청 ID 전달 규칙

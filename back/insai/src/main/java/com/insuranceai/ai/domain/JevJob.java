@@ -35,6 +35,10 @@ public class JevJob extends BaseEntity {
         if (status != Status.RUNNING) throw new IllegalStateException("Job is not running");
         status=Status.FAILED; errorCode=code; finishedAt=now;
     }
+    public void uncertain(Instant now) {
+        if (status != Status.RUNNING) throw new IllegalStateException("Job is not running");
+        status=Status.UNKNOWN; errorCode="EXECUTION_UNCERTAIN"; finishedAt=now;
+    }
     public UUID getCaseId() { return caseId; }
     public UUID getRequestedBy() { return requestedBy; }
     public UUID getRequestId() { return requestId; }

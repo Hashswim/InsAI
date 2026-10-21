@@ -36,6 +36,8 @@ Content-Type: application/json
 
 응답은 기존 success/data/error 봉투 안의 analysisId, result.
 GET /ai/jev/{analysisId} + 동일한 사용자 Bearer JWT로 저장 결과를 조회한다.
+27번부터 GET /ai/jev/{analysisId}/history 및 GET /ai/jev/jobs/{jobId}/history로
+원문 없는 실행 이력을 조회한다. [저장·감사 정책](result-audit.md)을 따른다.
 X-User-Id는 JEV의 사용자 식별에 사용하지 않는다.
 
 FastAPI POST /internal/jev 는 Bearer 서비스 토큰으로 보호한다.

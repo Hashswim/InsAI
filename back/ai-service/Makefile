@@ -1,6 +1,6 @@
 PYTHON ?= .venv/bin/python
 
-.PHONY: install run lint format typecheck test check build smoke
+.PHONY: install run lint format typecheck test check build smoke evaluate
 
 install:
 	$(PYTHON) -m pip install -e '.[test,dev]'
@@ -28,3 +28,6 @@ build:
 
 smoke:
 	$(PYTHON) scripts/smoke.py
+
+evaluate:
+	$(PYTHON) -m scripts.evaluate

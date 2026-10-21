@@ -33,7 +33,7 @@ jobs:
           cache: pip
           cache-dependency-path: back/ai-service/pyproject.toml
       - run: python -m pip install -e '.[test,dev]'
-      - run: make check smoke PYTHON=python
+      - run: make check smoke evaluate PYTHON=python
       - run: make build PYTHON=python
       - name: Build runtime image and check installed package
         if: matrix.python == '3.11'

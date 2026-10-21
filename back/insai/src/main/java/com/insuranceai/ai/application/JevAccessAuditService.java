@@ -17,4 +17,9 @@ public class JevAccessAuditService {
                        JevAccessAudit.Action action, JevAccessAudit.Outcome outcome, String reasonCode) {
         audits.save(JevAccessAudit.create(requestId, actorId, caseId, analysisId, action, outcome, reasonCode));
     }
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordJob(UUID requestId, UUID actorId, UUID caseId, UUID analysisId, UUID jobId,
+                          JevAccessAudit.Action action, JevAccessAudit.Outcome outcome, String reasonCode) {
+        audits.save(JevAccessAudit.forJob(requestId,actorId,caseId,analysisId,jobId,action,outcome,reasonCode));
+    }
 }
