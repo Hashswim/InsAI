@@ -28,6 +28,7 @@ Gemini를 선택하면 필수 설정이 없을 때 시작 시 실패한다.
 항목별 잠정 판정과 단일 모델 호출은 [J 체인 안내](../../docs/ai/judgment-chain.md)를 따른다.
 근거 연결·페이지 참조·중복 검사는 [E 체인 안내](../../docs/ai/evidence-chain.md)를 따른다.
 최종 구조 검증과 검증 한계 메타데이터는 [V 체인 안내](../../docs/ai/verification-chain.md)를 따른다.
+단계 순서·실패 중단·재시도 경계는 [오케스트레이터 안내](../../docs/ai/jev-orchestrator.md)를 따른다.
 
 ## 구성
 

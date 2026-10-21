@@ -7,6 +7,7 @@ from time import monotonic, sleep
 from httpx import TimeoutException
 
 from app.chains.jev_workflow import run_workflow
+from app.chains.orchestrator import WorkflowProgress, WorkflowReport
 from app.chains.verification import VerifiedResult
 from app.core.config import Settings
 from app.core.errors import (
@@ -33,6 +34,7 @@ class ExecutionStats:
     circuit_skips: int = 0
     cost_estimate_usd: str | None = None
     cost_accounting: str = "DISABLED"
+    orchestration: WorkflowReport | None = None
 
     def metadata(self) -> dict[str, int | str]:
         result: dict[str, int | str] = {
@@ -45,6 +47,8 @@ class ExecutionStats:
             result.update(
                 cost_estimate_usd=self.cost_estimate_usd, cost_accounting=self.cost_accounting
             )
+        if self.orchestration is not None:
+            result.update(self.orchestration.metadata())
         return result
 
 
@@ -126,6 +130,7 @@ class ResilientExecutor:
         observed_route = route
         pending_delay = 0.0
         account = CostAccount()
+        latest_report: WorkflowReport | None = None
 
         def stats() -> ExecutionStats:
             return ExecutionStats(
@@ -141,6 +146,7 @@ class ResilientExecutor:
                     if account.uncertain
                     else "USAGE_ESTIMATE"
                 ),
+                latest_report,
             )
 
         def fail(error: ProviderFailure) -> ExecutionFailure:
@@ -195,9 +201,11 @@ class ResilientExecutor:
                 attempts += 1
                 retries += int(model_attempt > 0)
                 fallbacks += int(route_index > 0 and model_attempt == 0)
+                progress = WorkflowProgress()
                 try:
-                    result = run_workflow(request, provider)
+                    result = run_workflow(request, provider, progress=progress)
                 except Exception as raw_error:
+                    latest_report = progress.report()
                     self.usage.finish(reservation)
                     error = safe_failure(raw_error)
                     self.breaker.complete(
@@ -210,10 +218,12 @@ class ResilientExecutor:
                     delay = min(2.0, self.config.jev_retry_base_delay_seconds * 2 ** (attempts - 1))
                     pending_delay = max(self.jitter(delay / 2, delay), error.retry_after or 0)
                 except BaseException:
+                    latest_report = progress.report()
                     self.usage.finish(reservation)
                     self.breaker.abandon(permit)
                     raise
                 else:
+                    latest_report = progress.report()
                     cost_breach = self.usage.finish(reservation, result)
                     self.breaker.complete(permit, failed=False)
                     if cost_breach:

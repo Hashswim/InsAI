@@ -58,7 +58,9 @@ stub의 confidence_basis만 OFFLINE_STUB이다. 모델이 이 필드를 출력�
 - 새 HTTP 성공 응답에는 verification이 필수이므로 Spring과 FastAPI를 함께 배포한다.
   프론트엔드 코드는 변경하지 않았다. 과거 저장 결과는 최신 검증 정책 통과 결과가 아니다.
 
-체인은 jev-chain-v5, 프롬프트는 변경 없는 jev-v2다. 실제 환경변수·키 설정은 건드리지 않았으며
+작업 22 당시 체인은 jev-chain-v5다. 현재 작업 23의 [오케스트레이터](jev-orchestrator.md)는
+jev-chain-v6으로 순서·실패 중단·시도별 상태를 조정한다. 프롬프트는 변경 없는 jev-v2다.
+실제 환경변수·키 설정은 건드리지 않았으며
 규정 파일은 비어 있다. submission_status=ON_HOLD / regulations_status=NOT_REGISTERED를 유지한다.
 
 ## 실패와 검증 근거

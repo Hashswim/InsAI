@@ -59,5 +59,7 @@ def test_v_rejects_a_stub_making_a_real_recommendation(monkeypatch, sample_reque
     assert "SECRET_PATIENT" not in response.text + caplog.text + str(trace.mock_calls)
     payload = trace.create_run.call_args.kwargs
     assert payload["error"] == "ANALYSIS_FAILED"
+    assert payload["extra"]["metadata"]["last_workflow_completed_stages"] == "PREPARE,J,E"
+    assert payload["extra"]["metadata"]["last_workflow_failed_stage"] == "V"
     assert not any(key.startswith("verification_") for key in payload["extra"]["metadata"])
     analyze.assert_called_once()

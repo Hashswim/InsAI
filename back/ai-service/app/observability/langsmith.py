@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from app.application.resilient_execution import ExecutionStats
+from app.chains.orchestrator import WorkflowReport
 from app.chains.release import ACTIVE_RELEASE
 from app.core.config import Settings
 from app.providers.routing_policy import RouteDecision
@@ -26,6 +27,7 @@ class SafeTrace:
         route: RouteDecision | None = None,
         execution: ExecutionStats | None = None,
         verification: VerificationSummary | None = None,
+        orchestration: WorkflowReport | None = None,
     ) -> tuple[UUID | None, str]:
         if not self.config.langsmith_enabled:
             return None, "DISABLED"
@@ -66,6 +68,7 @@ class SafeTrace:
                         **(route.metadata() if route else {}),
                         **(execution.metadata() if execution else {}),
                         **verification_metadata,
+                        **(orchestration.metadata() if orchestration else {}),
                     }
                 },
             )

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from httpx import TimeoutException
 
 from app.chains.jev_workflow import run_workflow
+from app.chains.orchestrator import WorkflowProgress
 from app.chains.release import ACTIVE_RELEASE
 from app.core.errors import (
     CircuitOpen,
@@ -34,21 +35,37 @@ class JevService:
 
     def run(self, request: JevRequest) -> JevResponse:
         started = datetime.now(timezone.utc)
+        progress = WorkflowProgress()
         try:
-            result = run_workflow(request, self.provider)
+            result = run_workflow(request, self.provider, progress=progress)
         except (TimeoutError, TimeoutException):
             self.trace.record(
-                started, self.provider.name, self.provider.model, False, route=self.route
+                started,
+                self.provider.name,
+                self.provider.model,
+                False,
+                route=self.route,
+                orchestration=progress.report(),
             )
             raise ProviderTimeout() from None
         except ValueError:
             self.trace.record(
-                started, self.provider.name, self.provider.model, False, route=self.route
+                started,
+                self.provider.name,
+                self.provider.model,
+                False,
+                route=self.route,
+                orchestration=progress.report(),
             )
             raise InvalidProviderResponse() from None
         except ProviderFailure as error:
             self.trace.record(
-                started, self.provider.name, self.provider.model, False, route=self.route
+                started,
+                self.provider.name,
+                self.provider.model,
+                False,
+                route=self.route,
+                orchestration=progress.report(),
             )
             # Preserve the portable error category, never adapter exception text.
             if isinstance(error, ProviderTimeout):
@@ -62,7 +79,12 @@ class JevService:
             raise ProviderFailure() from None
         except Exception:
             self.trace.record(
-                started, self.provider.name, self.provider.model, False, route=self.route
+                started,
+                self.provider.name,
+                self.provider.model,
+                False,
+                route=self.route,
+                orchestration=progress.report(),
             )
             raise ProviderFailure() from None
         trace_id, trace_status = self.trace.record(
@@ -74,6 +96,7 @@ class JevService:
             result.output_tokens,
             route=self.route,
             verification=result.verification,
+            orchestration=progress.report(),
         )
         try:
             return JevResponse.model_validate(

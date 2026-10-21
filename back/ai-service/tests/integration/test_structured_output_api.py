@@ -78,6 +78,16 @@ def test_parsing_failure_is_terminal_and_trace_never_contains_raw_output(
     assert payload["inputs"] == payload["outputs"] == {}
     assert payload["error"] == ("ANALYSIS_FAILED" if malformed else None)
     assert payload["extra"]["metadata"]["execution_attempts"] == 1
+    report = payload["extra"]["metadata"]
+    assert report["orchestrator_version"] == "jev-orchestrator-v1"
+    if failure == "none":
+        assert report["last_workflow_completed_stages"] == "PREPARE,J,E,V"
+        assert report["last_workflow_status"] == "COMPLETED"
+        assert report["last_workflow_failed_stage"] == "NONE"
+    else:
+        expected = "E" if failure in {"duplicate_evidence", "unknown_page"} else "J"
+        assert report["last_workflow_failed_stage"] == expected
+        assert report["last_workflow_status"] == "FAILED"
     if malformed:
         assert not any(key.startswith("verification_") for key in payload["extra"]["metadata"])
     else:

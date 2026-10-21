@@ -83,6 +83,8 @@ def test_fallback_response_trace_and_circuit_skip(
             assert metadata["routing_reason"] == "SAME_PROVIDER_FALLBACK"
             assert metadata["execution_attempts"] == expected_attempts
             assert metadata["execution_circuit_skips"] == expected_skips
+            assert metadata["last_workflow_completed_stages"] == "PREPARE,J,E,V"
+            assert metadata["last_workflow_failed_stage"] == "NONE"
     assert sdk.call_count == 2
     providers["first"].analyze.assert_called_once()
     assert client.create_run.call_count == 2
@@ -97,7 +99,8 @@ def test_open_circuit_is_safe_503_without_model_call(
     provider.model = "first"
     provider.analyze = Mock(side_effect=TransientProviderFailure())
     monkeypatch.setattr("app.providers.router.GeminiProvider", Mock(return_value=provider))
-    monkeypatch.setattr("langsmith.Client", Mock(return_value=Mock()))
+    trace = Mock()
+    monkeypatch.setattr("langsmith.Client", Mock(return_value=trace))
     with TestClient(app) as http:
         first = http.post(
             "/internal/jev",
@@ -114,6 +117,11 @@ def test_open_circuit_is_safe_503_without_model_call(
     assert second.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
     assert "synthetic" not in second.text
     provider.analyze.assert_called_once()
+    first_metadata = trace.create_run.call_args_list[0].kwargs["extra"]["metadata"]
+    second_metadata = trace.create_run.call_args_list[1].kwargs["extra"]["metadata"]
+    assert first_metadata["last_workflow_failed_stage"] == "J"
+    assert second_metadata["execution_attempts"] == 0
+    assert not any(key.startswith("last_workflow_") for key in second_metadata)
 
 
 def test_concurrent_results_keep_actual_model_request_local(

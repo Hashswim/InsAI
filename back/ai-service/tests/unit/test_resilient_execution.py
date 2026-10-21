@@ -86,6 +86,28 @@ def test_default_does_not_replay_or_fallback(harness, sample_request):
     assert clock.delays == []
 
 
+@pytest.mark.parametrize("stage", ["EvidenceChain", "VerificationChain"])
+def test_local_stage_failure_cannot_replay_a_paid_j_call(
+    monkeypatch, harness, sample_request, stage
+):
+    local = Mock()
+    local.run.side_effect = TransientProviderFailure(retry_after=0)
+    monkeypatch.setattr(f"app.chains.orchestrator.{stage}", Mock(return_value=local))
+    executor, providers, factory, _ = harness(
+        jev_max_attempts=3, jev_retry_attempts=3, jev_fallback_enabled=True
+    )
+    with pytest.raises(ExecutionFailure) as error:
+        executor.execute(sample_request)
+    assert isinstance(error.value.error, InvalidProviderResponse)
+    assert error.value.stats.attempts == 1
+    assert error.value.stats.orchestration.failed.value == (
+        "E" if stage == "EvidenceChain" else "V"
+    )
+    providers["first"].analyze.assert_called_once()
+    providers["second"].analyze.assert_not_called()
+    factory.assert_not_called()
+
+
 def test_bounded_retry_uses_backoff_and_same_request(harness, sample_request):
     result = FakeProvider().analyze(sample_request)
     executor, providers, _, clock = harness(
