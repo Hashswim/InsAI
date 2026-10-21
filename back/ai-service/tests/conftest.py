@@ -234,3 +234,12 @@ class FakeProvider:
             10,
             20,
         )
+
+
+def root_run(client):
+    """Latest trace root (jev-analysis); stage child runs are recorded after it."""
+    return next(
+        call.kwargs
+        for call in reversed(client.create_run.call_args_list)
+        if call.kwargs["name"] == "jev-analysis"
+    )

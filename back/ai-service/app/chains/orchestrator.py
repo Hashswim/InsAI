@@ -1,8 +1,10 @@
 """Single-attempt, fail-fast JEV coordination with payload-free progress."""
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
+from math import isfinite
+from time import monotonic
 from typing import TypeVar
 
 from app.chains.evidence import EvidenceChain
@@ -28,6 +30,8 @@ STAGES = tuple(WorkflowStage)
 class WorkflowReport:
     completed: tuple[WorkflowStage, ...]
     failed: WorkflowStage | None
+    # Seconds spent in each finished stage, in order; timing only, never content.
+    durations: tuple[float, ...] = field(default=(), compare=False)
 
     def __post_init__(self) -> None:
         if (
@@ -45,6 +49,12 @@ class WorkflowReport:
             )
         ):
             raise ValueError("Invalid JEV workflow report")
+        if self.durations and (
+            type(self.durations) is not tuple
+            or len(self.durations) != len(self.completed) + (self.failed is not None)
+            or any(type(d) is not float or not isfinite(d) or d < 0 for d in self.durations)
+        ):
+            raise ValueError("Invalid JEV workflow timing")
 
     def metadata(self) -> dict[str, str]:
         return {
@@ -68,9 +78,11 @@ class WorkflowProgress:
         self._completed: tuple[WorkflowStage, ...] = ()
         self._active: WorkflowStage | None = None
         self._failed: WorkflowStage | None = None
+        self._started = 0.0
+        self._durations: tuple[float, ...] = ()
 
     def report(self) -> WorkflowReport:
-        return WorkflowReport(self._completed, self._failed)
+        return WorkflowReport(self._completed, self._failed, self._durations)
 
     def begin(self, stage: WorkflowStage) -> None:
         if (
@@ -82,16 +94,19 @@ class WorkflowProgress:
         ):
             raise ValueError("Invalid JEV stage transition")
         self._active = stage
+        self._started = monotonic()
 
     def complete(self, stage: WorkflowStage) -> None:
         if type(stage) is not WorkflowStage or self._active != stage:
             raise ValueError("Invalid JEV stage transition")
         self._completed += (stage,)
+        self._durations += (max(0.0, monotonic() - self._started),)
         self._active = None
 
     def fail(self, stage: WorkflowStage) -> None:
         if type(stage) is not WorkflowStage or self._active != stage:
             raise ValueError("Invalid JEV stage transition")
+        self._durations += (max(0.0, monotonic() - self._started),)
         self._failed, self._active = stage, None
 
     def is_fresh(self) -> bool:

@@ -30,6 +30,9 @@ CONSTANTS = {
     "last_workflow_completed_stages": {"", "PREPARE", "PREPARE,J", "PREPARE,J,E", "PREPARE,J,E,V"},
     "last_workflow_failed_stage": {"NONE", "PREPARE", "J", "E", "V"},
     "last_workflow_status": {"FAILED", "COMPLETED", "INCOMPLETE"},
+    # Child-run metadata (trace tree): fixed step names and LangSmith's model fields.
+    "stage": {"PRECHECK", "PREPARE", "J", "E", "V"},
+    "ls_provider": {"openai", "google_genai"},
 }
 COUNTS = {
     "input_tokens",
@@ -64,7 +67,7 @@ def checked_metadata(values: dict[str, object]) -> dict[str, object]:
             valid = type(value) is str and value in CONSTANTS[key]
         elif key in COUNTS:
             valid = type(value) is int and 0 <= value <= 2**63 - 1
-        elif key == "model":
+        elif key in {"model", "ls_model_name"}:
             valid = (
                 type(value) is str
                 and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}", value) is not None

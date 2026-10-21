@@ -3,7 +3,7 @@ from threading import Barrier
 from unittest.mock import Mock
 
 import pytest
-from conftest import FakeProvider
+from conftest import FakeProvider, root_run
 from fastapi.testclient import TestClient
 
 from app.application.resilient_execution import ResilientExecutor
@@ -76,7 +76,7 @@ def test_fallback_response_trace_and_circuit_skip(
             assert body["model"] == "second" and body["provider"] == provider_name
             assert body["submission_status"] == "ON_HOLD"
             assert body["trace_status"] == "RECORDED"
-            metadata = client.create_run.call_args.kwargs["extra"]["metadata"]
+            metadata = root_run(client)["extra"]["metadata"]
             for key, value in ACTIVE_RELEASE.metadata().items():
                 assert response.json()[key] == metadata[key] == value
             assert metadata["model"] == "second"
@@ -87,7 +87,7 @@ def test_fallback_response_trace_and_circuit_skip(
             assert metadata["last_workflow_failed_stage"] == "NONE"
     assert sdk.call_count == 2
     providers["first"].analyze.assert_called_once()
-    assert client.create_run.call_count == 2
+    assert sum(c.kwargs["name"] == "jev-analysis" for c in client.create_run.call_args_list) == 2
     assert sample_request.documents[0].content_base64 not in str(client.mock_calls)
 
 
@@ -117,8 +117,10 @@ def test_open_circuit_is_safe_503_without_model_call(
     assert second.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
     assert "synthetic" not in second.text
     provider.analyze.assert_called_once()
-    first_metadata = trace.create_run.call_args_list[0].kwargs["extra"]["metadata"]
-    second_metadata = trace.create_run.call_args_list[1].kwargs["extra"]["metadata"]
+    roots = [
+        c.kwargs for c in trace.create_run.call_args_list if c.kwargs["name"] == "jev-analysis"
+    ]
+    first_metadata, second_metadata = (root["extra"]["metadata"] for root in roots)
     assert first_metadata["last_workflow_failed_stage"] == "J"
     assert second_metadata["execution_attempts"] == 0
     assert not any(key.startswith("last_workflow_") for key in second_metadata)

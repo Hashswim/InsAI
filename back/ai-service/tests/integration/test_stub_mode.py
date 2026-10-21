@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from conftest import FakeProvider
+from conftest import FakeProvider, root_run
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -57,7 +57,7 @@ def test_v_rejects_a_stub_making_a_real_recommendation(monkeypatch, sample_reque
     assert response.status_code == 502
     assert response.json()["error"]["code"] == "INVALID_AI_RESPONSE"
     assert "SECRET_PATIENT" not in response.text + caplog.text + str(trace.mock_calls)
-    payload = trace.create_run.call_args.kwargs
+    payload = root_run(trace)
     assert payload["error"] == "ANALYSIS_FAILED"
     assert payload["extra"]["metadata"]["last_workflow_completed_stages"] == "PREPARE,J,E"
     assert payload["extra"]["metadata"]["last_workflow_failed_stage"] == "V"

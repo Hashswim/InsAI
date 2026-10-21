@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from unittest.mock import Mock
 
 import pytest
-from conftest import FakeProvider
+from conftest import FakeProvider, root_run
 from pydantic import ValidationError
 
 from app.application.jev_service import JevService
@@ -169,7 +169,7 @@ def test_trace_exports_only_route_constants_and_index(monkeypatch, catalog_entry
         ModelProfile.model_validate(catalog_entry(source="SECRET_SOURCE")), "priority", 2
     )
     SafeTrace(config).record(datetime.now(timezone.utc), "gemini", "test-model", False, route=route)
-    payload = client.create_run.call_args.kwargs
+    payload = root_run(client)
     metadata = payload["extra"]["metadata"]
     assert metadata["routing_reason"] == "FIRST_COMPATIBLE_PRIORITY"
     assert metadata["router_version"] == "jev-router-v1"

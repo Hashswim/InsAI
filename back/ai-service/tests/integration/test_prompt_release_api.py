@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+from conftest import root_run
 from fastapi.testclient import TestClient
 
 from app.chains.release import ACTIVE_RELEASE
@@ -21,7 +22,7 @@ def test_stub_result_and_safe_trace_share_release_identity(monkeypatch, sample_r
             headers={"Authorization": "Bearer synthetic-token", "X-Prompt-Version": "jev-v999"},
         )
     assert response.status_code == 200
-    payload = trace_client.create_run.call_args.kwargs
+    payload = root_run(trace_client)
     for key, value in ACTIVE_RELEASE.metadata().items():
         assert response.json()[key] == payload["extra"]["metadata"][key] == value
     assert payload["inputs"] == payload["outputs"] == {}

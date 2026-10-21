@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
-from conftest import FakeProvider
+from conftest import FakeProvider, root_run
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
 
@@ -74,7 +74,7 @@ def test_parsing_failure_is_terminal_and_trace_never_contains_raw_output(
         assert response.json()["items"][0]["item"] == "SECRET_PATIENT"
         assert response.json()["verification"]["factual_consistency"] == "NOT_VERIFIED"
         assert response.json()["verification"]["human_review"] == "REQUIRED"
-    payload = trace.create_run.call_args.kwargs
+    payload = root_run(trace)
     assert payload["inputs"] == payload["outputs"] == {}
     assert payload["error"] == ("ANALYSIS_FAILED" if malformed else None)
     assert payload["extra"]["metadata"]["execution_attempts"] == 1

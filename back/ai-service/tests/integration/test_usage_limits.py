@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import Mock
 
 import pytest
-from conftest import FakeProvider
+from conftest import FakeProvider, root_run
 from fastapi import Request
 from fastapi.testclient import TestClient
 
@@ -127,7 +127,7 @@ def test_budget_rejects_before_inference_and_never_falls_back(
         response = post(client, sample_request)
     assert response.status_code == 429
     assert "Retry-After" not in response.headers
-    metadata = trace.create_run.call_args.kwargs["extra"]["metadata"]
+    metadata = root_run(trace)["extra"]["metadata"]
     assert metadata["execution_attempts"] == 0
     provider.analyze.assert_not_called()
 
@@ -153,7 +153,7 @@ def test_known_usage_reconciles_and_exports_only_estimate(
     with TestClient(app) as client:
         response = post(client, sample_request)
     assert response.status_code == 200
-    metadata = trace.create_run.call_args.kwargs["extra"]["metadata"]
+    metadata = root_run(trace)["extra"]["metadata"]
     assert metadata["cost_estimate_usd"] == "0.000050000"
     assert metadata["cost_accounting"] == "USAGE_ESTIMATE"
     assert "synthetic not real pricing" not in str(trace.mock_calls)
@@ -182,7 +182,7 @@ def test_failed_retry_cannot_bypass_request_budget(
     with TestClient(app) as client:
         response = post(client, sample_request)
     assert response.status_code == 429
-    metadata = trace.create_run.call_args.kwargs["extra"]["metadata"]
+    metadata = root_run(trace)["extra"]["metadata"]
     assert metadata["execution_attempts"] == 1
     assert metadata["cost_estimate_usd"] == "0.052000000"
     assert metadata["cost_accounting"] == "RESERVED_BOUND"

@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from conftest import FakeProvider
+from conftest import FakeProvider, root_run
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -53,7 +53,7 @@ def test_priority_route_matches_readiness_response_and_trace(
     assert response.json()["model"] == "second"
     assert response.json()["submission_status"] == "ON_HOLD"
     assert response.json()["trace_status"] == "RECORDED"
-    metadata = trace_client.create_run.call_args.kwargs["extra"]["metadata"]
+    metadata = root_run(trace_client)["extra"]["metadata"]
     assert metadata["model"] == "second"
     assert metadata["routing_priority_index"] == 1
     assert "content_base64" not in str(trace_client.mock_calls)

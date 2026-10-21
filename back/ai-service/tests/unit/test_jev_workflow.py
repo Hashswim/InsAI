@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
-from conftest import FakeProvider
+from conftest import FakeProvider, root_run
 from httpx import ReadTimeout
 
 from app.application.jev_service import JevService
@@ -83,7 +83,7 @@ def test_trace_only_receives_allowlisted_metadata(monkeypatch):
     trace_id, status = SafeTrace(
         Settings(app_env="local", langsmith_enabled=True, langsmith_api_key="test-trace-key")
     ).record(datetime.now(timezone.utc), "gemini", "test-model", True, 10, 20)
-    payload = client.create_run.call_args.kwargs
+    payload = root_run(client)
     assert trace_id and status == "RECORDED"
     assert payload["inputs"] == payload["outputs"] == {}
     assert set(payload["extra"]["metadata"]) == {

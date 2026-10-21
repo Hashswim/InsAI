@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from unittest.mock import Mock
 
 import pytest
-from conftest import FakeProvider
+from conftest import FakeProvider, root_run
 from pydantic import ValidationError
 
 from app.chains.jev_workflow import run_workflow
@@ -144,7 +144,7 @@ def test_safe_trace_adds_only_verification_constants_on_success(monkeypatch, sam
         datetime.now(timezone.utc), "gemini", "fake", True, verification=result.verification
     )
     assert status == "RECORDED"
-    payload = client.create_run.call_args.kwargs
+    payload = root_run(client)
     assert payload["inputs"] == payload["outputs"] == {}
     for key, value in result.verification.model_dump().items():
         assert payload["extra"]["metadata"][f"verification_{key}"] == value
@@ -152,10 +152,7 @@ def test_safe_trace_adds_only_verification_constants_on_success(monkeypatch, sam
     trace.record(
         datetime.now(timezone.utc), "gemini", "fake", False, verification=result.verification
     )
-    assert not any(
-        key.startswith("verification_")
-        for key in client.create_run.call_args.kwargs["extra"]["metadata"]
-    )
+    assert not any(key.startswith("verification_") for key in root_run(client)["extra"]["metadata"])
 
 
 def test_forged_verification_cannot_leak_through_trace(monkeypatch):
