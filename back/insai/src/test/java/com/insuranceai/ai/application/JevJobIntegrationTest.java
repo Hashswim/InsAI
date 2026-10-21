@@ -62,7 +62,7 @@ class JevJobIntegrationTest {
     JevResult result(UUID id) {
         return new JevResult(id,"ON_HOLD","NOT_REGISTERED","rules missing",
             List.of(new JevResult.Item("synthetic","UNVERIFIABLE",List.of(),0,"synthetic","review")),
-            "gemini","synthetic-model","jev-v2","a".repeat(64),"jev-chain-v7",null,"DISABLED",0,0,
+            List.of(),"synthetic summary","gemini","synthetic-model","jev-v2","a".repeat(64),"jev-chain-v7",null,"DISABLED",0,0,
             new JevResult.Verification("STRUCTURAL","NOT_VERIFIED","MODEL_SELF_ASSESSMENT","REQUIRED"));
     }
     String bearer(Account actor) { return "Bearer "+tokens.issue(actor.getId(),actor.getRole()).value(); }

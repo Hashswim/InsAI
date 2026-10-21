@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "InsuranceAI 청구 서류 검토 아키텍처",
+    "locale": "ko",
+    "output": "docs/architecture/architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "claimant", "type": "external", "label": "청구인", "sublabel": "브라우저", "pos": [40, 200], "size": [120, 64] },
+    { "id": "web", "type": "frontend", "label": "Vue 웹", "sublabel": ":5173 · /api 프록시", "pos": [260, 200], "size": [140, 64] },
+    { "id": "adjuster", "type": "external", "label": "손해사정사", "sublabel": "브라우저", "pos": [260, 380], "size": [140, 64] },
+    { "id": "spring", "type": "backend", "label": "Spring 업무 백엔드", "sublabel": ":8080 · 권한·감사·저장", "pos": [500, 200], "size": [170, 64], "tag": "JWT RS256" },
+    { "id": "storage", "type": "database", "label": "파일 저장소", "sublabel": "청구 서류 PDF", "pos": [510, 40], "size": [150, 60] },
+    { "id": "postgres", "type": "database", "label": "PostgreSQL", "sublabel": ":5433 · 케이스·분석·감사", "pos": [500, 380], "size": [170, 64] },
+    { "id": "precheck", "type": "backend", "label": "① 빠른 검사", "sublabel": "pypdf 키워드 추출·누락 검사", "pos": [770, 200], "size": [170, 64], "tag": "LLM 없음" },
+    { "id": "jev", "type": "backend", "label": "② J·E·V 정리", "sublabel": "요약·보완사항·의심사항", "pos": [1040, 200], "size": [160, 64] },
+    { "id": "langsmith", "type": "cloud", "label": "LangSmith", "sublabel": "메타데이터만 기록", "pos": [1045, 40], "size": [150, 60] },
+    { "id": "llm", "type": "external", "label": "LLM API", "sublabel": "OpenAI gpt-6-luna", "pos": [1045, 380], "size": [150, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "JEV AI 서비스 · FastAPI :8085", "wraps": ["precheck", "jev"] }
+  ],
+  "connections": [
+    { "id": "claimant-submits", "from": "claimant", "to": "web", "label": "서류 제출", "variant": "emphasis" },
+    { "id": "adjuster-reviews", "from": "adjuster", "to": "web", "label": "AI 요약 보고 판단" },
+    { "id": "web-to-spring", "from": "web", "to": "spring", "label": "REST · JWT", "variant": "emphasis" },
+    { "id": "spring-reads-pdf", "from": "spring", "to": "storage", "label": "PDF 읽기" },
+    { "id": "spring-persists", "from": "spring", "to": "postgres", "label": "결과·감사 저장" },
+    { "id": "spring-to-precheck", "from": "spring", "to": "precheck", "label": "PDF 3종", "variant": "security" },
+    { "id": "gaps-to-claimant", "from": "precheck", "to": "spring", "label": "누락 시 바로 보완 안내", "fromSide": "top", "toSide": "top" },
+    { "id": "complete-to-jev", "from": "precheck", "to": "jev", "label": "서류 완비 시", "variant": "emphasis" },
+    { "id": "jev-to-llm", "from": "jev", "to": "llm", "label": "텍스트 폼만 · 1회", "variant": "security" },
+    { "id": "jev-trace", "from": "jev", "to": "langsmith", "label": "원문 없는 실행 기록", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "청구인 → AI 플랫폼 → 손해사정사",
+      "items": [
+        "① 누락·판독 불가·서류 종류 오류는 LLM 없이 청구인에게 바로 보완 안내",
+        "② 서류가 갖춰진 건만 추출한 키워드를 LLM에 1회 보내 요약·보완·의심사항 정리",
+        "③ 손해사정사가 결과를 보고 승인 · 보완 요청 · 반려, 청구인은 수정 후 재제출"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "개인정보 경계",
+      "items": [
+        "PDF 원본은 LLM으로 보내지 않음",
+        "환자명은 가명, 주민번호는 앞 6자리만 전송",
+        "의심사항·요약은 손해사정사 응답에만 포함",
+        "Spring↔FastAPI는 별도 서비스 토큰으로 인증"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "현재 범위",
+      "items": [
+        "AI는 최종 판정을 하지 않음: 결과는 항상 판정 보류",
+        "OCR 없음: 스캔 PDF는 보완 안내로 처리",
+        "Redis는 compose에만 있고 코드는 인메모리 저장소 사용"
+      ]
+    }
+  ]
+}

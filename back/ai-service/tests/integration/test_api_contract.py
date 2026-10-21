@@ -173,6 +173,9 @@ def test_shared_java_python_response_contract():
         {"items": []},
         {"trace_status": "DISABLED"},
         {"trace_id": None},
+        {"summary": " "},
+        {"risk_signals": [{"signal": "x", "level": "HIGH", "reason": "r", "evidence": []}]},
+        {"provider": "stub"},
     ],
 )
 def test_response_contract_rejects_inconsistent_output(changes):

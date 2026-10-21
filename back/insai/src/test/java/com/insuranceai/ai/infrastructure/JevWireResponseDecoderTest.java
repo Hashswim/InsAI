@@ -42,6 +42,7 @@ class JevWireResponseDecoderTest {
     ObjectNode rules() throws Exception {
         var root = fixture();
         root.put("provider", "rules").put("model", "jev-rules-v1").put("input_tokens", 0).put("output_tokens", 0);
+        root.putArray("risk_signals");
         ((ObjectNode) root.get("verification")).put("confidence_basis", "RULE_PRESENCE_CHECK");
         return root;
     }
@@ -54,13 +55,14 @@ class JevWireResponseDecoderTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"tokens", "model_basis", "rules_basis_on_model"})
+    @ValueSource(strings = {"tokens", "model_basis", "rules_basis_on_model", "rules_signal"})
     void rejectsInconsistentRuleOnlyResult(String mutation) throws Exception {
         var root = rules();
         switch (mutation) {
             case "tokens" -> root.put("input_tokens", 1);
             case "model_basis" -> ((ObjectNode) root.get("verification")).put("confidence_basis", "MODEL_SELF_ASSESSMENT");
             case "rules_basis_on_model" -> root.put("provider", "gemini");
+            case "rules_signal" -> root.set("risk_signals", fixture().get("risk_signals"));
             default -> fail("unknown mutation");
         }
         assertThrows(Exception.class, () -> decoder.decode(mapper.writeValueAsBytes(root), request(root), false));
@@ -73,7 +75,9 @@ class JevWireResponseDecoderTest {
         "page_zero", "page_large", "fraction_page", "string_page", "blank_description", "long_description",
         "missing_supplement", "blank_supplement", "unknown_confidence", "trace_missing", "trace_contradiction",
         "trace_unknown", "bad_uuid", "wrong_request", "duplicate_item", "duplicate_evidence", "empty_model",
-        "null_item", "many_items", "many_evidence", "null_verification", "surrogate"})
+        "null_item", "many_items", "many_evidence", "null_verification", "surrogate",
+        "missing_summary", "blank_summary", "missing_signals", "signal_level", "signal_no_evidence",
+        "signal_foreign_document", "signal_page_large", "many_signals"})
     void rejectsInvalidNestedWireData(String mutation) throws Exception {
         var root = fixture();
         var request = request(root);
@@ -117,6 +121,16 @@ class JevWireResponseDecoderTest {
             case "many_evidence" -> { for (int i=0; i<20; i++) item.withArray("evidence").add(evidence.deepCopy()); }
             case "null_verification" -> root.putNull("verification");
             case "surrogate" -> item.put("item", "\uD800");
+            case "missing_summary" -> root.remove("summary");
+            case "blank_summary" -> root.put("summary", " ");
+            case "missing_signals" -> root.remove("risk_signals");
+            case "signal_level" -> ((ObjectNode) root.withArray("risk_signals").get(0)).put("level", "FRAUD");
+            case "signal_no_evidence" -> ((ObjectNode) root.withArray("risk_signals").get(0)).putArray("evidence");
+            case "signal_foreign_document" -> ((ObjectNode) root.withArray("risk_signals").get(0).get("evidence").get(0))
+                .put("document_id", UUID.randomUUID().toString());
+            case "signal_page_large" -> ((ObjectNode) root.withArray("risk_signals").get(0).get("evidence").get(0)).put("page", 31);
+            case "many_signals" -> { var signals = root.withArray("risk_signals");
+                for (int i=0; i<20; i++) signals.add(signals.get(0).deepCopy()); }
             default -> fail("unknown mutation");
         }
         assertThrows(Exception.class, () -> decoder.decode(mapper.writeValueAsBytes(root), request, false));

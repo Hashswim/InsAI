@@ -11,6 +11,7 @@ import StatusBadge from '@/components/StatusBadge.vue'
 import CaseTimeline from '@/components/CaseTimeline.vue'
 import FeedCard from '@/components/FeedCard.vue'
 import JevPanel from '@/components/JevPanel.vue'
+import { aiSupplementText } from '@/api/jev'
 
 const props = defineProps({ id: { type: String, required: true } })
 const auth = useAuthStore()
@@ -43,14 +44,14 @@ const NAV_CLAIMANT = [
   { k: 'inquiry', label: '문의', icon: '💬' },
   { k: 'notice', label: '안내 사항', icon: '🔔' },
   { k: 'progress', label: '진행 상황', icon: '🗂' },
-  { k: 'jev', label: 'AI 서류 점검', icon: '🔎' },
+  { k: 'jev', label: '서류 점검', icon: '🔎' },
   { k: 'result', label: '사정 결과', icon: '⚖️' },
   { k: 'info', label: '청구 정보', icon: 'ℹ️' },
 ]
 const NAV_ADJUSTER = [
   { k: 'overview', label: '개요', icon: '📊' },
+  { k: 'jev', label: 'AI 검토 요약', icon: '🔎' },
   { k: 'requests', label: '서류 검토', icon: '📄' },
-  { k: 'jev', label: 'AI 서류 점검', icon: '🔎' },
   { k: 'result', label: '심사·결정', icon: '⚖️' },
   { k: 'inquiry', label: '청구인과 소통', icon: '💬' },
   { k: 'info', label: '청구 정보', icon: 'ℹ️' },
@@ -103,7 +104,7 @@ async function takeCase() {
 /* ---------- 해야 할 일 (청구인) ---------- */
 const todoDocs = computed(() =>
   [...docs.value]
-    .filter((d) => ['PENDING', 'REJECTED'].includes(d.status))
+    .filter((d) => ['PENDING', 'REJECTED', 'SUPPLEMENT_REQUESTED'].includes(d.status))
     .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)),
 )
 const doneDocs = computed(() =>
@@ -135,6 +136,13 @@ const noticeFeed = computed(() => {
         body: `‘${d.title}’ 서류가 반려되었습니다.${d.rejectionReason ? ' 사유: ' + d.rejectionReason : ''} “해야 할 일”에서 다시 작성해 주세요.`,
         at: null,
       })
+    if (d.status === 'SUPPLEMENT_REQUESTED')
+      items.push({
+        key: `dr-${d.id}-S`,
+        title: '서류 보완 요청',
+        body: `‘${d.title}’ 서류에 보완 요청이 있습니다. 내용: ${d.rejectionReason} “해야 할 일”에서 수정해 다시 제출해 주세요.`,
+        at: null,
+      })
   })
   return items.sort((a, b) => new Date(b.at || Date.now()) - new Date(a.at || Date.now()))
 })
@@ -159,6 +167,7 @@ async function sendInquiry() {
 const pendingReviewDocs = computed(() => docs.value.filter((d) => d.status === 'SUBMITTED'))
 const acceptedDocs = computed(() => docs.value.filter((d) => d.status === 'ACCEPTED'))
 const rejectedDocs = computed(() => docs.value.filter((d) => d.status === 'REJECTED'))
+const supplementDocs = computed(() => docs.value.filter((d) => d.status === 'SUPPLEMENT_REQUESTED'))
 const daysOpen = computed(() => {
   if (!caseData.value?.createdAt) return null
   const ms = Date.now() - new Date(caseData.value.createdAt).getTime()
@@ -229,11 +238,17 @@ async function loadSubmission(drId) {
     submissions.value = { ...submissions.value, [drId]: 'none' }
   }
 }
+const reasonLabel = (d) => (d.status === 'SUPPLEMENT_REQUESTED' ? '보완 요청' : '반려 사유')
 async function decide(drId, action) {
   let reason = null
+  if (action === 'SUPPLEMENT') {
+    // AI 서류 점검의 보완 제안을 기본값으로 채워 손해사정사가 고쳐 쓰게 한다.
+    reason = window.prompt('보완 요청 내용을 입력하세요 (AI 제안이 있으면 미리 채워집니다)', await aiSupplementText(props.id))
+    if (!reason?.trim()) return
+  }
   if (action === 'REJECT') {
     reason = window.prompt('반려 사유를 입력하세요')
-    if (!reason) return
+    if (!reason?.trim()) return
   }
   try {
     await casesApi.updateDocumentRequest(drId, action, reason)
@@ -381,6 +396,9 @@ const statusLabel = {
                 <b>{{ acceptedDocs.length }}</b><span>승인</span>
               </div>
               <div class="ov-stat">
+                <b>{{ supplementDocs.length }}</b><span>보완 요청</span>
+              </div>
+              <div class="ov-stat">
                 <b>{{ rejectedDocs.length }}</b><span>반려</span>
               </div>
               <div class="ov-stat">
@@ -413,7 +431,7 @@ const statusLabel = {
                 <span v-if="d.dueDate" class="small muted">제출 기한 {{ d.dueDate }}</span>
               </div>
               <div v-if="d.rejectionReason" class="alert err" style="margin-bottom: 8px">
-                반려 사유: {{ d.rejectionReason }}
+                {{ reasonLabel(d) }}: {{ d.rejectionReason }}
               </div>
               <p class="muted">아래 버튼에서 서류의 칸을 채워 제출하세요.</p>
               <template #actions>
@@ -421,7 +439,7 @@ const statusLabel = {
                   class="btn sm"
                   :to="`/cases/${id}/requests/${d.id}/submit?templateId=${d.templateId}`"
                 >
-                  {{ d.status === 'REJECTED' ? '다시 작성하기' : '작성하기' }}
+                  {{ d.status === 'SUPPLEMENT_REQUESTED' ? '보완하기' : d.status === 'REJECTED' ? '다시 작성하기' : '작성하기' }}
                 </RouterLink>
               </template>
             </FeedCard>
@@ -559,7 +577,7 @@ const statusLabel = {
                 <StatusBadge :status="d.status" />
               </div>
               <div v-if="d.rejectionReason" class="alert err" style="margin-bottom: 8px">
-                반려 사유: {{ d.rejectionReason }}
+                {{ reasonLabel(d) }}: {{ d.rejectionReason }}
               </div>
               <template #actions>
                 <button v-if="d.status !== 'PENDING'" class="btn sm ghost" @click="loadSubmission(d.id)">
@@ -598,6 +616,7 @@ const statusLabel = {
                 </div>
                 <div v-if="d.status === 'SUBMITTED'" class="row" style="margin-top: 10px">
                   <button class="btn sm" @click="decide(d.id, 'ACCEPT')">승인</button>
+                  <button class="btn sm ghost" @click="decide(d.id, 'SUPPLEMENT')">보완 요청</button>
                   <button class="btn sm danger" @click="decide(d.id, 'REJECT')">반려</button>
                 </div>
               </div>
@@ -662,7 +681,7 @@ const statusLabel = {
             </template>
           </section>
 
-          <JevPanel v-else-if="nav === 'jev'" :case-id="id" />
+          <JevPanel v-else-if="nav === 'jev'" :case-id="id" :role="myRole || 'CLAIMANT'" />
 
           <section v-else />
 

@@ -16,6 +16,7 @@ const MAP = {
   SUBMITTED: ['제출됨', 'b-info'],
   ACCEPTED: ['승인', 'b-ok'],
   REJECTED: ['반려', 'b-danger'],
+  SUPPLEMENT_REQUESTED: ['보완 요청', 'b-warn'],
 }
 
 const label = computed(() => MAP[props.status]?.[0] || props.status)

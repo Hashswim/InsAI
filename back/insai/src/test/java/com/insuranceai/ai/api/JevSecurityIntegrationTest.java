@@ -61,7 +61,7 @@ class JevSecurityIntegrationTest {
             JevGateway.Request request=call.getArgument(0);
             return new JevResult(request.requestId(),"ON_HOLD","NOT_REGISTERED","rules missing",
                 List.of(new JevResult.Item("synthetic","UNVERIFIABLE",List.of(),0,"test only","review")),
-                "gemini","synthetic-model","jev-v1","a".repeat(64),"jev-chain-v1",null,"DISABLED",0,0,
+                List.of(),"synthetic summary","gemini","synthetic-model","jev-v1","a".repeat(64),"jev-chain-v1",null,"DISABLED",0,0,
                 new JevResult.Verification("STRUCTURAL","NOT_VERIFIED","MODEL_SELF_ASSESSMENT","REQUIRED"));
         });
     }
@@ -127,6 +127,28 @@ class JevSecurityIntegrationTest {
         assertEquals(JevAccessAudit.Action.READ,audits.findByRequestId(allowedId).getFirst().getAction());
         assertEquals(JevAccessAudit.Outcome.DENIED,audits.findByRequestId(deniedId).getFirst().getOutcome());
         verifyNoInteractions(gateway,storage);
+    }
+
+    @Test void claimantSubmitsButOnlyAdjusterSeesModelSummaryOfLatestAnalysis() throws Exception {
+        mvc.perform(post("/ai/jev").header("Authorization",bearer(claimant))
+            .contentType(MediaType.APPLICATION_JSON).content(body(documents)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.result.summary").value("서류가 모두 확인되어 담당 손해사정사에게 전달되었습니다."))
+            .andExpect(jsonPath("$.data.result.items").isEmpty())
+            .andExpect(jsonPath("$.data.result.risk_signals").isEmpty());
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/latest").header("Authorization",bearer(adjuster)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.data.result.summary").value("synthetic summary"))
+            .andExpect(jsonPath("$.data.result.items[0].item").value("synthetic"));
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/latest").header("Authorization",bearer(claimant)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data.result.items").isEmpty());
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/latest").header("Authorization",bearer(outsider)))
+            .andExpect(status().isForbidden());
+    }
+
+    @Test void latestIsEmptyBeforeAnyAnalysis() throws Exception {
+        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/latest").header("Authorization",bearer(adjuster)))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test void inactiveAccountsAndAdminHaveNoImplicitClinicalAccess() throws Exception {

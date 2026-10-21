@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "63e0e7b7-a0f7-4230-8714-0419cab9c261",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-insurance-ai-20261021-165025/candidate.json",
+  "output": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.html",
+  "specification": {
+    "sha256": "5b6d102710fc7de32056aff588f101a51258bc443984feceb9ac28be25b5661f",
+    "bytes": 4245
+  },
+  "artifact": {
+    "sha256": "378697f1714cd4dbb3f6e85f0ecbcc796fe885c93c452c025b3890e7b064eed3",
+    "bytes": 833716
+  }
+}

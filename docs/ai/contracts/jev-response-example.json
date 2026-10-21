@@ -19,11 +19,26 @@
       "supplement": ""
     }
   ],
+  "risk_signals": [
+    {
+      "signal": "영수증 납부액이 환자부담 총액보다 큼",
+      "level": "MEDIUM",
+      "reason": "합성 예제: 납부액과 환자부담 총액이 달라 원본 영수증 확인이 필요함",
+      "evidence": [
+        {
+          "document_id": "22222222-2222-4222-8222-222222222222",
+          "page": 1,
+          "description": "합성 예제: 납부액 항목"
+        }
+      ]
+    }
+  ],
+  "summary": "합성 예제: 진료일자는 확인되었고, 영수증 금액은 원본 확인이 필요합니다. 최종 판단은 손해사정사가 합니다.",
   "provider": "gemini",
   "model": "synthetic-contract-model",
-  "prompt_version": "jev-v4",
-  "prompt_sha256": "d3a3c1b20ac9764ecda7cd4d37de8a93dabdd12e7f165057715d47fb81762d31",
-  "chain_version": "jev-chain-v9",
+  "prompt_version": "jev-v5",
+  "prompt_sha256": "c6b1357d3dbcb7e071f942090af022422a87e49334e232998084f90a425d4a0f",
+  "chain_version": "jev-chain-v10",
   "verification": {
     "method": "STRUCTURAL",
     "factual_consistency": "NOT_VERIFIED",

@@ -151,14 +151,50 @@ def text_pdf(*pages: list[str]) -> bytes:
     return stream.getvalue()
 
 
+# Synthetic text-layer forms with every required field: complete bundles reach the model.
+COMMON_LINES = [
+    "환자 성명: 테스트-김하늘",
+    "주민등록번호: 900101-1234567",
+    "의료기관: 가상 테스트의원",
+    "진료일: 2026-09-01",
+]
+FORM_PAGES = {
+    "DIAGNOSIS": ["진단서", *COMMON_LINES, "진단명: 가상 질환", "질병분류기호: J20.9"],
+    "TREATMENT_CONFIRMATION": ["진료확인서", *COMMON_LINES, "진단명: 가상 질환"],
+    "ITEMIZED_BILL": [
+        "진료비 세부산정내역서",
+        *COMMON_LINES,
+        "진료비 총액 50,000 원",
+        "환자부담 총액 12,300 원",
+    ],
+    "INITIAL_VISIT_RECORD": [
+        "초진기록지",
+        *COMMON_LINES,
+        "주호소: 가상 증상",
+        "현병력: 3일 전 시작",
+        "진단명: 가상 질환",
+        "질병분류기호: J20.9",
+    ],
+    "MEDICAL_RECEIPT": [
+        "진료비 계산서·영수증",
+        *COMMON_LINES,
+        "진료비 총액 50,000 원",
+        "환자부담 총액 12,300 원",
+        "납부액 12,300 원",
+    ],
+}
+
+
 @pytest.fixture
 def request_data():
-    # Readable but not a recognizable form, so requests take the model path.
-    encoded = base64.b64encode(text_pdf(["SYNTHETIC TEST DOCUMENT"])).decode()
     return {
         "request_id": str(uuid4()),
         "documents": [
-            {"document_id": str(uuid4()), "kind": kind.value, "content_base64": encoded}
+            {
+                "document_id": str(uuid4()),
+                "kind": kind.value,
+                "content_base64": base64.b64encode(text_pdf(FORM_PAGES[kind.value])).decode(),
+            }
             for kind in LEGACY_DOCUMENT_KINDS
         ],
     }
@@ -191,7 +227,9 @@ class FakeProvider:
                         "verification_reason": "날짜 판독 가능",
                         "supplement": "",
                     }
-                ]
+                ],
+                risk_signals=[],
+                summary="합성 요약: 진료일자 항목을 확인했습니다.",
             ),
             10,
             20,

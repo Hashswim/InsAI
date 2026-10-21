@@ -131,8 +131,30 @@ class Item(StrictModel):
         return self
 
 
+class RiskSignal(StrictModel):
+    """A point the adjuster should verify (possible false/inflated claim), never a fraud finding."""
+
+    signal: str = Field(min_length=1, max_length=200)
+    level: Literal["LOW", "MEDIUM", "HIGH"]
+    reason: str = Field(min_length=1, max_length=2000)
+    evidence: list[Evidence] = Field(min_length=1, max_length=20, strict=True)
+
+    @field_validator("signal", "reason")
+    @classmethod
+    def nonblank_text(cls, value: str) -> str:
+        return valid_text(value)
+
+
 class Findings(StrictModel):
+    # Field order is the model's generation order: details first, summary of them last.
     items: list[Item] = Field(min_length=1, max_length=100, strict=True)
+    risk_signals: list[RiskSignal] = Field(max_length=20, strict=True)
+    summary: str = Field(min_length=1, max_length=2000, description="손해사정사용 요약")
+
+    @field_validator("summary")
+    @classmethod
+    def nonblank_summary(cls, value: str) -> str:
+        return valid_text(value)
 
 
 class VerificationSummary(StrictModel):
@@ -151,6 +173,8 @@ class JevResponse(StrictModel):
     regulations_status: Literal["NOT_REGISTERED"] = "NOT_REGISTERED"
     reason: str = "규정 미등록: 최종 제출 가능 여부는 판정 보류입니다."
     items: list[Item] = Field(min_length=1, max_length=100)
+    risk_signals: list[RiskSignal] = Field(max_length=20)
+    summary: str = Field(min_length=1, max_length=2000)
     provider: Literal["gemini", "stub", "openai", "rules"]
     model: str = Field(min_length=1, max_length=200)
     prompt_version: str = Field(min_length=1, max_length=100)
@@ -161,6 +185,11 @@ class JevResponse(StrictModel):
     trace_status: Literal["RECORDED", "DISABLED", "FAILED"]
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
+
+    @field_validator("summary")
+    @classmethod
+    def nonblank_summary(cls, value: str) -> str:
+        return valid_text(value)
 
     @model_validator(mode="after")
     def trace_consistency(self) -> Self:
@@ -175,6 +204,8 @@ class JevResponse(StrictModel):
             item.judgment != "UNVERIFIABLE" or item.evidence for item in self.items
         ):
             raise ValueError("Offline stub cannot make grounded recommendations")
+        if self.provider in {"stub", "rules"} and self.risk_signals:
+            raise ValueError("Only a model analysis can raise risk signals")
         if self.provider == "rules" and (self.input_tokens or self.output_tokens):
             raise ValueError("Rule-only results cannot report model token usage")
         return self

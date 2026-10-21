@@ -81,16 +81,16 @@ onMounted(load)
         <div class="hero">{{ num(total.analyses) }}<span>건</span></div>
       </div>
       <div class="card tile">
-        <div class="small muted">AI 호출 없이 처리</div>
+        <div class="small muted">청구인 바로 보완 안내 (AI 미호출)</div>
         <div class="hero">{{ ruleShare === null ? '–' : ruleShare }}<span v-if="ruleShare !== null">%</span></div>
         <div
           class="meter"
           role="img"
-          :aria-label="`규칙 처리 ${total.rules}건, AI 호출 ${total.model}건`"
+          :aria-label="`보완 안내 ${total.rules}건, AI 정리 ${total.model}건`"
         >
           <div class="meter-fill" :style="{ width: (ruleShare || 0) + '%' }" />
         </div>
-        <div class="small muted">규칙 {{ num(total.rules) }}건 · AI 호출 {{ num(total.model) }}건</div>
+        <div class="small muted">보완 안내 {{ num(total.rules) }}건 · AI 정리 {{ num(total.model) }}건</div>
       </div>
       <div class="card tile">
         <div class="small muted">사용 토큰 (입력 + 출력)</div>
@@ -116,7 +116,7 @@ onMounted(load)
             <tr>
               <th>청구 건</th>
               <th class="n">분석</th>
-              <th class="n">규칙 처리</th>
+              <th class="n">보완 안내</th>
               <th class="n">AI 호출</th>
               <th class="n">토큰</th>
             </tr>
@@ -137,8 +137,8 @@ onMounted(load)
     </div>
 
     <p class="small muted">
-      규칙 처리는 PDF 텍스트에서 필요한 항목을 모두 확인해 AI를 부르지 않은 건입니다. 스캔·이미지 PDF는
-      텍스트를 읽을 수 없어 규칙 처리(판독 불가)로 집계됩니다.
+      빠른 검사에서 누락·판독 불가·서류 종류 오류가 보이면 AI를 부르지 않고 청구인에게 바로 보완을
+      안내합니다. 서류가 모두 갖춰진 건만 추출한 항목을 AI에 1회 보내 손해사정사용 요약을 만듭니다.
     </p>
   </div>
 </template>

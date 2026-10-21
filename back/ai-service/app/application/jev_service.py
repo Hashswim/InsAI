@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 
 from httpx import TimeoutException
 
-from app.chains.evidence import EvidenceChain
 from app.chains.jev_workflow import run_workflow
 from app.chains.orchestrator import WorkflowProgress
 from app.chains.precheck import RULES_MODEL, precheck
@@ -16,7 +15,7 @@ from app.core.errors import (
 )
 from app.core.resources import load_jev_prompt
 from app.observability.langsmith import SafeTrace
-from app.providers.base import Provider, ProviderResult
+from app.providers.base import Provider
 from app.providers.routing_policy import RouteDecision
 from app.schemas.jev import JevRequest, JevResponse, VerificationSummary
 
@@ -36,14 +35,14 @@ class JevService:
         self.route = route
 
     def rule_response(self, request: JevRequest, started: datetime) -> JevResponse | None:
-        """Answer without a model call when rules suffice or nothing is readable."""
+        """Obvious gaps go straight back to the claimant; only complete bundles reach a model."""
         # ponytail: the model path extracts the PDFs again in PREPARE; pass the
         # Precheck through the executor if extraction time ever matters.
         try:
             check = precheck(request)
-            if check.readable and not check.confident:
+            if check.complete:
                 return None
-            findings = EvidenceChain().run(request, ProviderResult(check.findings())).findings
+            findings = check.claimant_findings()
             verification = VerificationSummary(
                 method="STRUCTURAL",
                 factual_consistency="NOT_VERIFIED",
@@ -59,6 +58,8 @@ class JevService:
             {
                 "request_id": request.request_id,
                 "items": findings.items,
+                "risk_signals": findings.risk_signals,
+                "summary": findings.summary,
                 "provider": "rules",
                 "model": RULES_MODEL,
                 **ACTIVE_RELEASE.metadata(),
@@ -140,6 +141,8 @@ class JevService:
                 {
                     "request_id": request.request_id,
                     "items": result.findings.items,
+                    "risk_signals": result.findings.risk_signals,
+                    "summary": result.findings.summary,
                     "provider": self.provider.name,
                     "model": self.provider.model,
                     **ACTIVE_RELEASE.metadata(),

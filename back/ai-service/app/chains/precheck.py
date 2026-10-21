@@ -1,4 +1,4 @@
-"""Rule-based presence check over PDF text layers, and the only text a model may receive.
+"""Keyword extraction and code checks over PDF text layers; the only text a model may receive.
 
 No OCR: scanned/image-only pages have no text layer and are reported as such.
 Presence of a label and a value is checked, never the meaning or accuracy of the value.
@@ -7,6 +7,7 @@ Presence of a label and a value is checked, never the meaning or accuracy of the
 import json
 import re
 from dataclasses import dataclass, field
+from datetime import date
 from io import BytesIO
 from uuid import UUID
 
@@ -22,7 +23,7 @@ from app.schemas.jev import (
 )
 
 FORM_VERSION = "jev-text-form-v1"
-RULES_MODEL = "jev-rules-v1"
+RULES_MODEL = "jev-rules-v1"  # Reported when gaps go straight back to the claimant.
 MAX_PAGE_CHARS = 20_000
 MAX_VALUE_CHARS = 300
 Specs = dict[str, tuple[str, tuple[str, ...]]]
@@ -46,6 +47,15 @@ DIAGNOSIS_NAME = ("진단명", ("상병명", "병명", "진단명"))
 DISEASE_CODE = ("질병분류기호", ("질병분류기호", "상병코드", "분류기호"))
 GROSS = ("진료비 총액", ("진료비총액", "총진료비"))
 PATIENT_DUE = ("환자부담 총액", ("환자부담총액", "본인부담총액"))
+AMOUNT_FIELDS = (
+    "gross",
+    "patient_due",
+    "covered_patient",
+    "insurer",
+    "full_patient",
+    "noncovered",
+    "paid",
+)
 AMOUNTS: Specs = {
     "covered_patient": ("급여 본인부담금", ("급여본인부담금", "급여본인부담")),
     "insurer": ("공단부담금", ("공단부담금", "공단부담")),
@@ -138,10 +148,6 @@ class DocumentText:
             name for name in self.required if not getattr(self.fields.get(name), "value", "")
         )
 
-    @property
-    def reliable(self) -> bool:
-        return self.text_layer and self.title_page is not None and not self.missing
-
 
 def _compact(text: str) -> str:
     return "".join(text.split())
@@ -193,13 +199,48 @@ def read_document(document_id: UUID, kind: DocumentKind, raw: bytes) -> Document
     return DocumentText(document_id, kind, pages, text_layer, title_page, found)
 
 
+def _date(text: str) -> date | None:
+    """First date in a value (a period yields its start); None when not a clear date."""
+    match = re.search(r"(\d{4})\s*[-./년]\s*(\d{1,2})\s*[-./월]\s*(\d{1,2})", text)
+    try:
+        return date(*map(int, match.groups())) if match else None
+    except ValueError:
+        return None
+
+
+def _document_flags(d: DocumentText) -> list[str]:
+    """Code-detectable inconsistencies inside one document; hints for the model, not findings."""
+    values = {name: field.value for name, field in d.fields.items()}
+    flags = []
+    visit = _date(values.get("visit_date", ""))
+    onset = _date(values.get("onset_date", ""))
+    issue = _date(values.get("issue_date", ""))
+    if visit and onset and onset > visit:
+        flags.append("ONSET_AFTER_VISIT")
+    if visit and issue and issue < visit:
+        flags.append("ISSUE_BEFORE_VISIT")
+    amount = {name: _amount(values[name]) for name in AMOUNT_FIELDS if name in values}
+    due, gross = amount.get("patient_due"), amount.get("gross")
+    if due is not None and gross is not None and due > gross:
+        flags.append("PATIENT_DUE_EXCEEDS_GROSS")
+    parts = [amount.get("covered_patient"), amount.get("noncovered")]
+    if due is not None and None not in parts:
+        if sum(parts) + (amount.get("full_patient") or 0) != due:  # type: ignore[arg-type]
+            flags.append("PATIENT_DUE_BREAKDOWN_MISMATCH")
+    paid = amount.get("paid")
+    if due is not None and paid is not None and paid > due:
+        flags.append("PAID_EXCEEDS_DUE")
+    return [f"{d.kind.value}:{flag}" for flag in flags]
+
+
 @dataclass(frozen=True)
 class Precheck:
     documents: tuple[DocumentText, ...]
     outpatient: bool
 
     @property
-    def mismatches(self) -> tuple[str, ...]:
+    def flags(self) -> tuple[str, ...]:
+        """Cross-document mismatches and in-document anomalies the model should explain."""
         flags = []
         for name, flag, normalize in (
             ("patient", "PATIENT_MISMATCH", _compact),
@@ -219,15 +260,16 @@ class Precheck:
                 flags.append("PATIENT_DUE_UNREADABLE")
             elif len(set(dues)) > 1:
                 flags.append("PATIENT_DUE_MISMATCH")
+        for d in self.documents:
+            flags.extend(_document_flags(d))
         return tuple(flags)
 
     @property
-    def readable(self) -> bool:
-        return any(d.text_layer for d in self.documents)
-
-    @property
-    def confident(self) -> bool:
-        return all(d.reliable for d in self.documents) and not self.mismatches
+    def complete(self) -> bool:
+        """Every document readable, recognized and filled in: only then is it worth a model call."""
+        return all(
+            d.text_layer and d.title_page is not None and not d.missing for d in self.documents
+        )
 
     def form(self) -> str:
         """Extracted fields only. Patient names become bundle-local labels."""
@@ -256,90 +298,90 @@ class Precheck:
             "bundle": "OUTPATIENT_THREE_DOCS" if self.outpatient else "LEGACY_MEDICAL_THREE_DOCS",
             "regulations_status": "NOT_REGISTERED",
             "documents": documents,
-            "server_flags": list(self.mismatches),
+            "server_flags": list(self.flags),
         }
         return "JEV_TEXT_FORM=" + json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
-    def findings(self) -> Findings:
-        """Rule-only findings; only valid when confident or nothing is readable."""
-        if self.confident:
-            items = [self._document_item(d) for d in self.documents]
-            items.append(self._cross_item("환자 표기 일치(문서 간)", "patient", "환자 성명"))
-            items.append(self._cross_item("진료일 일치(문서 간)", "visit_date", "진료일"))
-            if self.outpatient:
+    def claimant_findings(self) -> Findings:
+        """Obvious gaps told straight back to the claimant, without a model call."""
+        if self.complete:
+            raise ValueError("A complete bundle goes to the model for the adjuster")
+        items = []
+        for d in self.documents:
+            name = KIND_NAMES[d.kind]
+            if not d.text_layer:
                 items.append(
-                    self._cross_item(
-                        "환자부담 총액 일치(세부내역서·영수증)",
-                        "patient_due",
-                        "환자부담 총액",
-                        (DocumentKind.ITEMIZED_BILL, DocumentKind.MEDICAL_RECEIPT),
+                    Item(
+                        item=f"{name} 판독 가능 여부",
+                        judgment="UNVERIFIABLE",
+                        evidence=[],
+                        confidence=0,
+                        verification_reason="스캔·이미지 PDF라 글자를 읽을 수 없음.",
+                        supplement="전자 발급본(텍스트가 포함된 PDF)으로 다시 제출해 주세요.",
                     )
                 )
-            return Findings(items=items)
-        if self.readable:
-            raise ValueError("Rule-only findings require a confident or unreadable bundle")
+                continue
+            page = d.title_page or 1
+            if d.title_page is None:
+                items.append(
+                    _gap(
+                        d,
+                        f"{name} 서류 종류",
+                        page,
+                        f"문서 앞부분에서 '{name}' 제목을 찾지 못함",
+                        f"{name}가 맞는지 확인하고 올바른 서류로 다시 제출해 주세요.",
+                    )
+                )
+            for missing in d.missing:
+                display = d.required[missing][0]
+                items.append(
+                    _gap(
+                        d,
+                        f"{name} {display}",
+                        d.fields[missing].page if missing in d.fields else page,
+                        f"'{display}' 항목의 값을 찾지 못함",
+                        f"{display}이(가) 기재된 {name}로 다시 제출해 주세요.",
+                    )
+                )
+            if d.title_page is not None and not d.missing:
+                items.append(
+                    Item(
+                        item=f"{name} 필수 항목",
+                        judgment="SUITABLE",
+                        evidence=[
+                            Evidence(
+                                document_id=d.document_id,
+                                page=page,
+                                description="제목과 필수 항목의 기재를 확인함",
+                            )
+                        ],
+                        confidence=1,
+                        verification_reason="규칙 점검: 필수 항목의 라벨과 값을 모두 찾음.",
+                        supplement="",
+                    )
+                )
+        gaps = [it.item for it in items if it.judgment != "SUITABLE"]
         return Findings(
-            items=[
-                Item(
-                    item=f"{KIND_NAMES[d.kind]} 판독 가능 여부",
-                    judgment="UNVERIFIABLE",
-                    evidence=[],
-                    confidence=0,
-                    verification_reason=(
-                        "규칙 점검: 텍스트 레이어가 없는 스캔·이미지 PDF라 항목을 추출할 수 없음. "
-                        "PDF 원본은 모델에 전송하지 않음."
-                    ),
-                    supplement="전자 발급본(텍스트가 포함된 PDF)으로 다시 제출해 주세요.",
-                )
-                for d in self.documents
-            ]
-        )
-
-    @staticmethod
-    def _document_item(d: DocumentText) -> Item:
-        labels = ", ".join(display for display, _ in d.required.values())
-        assert d.title_page is not None  # Only called for reliable documents.
-        return Item(
-            item=f"{KIND_NAMES[d.kind]} 핵심 항목 기재",
-            judgment="SUITABLE",
-            evidence=[
-                Evidence(
-                    document_id=d.document_id,
-                    page=d.title_page,
-                    description=f"문서 제목과 핵심 항목 기재 확인: {labels}",
-                )
-            ],
-            confidence=1,
-            verification_reason=(
-                "규칙 점검: 텍스트 레이어에서 라벨과 값을 모두 확인함. "
-                "값의 의미와 정확성은 검증하지 않음."
+            items=items,
+            risk_signals=[],
+            summary=(
+                f"보완이 필요한 항목이 {len(gaps)}건 있습니다: {', '.join(gaps)}. "
+                "보완한 서류로 다시 제출하시면 담당 손해사정사에게 전달됩니다."
             ),
-            supplement="",
         )
 
-    def _cross_item(
-        self,
-        item: str,
-        name: str,
-        display: str,
-        kinds: tuple[DocumentKind, ...] | None = None,
-    ) -> Item:
-        return Item(
-            item=item,
-            judgment="SUITABLE",
-            evidence=[
-                Evidence(
-                    document_id=d.document_id,
-                    page=d.fields[name].page,
-                    description=f"{display} 표기가 비교 문서와 같음(값은 표시하지 않음)",
-                )
-                for d in self.documents
-                if kinds is None or d.kind in kinds
-            ],
-            confidence=1,
-            verification_reason="규칙 점검: 문서 간 표기를 공백·형식만 정규화해 비교함.",
-            supplement="",
-        )
+
+def _gap(d: DocumentText, item: str, page: int, description: str, supplement: str) -> Item:
+    return Item(
+        item=item,
+        judgment="NEEDS_SUPPLEMENT",
+        evidence=[Evidence(document_id=d.document_id, page=page, description=description)],
+        confidence=1,
+        verification_reason=(
+            "규칙 점검: PDF 텍스트에서 확인하지 못함. 표 형식 등으로 읽지 못했을 수도 있음."
+        ),
+        supplement=supplement,
+    )
 
 
 def precheck(request: JevRequest) -> Precheck:

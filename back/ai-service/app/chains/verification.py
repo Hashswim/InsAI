@@ -23,8 +23,9 @@ class VerificationChain:
         findings = validate_findings(draft.findings)
         if type(offline_stub) is not bool:
             raise ValueError("Invalid V-stage execution mode")
-        if offline_stub and any(
-            item.judgment != "UNVERIFIABLE" or item.evidence for item in findings.items
+        if offline_stub and (
+            findings.risk_signals
+            or any(item.judgment != "UNVERIFIABLE" or item.evidence for item in findings.items)
         ):
             raise ValueError("Invalid offline stub recommendation")
         return VerifiedResult(

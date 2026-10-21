@@ -5,7 +5,7 @@ No OCR, network access, model invocation, or claim of factual verification.
 
 from app.chains.structured_output import validate_findings
 from app.providers.base import ProviderResult
-from app.schemas.jev import JevRequest, supported_document_kinds
+from app.schemas.jev import Item, JevRequest, RiskSignal, supported_document_kinds
 
 
 class EvidenceChain:
@@ -28,7 +28,9 @@ class EvidenceChain:
         except Exception:
             # Parser exceptions may contain document data or implementation details.
             raise ValueError("E-stage PDF reference index is unavailable") from None
-        for item in findings.items:
+        # Risk signals are held to the same citation rules as judgments.
+        cited: list[Item | RiskSignal] = [*findings.items, *findings.risk_signals]
+        for item in cited:
             seen: set[tuple[str, int, str]] = set()
             for evidence in item.evidence:
                 if evidence.document_id not in pages or evidence.page > pages[evidence.document_id]:

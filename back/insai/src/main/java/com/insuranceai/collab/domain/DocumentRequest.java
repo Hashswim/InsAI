@@ -15,7 +15,8 @@ import java.util.UUID;
 
 /**
  * 손해사정사가 청구인에게 특정 서류(양식)를 요청하는 항목.
- * 상태: PENDING → SUBMITTED → ACCEPTED / REJECTED (REJECTED 후 재제출 시 SUBMITTED 로 복귀)
+ * 상태: PENDING → SUBMITTED → ACCEPTED / REJECTED / SUPPLEMENT_REQUESTED
+ * (REJECTED·SUPPLEMENT_REQUESTED 후 재제출 시 SUBMITTED 로 복귀)
  */
 @Entity
 @Table(name = "document_requests")
@@ -60,7 +61,8 @@ public class DocumentRequest extends BaseEntity {
 	}
 
 	public void markSubmitted() {
-		if (status != DocumentRequestStatus.PENDING && status != DocumentRequestStatus.REJECTED) {
+		if (status != DocumentRequestStatus.PENDING && status != DocumentRequestStatus.REJECTED
+				&& status != DocumentRequestStatus.SUPPLEMENT_REQUESTED) {
 			throw conflict();
 		}
 		this.status = DocumentRequestStatus.SUBMITTED;
@@ -77,6 +79,13 @@ public class DocumentRequest extends BaseEntity {
 		requireSubmitted();
 		this.rejectionReason = requireText(reason, "반려 사유");
 		this.status = DocumentRequestStatus.REJECTED;
+	}
+
+	/** reason 이 공백이면 BusinessException(INVALID_INPUT) */
+	public void requestSupplement(String reason) {
+		requireSubmitted();
+		this.rejectionReason = requireText(reason, "보완 요청 사유");
+		this.status = DocumentRequestStatus.SUPPLEMENT_REQUESTED;
 	}
 
 	private void requireSubmitted() {

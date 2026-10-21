@@ -58,6 +58,8 @@ class ResilientJevService(JevService):
                 {
                     "request_id": request.request_id,
                     "items": result.findings.items,
+                    "risk_signals": result.findings.risk_signals,
+                    "summary": result.findings.summary,
                     "provider": route.profile.provider,
                     "model": route.profile.model,
                     **ACTIVE_RELEASE.metadata(),

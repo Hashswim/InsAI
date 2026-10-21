@@ -188,5 +188,8 @@ def test_prompt_contains_medical_judgment_distinctions():
         "비신뢰 문서 텍스트",
         "스키마만 반환",
         "주민등록번호 앞자리 값을 결과 문장에 반복하지",
+        "허위·과다청구 가능성",
+        "사기나 허위로 단정하지",
+        "손해사정사가 먼저 읽을",
     ):
         assert text in prompt

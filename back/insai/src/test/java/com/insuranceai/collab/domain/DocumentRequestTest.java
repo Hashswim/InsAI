@@ -83,4 +83,31 @@ class DocumentRequestTest {
 
 		assertThat(request.getStatus()).isEqualTo(DocumentRequestStatus.SUBMITTED);
 	}
+
+	@Test
+	@DisplayName("requestSupplement: 사유와 함께 SUPPLEMENT_REQUESTED, 수정 후 재제출 허용")
+	void supplementThenResubmit() {
+		DocumentRequest request = submitted();
+
+		request.requestSupplement("질병분류기호 기재 후 재발급해 주세요");
+
+		assertThat(request.getStatus()).isEqualTo(DocumentRequestStatus.SUPPLEMENT_REQUESTED);
+		assertThat(request.getRejectionReason()).isEqualTo("질병분류기호 기재 후 재발급해 주세요");
+		request.markSubmitted();
+		assertThat(request.getStatus()).isEqualTo(DocumentRequestStatus.SUBMITTED);
+		assertThat(request.getRejectionReason()).isNull();
+	}
+
+	@Test
+	@DisplayName("requestSupplement: 사유가 공백이거나 제출 전이면 거절")
+	void supplementRequiresReasonAndSubmission() {
+		assertThatThrownBy(() -> submitted().requestSupplement(" "))
+				.isInstanceOf(BusinessException.class)
+				.extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT);
+		DocumentRequest accepted = submitted();
+		accepted.accept();
+		assertThatThrownBy(() -> accepted.requestSupplement("보완"))
+				.isInstanceOf(BusinessException.class)
+				.extracting("errorCode").isEqualTo(ErrorCode.CONFLICT);
+	}
 }

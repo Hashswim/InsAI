@@ -22,8 +22,23 @@ export const KIND_LABELS = {
   MEDICAL_RECEIPT: '진료비 영수증',
 }
 
+/** 최근 AI 점검의 보완 제안을 보완 요청 문구 초안으로 만든다. 없으면 빈 문자열. */
+export async function aiSupplementText(caseId) {
+  try {
+    const latest = await getLatestJev(caseId)
+    return (latest?.result.items ?? [])
+      .filter((it) => it.judgment === 'NEEDS_SUPPLEMENT' && it.supplement)
+      .map((it) => `${it.item}: ${it.supplement}`)
+      .join(' / ')
+  } catch {
+    return ''
+  }
+}
+
 export const runJev = (caseId, documents) =>
   api.post('/ai/jev', { caseId, documents }, { timeout: JEV_TIMEOUT })
 export const getJev = (analysisId) => api.get(`/ai/jev/${analysisId}`)
+// 청구 건의 가장 최근 분석 (누가 실행했든). 청구인에게는 손해사정사용 요약·의심사항이 빠진 채 온다.
+export const getLatestJev = (caseId) => api.get(`/ai/jev/cases/${caseId}/latest`)
 export const jevMetrics = (caseId, days = 7) =>
   api.get(`/ai/jev/cases/${caseId}/metrics`, { params: { days } })

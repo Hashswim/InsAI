@@ -73,7 +73,9 @@ def evaluate_synthetic() -> dict[str, object]:
                         "verification_reason": "synthetic-only",
                         "supplement": "review" if case == "supplement" else "",
                     }
-                ]
+                ],
+                "risk_signals": [],
+                "summary": "synthetic-only",
             }
         )
         expected = case not in {"foreign_document", "invalid_page"}

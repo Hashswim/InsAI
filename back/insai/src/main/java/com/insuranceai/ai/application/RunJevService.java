@@ -27,7 +27,9 @@ public class RunJevService {
         this.audit=audit;
         this.resultStore=resultStore; this.executionAudit=executionAudit;
     }
-    public record AnalysisView(UUID analysisId, JevResult result) {}
+    public record AnalysisView(UUID analysisId, JevResult result) {
+        public AnalysisView forClaimant() { return new AnalysisView(analysisId, result.forClaimant()); }
+    }
     public AnalysisView run(UUID userId, RunJevCommand command) {
         return run(userId, command, UUID.randomUUID());
     }
@@ -68,6 +70,25 @@ public class RunJevService {
         audit.record(requestId, userId, command.caseId(), null, JevAccessAudit.Action.ANALYZE,
             JevAccessAudit.Outcome.ALLOWED, "AUTHORIZED");
         return gateway.analyze(new JevGateway.Request(requestId, documents));
+    }
+    /** The case's most recent analysis (whoever ran it), or null when there is none yet. */
+    public AnalysisView latest(UUID userId, UUID caseId, UUID requestId) {
+        try {
+            access.requireParticipant(caseId, userId);
+        } catch (BusinessException e) {
+            audit.record(requestId, userId, caseId, null, JevAccessAudit.Action.READ,
+                JevAccessAudit.Outcome.DENIED, e.getErrorCode().name());
+            throw e;
+        }
+        var analysis = analyses.findFirstByCaseIdOrderByCreatedAtDesc(caseId).orElse(null);
+        audit.record(requestId, userId, caseId, analysis == null ? null : analysis.getId(),
+            JevAccessAudit.Action.READ, JevAccessAudit.Outcome.ALLOWED, "LATEST_READ");
+        if (analysis == null) return null;
+        try {
+            return new AnalysisView(analysis.getId(), mapper.readValue(analysis.getResultJson(), JevResult.class));
+        } catch (JsonProcessingException e) {
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR);
+        }
     }
     public AnalysisView get(UUID userId, UUID analysisId) {
         return get(userId, analysisId, UUID.randomUUID());

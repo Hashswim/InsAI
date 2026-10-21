@@ -29,13 +29,14 @@ final class JevWireResponseDecoder {
             .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
             .decode(java.nio.ByteBuffer.wrap(bytes)).toString();
         var root = mapper.readTree(json);
-        fields(root, "request_id", "submission_status", "regulations_status", "reason", "items",
+        fields(root, "request_id", "submission_status", "regulations_status", "reason", "items", "risk_signals", "summary",
             "provider", "model", "prompt_version", "prompt_sha256", "chain_version", "trace_id",
             "trace_status", "input_tokens", "output_tokens", "verification");
         require(uuid(root.get("request_id")).equals(request.requestId()));
         equal(root, "submission_status", "ON_HOLD");
         equal(root, "regulations_status", "NOT_REGISTERED");
         text(root, "reason", 2000, false);
+        text(root, "summary", 2000, false);
         String provider = text(root, "provider", 20, false);
         // "rules": answered by the AI service's text-layer presence check without a model call.
         require(Set.of("gemini", "openai", "rules").contains(provider) || (allowStub && provider.equals("stub")));
@@ -81,17 +82,34 @@ final class JevWireResponseDecoder {
             require(evidence.isArray() && evidence.size() <= 20);
             require(judgment.equals("UNVERIFIABLE") || !evidence.isEmpty());
             require(!provider.equals("stub") || (judgment.equals("UNVERIFIABLE") && evidence.isEmpty()));
-            var citations = new HashSet<String>();
-            for (var entry : evidence) {
-                fields(entry, "document_id", "page", "description");
-                UUID id = uuid(entry.get("document_id"));
-                require(documentIds.contains(id));
-                int page = integer(entry.get("page"), 1, 30);
-                String description = text(entry, "description", 2000, false);
-                require(citations.add(id + ":" + page + ":" + description.strip()));
-            }
+            citations(evidence, documentIds);
+        }
+        var signals = root.get("risk_signals");
+        require(signals != null && signals.isArray() && signals.size() <= 20);
+        // Only a model analysis may raise risk signals; stub and rule-only results cannot.
+        require(signals.isEmpty() || !Set.of("stub", "rules").contains(provider));
+        for (var signal : signals) {
+            fields(signal, "signal", "level", "reason", "evidence");
+            text(signal, "signal", 200, false);
+            require(Set.of("LOW", "MEDIUM", "HIGH").contains(text(signal, "level", 10, false)));
+            text(signal, "reason", 2000, false);
+            var evidence = signal.get("evidence");
+            require(evidence.isArray() && !evidence.isEmpty() && evidence.size() <= 20);
+            citations(evidence, documentIds);
         }
         return mapper.treeToValue(root, JevResult.class);
+    }
+
+    private static void citations(JsonNode evidence, Set<UUID> documentIds) {
+        var seen = new HashSet<String>();
+        for (var entry : evidence) {
+            fields(entry, "document_id", "page", "description");
+            UUID id = uuid(entry.get("document_id"));
+            require(documentIds.contains(id));
+            int page = integer(entry.get("page"), 1, 30);
+            String description = text(entry, "description", 2000, false);
+            require(seen.add(id + ":" + page + ":" + description.strip()));
+        }
     }
 
     private static void fields(JsonNode node, String... expected) {

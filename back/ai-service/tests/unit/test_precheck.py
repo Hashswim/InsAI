@@ -4,7 +4,7 @@ from io import BytesIO
 from unittest.mock import Mock
 
 import pytest
-from conftest import FakeProvider, text_pdf
+from conftest import FORM_PAGES, FakeProvider, text_pdf
 from pydantic import ValidationError
 from pypdf import PdfWriter
 
@@ -14,35 +14,7 @@ from app.chains.precheck import precheck
 from app.schemas.jev import OUTPATIENT_DOCUMENT_KINDS, JevRequest
 from scripts.generate_medical_synthetic import sample
 
-COMMON = [
-    "환자 성명: 테스트-김하늘",
-    "주민등록번호: 900101-1234567",
-    "의료기관: 가상 테스트의원",
-    "진료일: 2026-09-01",
-]
-PAGES = {
-    "ITEMIZED_BILL": [
-        "진료비 세부산정내역서",
-        *COMMON,
-        "진료비 총액 50,000 원",
-        "환자부담 총액 12,300 원",
-    ],
-    "INITIAL_VISIT_RECORD": [
-        "초진기록지",
-        *COMMON,
-        "주호소: 가상 증상",
-        "현병력: 3일 전 시작",
-        "진단명: 가상 질환",
-        "질병분류기호: J20.9",
-    ],
-    "MEDICAL_RECEIPT": [
-        "진료비 계산서·영수증",
-        *COMMON,
-        "진료비 총액 50,000 원",
-        "환자부담 총액 12,300 원",
-        "납부액 12,300 원",
-    ],
-}
+PAGES = {kind.value: FORM_PAGES[kind.value] for kind in OUTPATIENT_DOCUMENT_KINDS}
 
 
 def bundle(request_data, **changes):
@@ -69,28 +41,46 @@ def service():
     return JevService(provider, trace), provider
 
 
-def test_complete_bundle_is_answered_by_rules_without_a_model_call(request_data):
+def test_complete_bundle_still_asks_the_model_once_for_the_adjuster_summary(request_data):
     runner, provider = service()
     result = runner.run(bundle(request_data))
+    provider.analyze.assert_called_once()
+    assert result.provider == "gemini" and result.summary
+    form = json.loads(provider.analyze.call_args.args[0].form.removeprefix("JEV_TEXT_FORM="))
+    assert form["server_flags"] == []
+    assert all(document["missing"] == [] for document in form["documents"])
+    assert result.submission_status == "ON_HOLD" and result.verification.human_review == "REQUIRED"
+
+
+def test_missing_field_is_told_to_the_claimant_without_a_model_call(request_data):
+    request = bundle(request_data, INITIAL_VISIT_RECORD=PAGES["INITIAL_VISIT_RECORD"][:-1])
+    runner, provider = service()
+    result = runner.run(request)
     provider.analyze.assert_not_called()
     assert result.provider == "rules" and result.input_tokens == result.output_tokens == 0
     assert result.verification.confidence_basis == "RULE_PRESENCE_CHECK"
-    assert result.submission_status == "ON_HOLD" and result.verification.human_review == "REQUIRED"
-    assert {item.judgment for item in result.items} == {"SUITABLE"}
-    assert "환자부담 총액 일치(세부내역서·영수증)" in {item.item for item in result.items}
-    assert "테스트-김하늘" not in result.model_dump_json()
-    assert "900101" not in result.model_dump_json()
+    gaps = [item for item in result.items if item.judgment == "NEEDS_SUPPLEMENT"]
+    assert [item.item for item in gaps] == ["초진기록지 질병분류기호"]
+    assert "질병분류기호" in gaps[0].supplement and "보완이 필요한 항목이 1건" in result.summary
+    assert result.risk_signals == []
 
 
-def test_missing_field_sends_only_the_extracted_text_form(request_data):
-    request = bundle(request_data, INITIAL_VISIT_RECORD=PAGES["INITIAL_VISIT_RECORD"][:-1])
+def test_wrong_document_kind_is_told_to_the_claimant(request_data):
+    request = bundle(request_data, MEDICAL_RECEIPT=PAGES["ITEMIZED_BILL"])
     runner, provider = service()
-    assert runner.run(request).provider == "gemini"
+    result = runner.run(request)
+    provider.analyze.assert_not_called()
+    assert "진료비 영수증 서류 종류" in {item.item for item in result.items}
+
+
+def test_model_receives_only_the_extracted_text_form(request_data):
+    runner, provider = service()
+    runner.run(bundle(request_data))
     sent = provider.analyze.call_args.args[0]
     form = json.loads(sent.form.removeprefix("JEV_TEXT_FORM="))
     record = form["documents"][1]
-    assert record["missing"] == ["disease_code"]
     assert record["fields"]["diagnosis"] == {"value": "가상 질환", "page": 1}
+    assert record["fields"]["disease_code"] == {"value": "J20.9", "page": 1}
     assert record["fields"]["resident_id_front"]["value"] == "900101"
     assert record["fields"]["patient"]["value"] == "환자-A"
     # Never the PDF, the patient name or the back part of the resident number.
@@ -99,12 +89,26 @@ def test_missing_field_sends_only_the_extracted_text_form(request_data):
     assert not any(hasattr(document, "content_base64") for document in sent.documents)
 
 
-def test_cross_document_mismatch_goes_to_the_model_with_a_flag(request_data):
+def test_cross_document_mismatch_is_flagged_for_the_model(request_data):
     receipt = [line.replace("12,300", "22,300") for line in PAGES["MEDICAL_RECEIPT"]]
     check = precheck(bundle(request_data, MEDICAL_RECEIPT=receipt))
-    assert all(document.reliable for document in check.documents)
-    assert check.mismatches == ("PATIENT_DUE_MISMATCH",)
-    assert not check.confident
+    assert check.complete  # A suspicious but complete bundle goes to the model for the adjuster.
+    assert check.flags == ("PATIENT_DUE_MISMATCH",)
+
+
+def test_in_document_anomalies_are_flagged_for_the_model(request_data):
+    bill = [
+        *PAGES["ITEMIZED_BILL"][:-1],
+        "환자부담 총액 60,000 원",
+        "급여 본인부담금 10,000 원",
+        "비급여 합계 20,000 원",
+    ]
+    record = [*PAGES["INITIAL_VISIT_RECORD"], "증상 시작일: 2026-09-05", "발급일: 2026-08-30"]
+    check = precheck(bundle(request_data, ITEMIZED_BILL=bill, INITIAL_VISIT_RECORD=record))
+    assert "ITEMIZED_BILL:PATIENT_DUE_EXCEEDS_GROSS" in check.flags
+    assert "ITEMIZED_BILL:PATIENT_DUE_BREAKDOWN_MISMATCH" in check.flags
+    assert "INITIAL_VISIT_RECORD:ONSET_AFTER_VISIT" in check.flags
+    assert "INITIAL_VISIT_RECORD:ISSUE_BEFORE_VISIT" in check.flags
 
 
 def test_resident_number_in_another_value_is_masked(request_data):
@@ -123,6 +127,14 @@ def test_image_only_bundle_is_unverifiable_without_a_model_call(request_data):
     provider.analyze.assert_not_called()
     assert result.provider == "rules"
     assert {item.judgment for item in result.items} == {"UNVERIFIABLE"}
+    assert result.summary and result.risk_signals == []
+
+
+def test_one_scanned_document_is_told_to_the_claimant(request_data):
+    runner, provider = service()
+    result = runner.run(bundle(request_data, MEDICAL_RECEIPT=None))
+    provider.analyze.assert_not_called()
+    assert "진료비 영수증 판독 가능 여부" in {item.item for item in result.items}
 
 
 def test_label_followed_by_other_hangul_is_not_a_match(request_data):

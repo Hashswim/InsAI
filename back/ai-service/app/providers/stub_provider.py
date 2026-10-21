@@ -21,6 +21,8 @@ class StubProvider:
                         supplement="실제 판정을 받으려면 Gemini 모드를 설정한 뒤 다시 분석하세요.",
                     )
                     for document in request.documents
-                ]
+                ],
+                risk_signals=[],
+                summary="스텁 모드: 실제 분석을 하지 않았습니다. 실제 요약은 모델 연결 후 제공됩니다.",
             )
         )
