@@ -29,7 +29,9 @@ def test_stub_result_and_safe_trace_share_release_identity(monkeypatch, sample_r
     assert sample_request.documents[0].content_base64 not in str(payload)
 
 
-@pytest.mark.parametrize("field", ["prompt_version", "prompt_sha256", "chain_version", "prompt"])
+@pytest.mark.parametrize(
+    "field", ["prompt_version", "prompt_sha256", "chain_version", "prompt", "verification"]
+)
 def test_request_cannot_override_release(monkeypatch, sample_request, field):
     monkeypatch.setenv("JEV_SERVICE_TOKEN", "synthetic-token")
     with TestClient(app) as client:

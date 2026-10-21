@@ -15,8 +15,13 @@ public record JevResult(
     @JsonProperty("trace_id") UUID traceId,
     @JsonProperty("trace_status") String traceStatus,
     @JsonProperty("input_tokens") int inputTokens,
-    @JsonProperty("output_tokens") int outputTokens
+    @JsonProperty("output_tokens") int outputTokens,
+    Verification verification
 ) {
+    public record Verification(String method,
+                               @JsonProperty("factual_consistency") String factualConsistency,
+                               @JsonProperty("confidence_basis") String confidenceBasis,
+                               @JsonProperty("human_review") String humanReview) {}
     public record Evidence(@JsonProperty("document_id") UUID documentId, int page, String description) {}
     public record Item(String item, String judgment, List<Evidence> evidence, double confidence,
                        @JsonProperty("verification_reason") String verificationReason, String supplement) {}

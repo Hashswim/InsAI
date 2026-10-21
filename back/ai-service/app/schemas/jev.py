@@ -114,6 +114,16 @@ class Findings(StrictModel):
     items: list[Item] = Field(min_length=1, max_length=100, strict=True)
 
 
+class VerificationSummary(StrictModel):
+    """Server-owned scope disclosure, not a model claim of factual accuracy."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, revalidate_instances="always")
+    method: Literal["STRUCTURAL"]
+    factual_consistency: Literal["NOT_VERIFIED"]
+    confidence_basis: Literal["MODEL_SELF_ASSESSMENT", "OFFLINE_STUB"]
+    human_review: Literal["REQUIRED"]
+
+
 class JevResponse(StrictModel):
     request_id: UUID
     submission_status: Literal["ON_HOLD"] = "ON_HOLD"
@@ -125,6 +135,7 @@ class JevResponse(StrictModel):
     prompt_version: str = Field(min_length=1, max_length=100)
     prompt_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     chain_version: str = Field(min_length=1, max_length=100)
+    verification: VerificationSummary
     trace_id: UUID | None
     trace_status: Literal["RECORDED", "DISABLED", "FAILED"]
     input_tokens: int = Field(default=0, ge=0)
@@ -134,4 +145,11 @@ class JevResponse(StrictModel):
     def trace_consistency(self) -> Self:
         if (self.trace_status == "RECORDED") != (self.trace_id is not None):
             raise ValueError("Trace ID must be present exactly when trace is recorded")
+        basis = "OFFLINE_STUB" if self.provider == "stub" else "MODEL_SELF_ASSESSMENT"
+        if self.verification.confidence_basis != basis:
+            raise ValueError("Verification basis does not match execution mode")
+        if self.provider == "stub" and any(
+            item.judgment != "UNVERIFIABLE" or item.evidence for item in self.items
+        ):
+            raise ValueError("Offline stub cannot make grounded recommendations")
         return self

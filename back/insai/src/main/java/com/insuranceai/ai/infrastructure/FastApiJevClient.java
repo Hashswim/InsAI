@@ -47,6 +47,12 @@ public class FastApiJevClient implements JevGateway {
                 || result.promptSha256() == null || !result.promptSha256().matches("[0-9a-f]{64}")
                 || result.chainVersion() == null || result.chainVersion().isBlank()
                 || result.chainVersion().length() > 100
+                || result.verification() == null
+                || !"STRUCTURAL".equals(result.verification().method())
+                || !"NOT_VERIFIED".equals(result.verification().factualConsistency())
+                || !("stub".equals(result.provider()) ? "OFFLINE_STUB" : "MODEL_SELF_ASSESSMENT")
+                    .equals(result.verification().confidenceBasis())
+                || !"REQUIRED".equals(result.verification().humanReview())
                 || !("gemini".equals(result.provider())
                      || "openai".equals(result.provider())
                      || (properties.allowStub() && "stub".equals(result.provider())))) {

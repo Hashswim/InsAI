@@ -30,7 +30,9 @@ class FastApiJevClientTest {
                  "confidence":0,"verification_reason":"unreadable","supplement":"rescan"}],
                  "provider":"%s","model":"fake","prompt_version":"jev-v1","trace_id":"%s",
                  "prompt_sha256":"%s","chain_version":"jev-chain-v1",
-                 "trace_status":"RECORDED","input_tokens":10,"output_tokens":20}
+                 "trace_status":"RECORDED","input_tokens":10,"output_tokens":20,
+                 "verification":{"method":"STRUCTURAL","factual_consistency":"NOT_VERIFIED",
+                 "confidence_basis":"MODEL_SELF_ASSESSMENT","human_review":"REQUIRED"}}
                 """.formatted(requestId,provider,traceId,"a".repeat(64));
             byte[] bytes=response.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type","application/json");
@@ -49,6 +51,7 @@ class FastApiJevClientTest {
             assertEquals(10,result.inputTokens());
             assertEquals("a".repeat(64),result.promptSha256());
             assertEquals("jev-chain-v1",result.chainVersion());
+            assertEquals("NOT_VERIFIED",result.verification().factualConsistency());
         } finally { server.stop(0); }
     }
 
@@ -95,6 +98,44 @@ class FastApiJevClientTest {
         assertTrue(properties.toString().contains("[REDACTED]"));
     }
 
+    @ParameterizedTest
+    @CsvSource({"verification,MISSING", "verification,NULL", "method,FACTUAL",
+        "factual_consistency,VERIFIED", "confidence_basis,CALIBRATED",
+        "confidence_basis,OFFLINE_STUB", "human_review,NOT_REQUIRED", "method,MISSING"})
+    void rejectsMissingOrOverstatedVerification(String field, String value) throws Exception {
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(
+            java.nio.file.Files.readString(java.nio.file.Path.of(
+                "../../docs/ai/contracts/jev-response-example.json")));
+        UUID requestId = UUID.randomUUID();
+        payload.put("request_id", requestId.toString());
+        if (field.equals("verification")) {
+            if (value.equals("MISSING")) payload.remove(field);
+            else payload.putNull(field);
+        } else {
+            var verification = (com.fasterxml.jackson.databind.node.ObjectNode) payload.get("verification");
+            if (value.equals("MISSING")) verification.remove(field);
+            else verification.put(field, value);
+        }
+        byte[] bytes = mapper.writeValueAsBytes(payload);
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/internal/jev", exchange -> {
+            exchange.getRequestBody().readAllBytes();
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, bytes.length);
+            exchange.getResponseBody().write(bytes);
+            exchange.close();
+        });
+        server.start();
+        try {
+            var client = new FastApiJevClient(new FastApiJevProperties(
+                "http://127.0.0.1:" + server.getAddress().getPort(), "token", 5));
+            var error = assertThrows(BusinessException.class, () -> client.analyze(
+                new JevGateway.Request(requestId, List.of())));
+            assertEquals(ErrorCode.AI_INVALID_RESPONSE, error.getErrorCode());
+        } finally { server.stop(0); }
+    }
+
     @Test void rejectsCredentialBearingEndpointWithoutEchoingIt() {
         var error = assertThrows(IllegalArgumentException.class, () ->
             new FastApiJevProperties("https://user:SENTINEL_TOKEN@example.com", "", 120));
@@ -113,7 +154,9 @@ class FastApiJevClientTest {
                 "items":[{"item":"offline","judgment":"UNVERIFIABLE","evidence":[],"confidence":0,
                 "verification_reason":"stub","supplement":"configure Gemini"}],
                 "provider":"stub","model":"stub-v1","trace_status":"DISABLED",
-                "prompt_version":"jev-v1","prompt_sha256":"%s","chain_version":"jev-chain-v1"}
+                "prompt_version":"jev-v1","prompt_sha256":"%s","chain_version":"jev-chain-v1",
+                "verification":{"method":"STRUCTURAL","factual_consistency":"NOT_VERIFIED",
+                "confidence_basis":"OFFLINE_STUB","human_review":"REQUIRED"}}
                 """).formatted(requestId,"a".repeat(64)).getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, bytes.length);

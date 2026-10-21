@@ -49,6 +49,7 @@ class ResilientJevService(JevService):
             result.output_tokens,
             route=route,
             execution=outcome.stats,
+            verification=result.verification,
         )
         try:
             return JevResponse.model_validate(
@@ -62,6 +63,7 @@ class ResilientJevService(JevService):
                     "trace_status": trace_status,
                     "input_tokens": result.input_tokens,
                     "output_tokens": result.output_tokens,
+                    "verification": result.verification,
                 }
             )
         except ValueError:

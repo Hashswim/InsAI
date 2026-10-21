@@ -36,7 +36,8 @@ class JevPersistenceIntegrationTest {
                 List.of(new JevResult.Item("date","SUITABLE",
                     List.of(new JevResult.Evidence(refs.getFirst().fileId(),1,"date present")),
                     0.8,"readable","")),
-                "gemini","fake-model","jev-v1","a".repeat(64),"jev-chain-v1",traceId,"RECORDED",10,20);
+                "gemini","fake-model","jev-v1","a".repeat(64),"jev-chain-v1",traceId,"RECORDED",10,20,
+                new JevResult.Verification("STRUCTURAL","NOT_VERIFIED","MODEL_SELF_ASSESSMENT","REQUIRED"));
         });
         var saved=service.run(account.getId(),new RunJevCommand(claim.getId(),refs));
         var loaded=service.get(account.getId(),saved.analysisId()).result();
@@ -45,6 +46,10 @@ class JevPersistenceIntegrationTest {
         assertEquals("jev-v1",loaded.promptVersion());
         assertEquals("a".repeat(64),loaded.promptSha256());
         assertEquals("jev-chain-v1",loaded.chainVersion());
+        assertEquals("STRUCTURAL",loaded.verification().method());
+        assertEquals("NOT_VERIFIED",loaded.verification().factualConsistency());
+        assertEquals("MODEL_SELF_ASSESSMENT",loaded.verification().confidenceBasis());
+        assertEquals("REQUIRED",loaded.verification().humanReview());
         assertEquals(1,loaded.items().getFirst().evidence().getFirst().page());
         assertEquals("ON_HOLD",loaded.submissionStatus());
         assertTrue(analyses.findById(saved.analysisId()).isPresent());

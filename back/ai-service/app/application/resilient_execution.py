@@ -7,6 +7,7 @@ from time import monotonic, sleep
 from httpx import TimeoutException
 
 from app.chains.jev_workflow import run_workflow
+from app.chains.verification import VerifiedResult
 from app.core.config import Settings
 from app.core.errors import (
     CircuitOpen,
@@ -18,7 +19,7 @@ from app.core.errors import (
     UsagePolicyUnavailable,
 )
 from app.core.usage import CostAccount, UsageGuard, validate_cost_profiles
-from app.providers.base import Provider, ProviderResult
+from app.providers.base import Provider
 from app.providers.circuit_breaker import CircuitBreaker
 from app.providers.routing_policy import RouteDecision
 from app.schemas.jev import JevRequest
@@ -49,7 +50,7 @@ class ExecutionStats:
 
 @dataclass(frozen=True)
 class ExecutionOutcome:
-    result: ProviderResult
+    result: VerifiedResult
     route: RouteDecision
     stats: ExecutionStats
 

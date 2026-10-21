@@ -9,7 +9,7 @@
 |---|---|
 | prompt_version | `jev-v2` — `chains/prompts/jev-v2.txt` |
 | prompt_sha256 | 패키지에 포함된 UTF-8 파일 원본 바이트의 SHA-256, 줄바꿈 포함 |
-| chain_version | `jev-chain-v4` — PDF 입력 매핑 → J의 단일 모델 초안/중복 판정 검사 → E의 PDF 참조 연결/중복 근거 검사 |
+| chain_version | `jev-chain-v5` — PDF 입력 매핑 → J의 단일 모델 초안 → E의 PDF 참조 검사 → V의 구조 검사/한계 표시 |
 
 프롬프트 v2에서 J 판정 지침을 구체화했다. 규정은 비어 있고 제출 여부는 계속 `ON_HOLD`다.
 J/E/V를 별도의 모델 호출 세 개로 구현했다는 뜻은 아니다. 재시도·라우팅은 별도 정책이며
@@ -21,6 +21,8 @@ v3에서는 [J 체인](judgment-chain.md)을 연결하고 중복 범위 검증�
 프롬프트도 jev-v2로 올렸다. 과거 파일·저장 결과를 덮어쓰지 않는다.
 v4에서는 [E 체인](evidence-chain.md)을 분리하고 실제 PDF 페이지 범위와 항목별 중복 근거를 검사한다.
 프롬프트 jev-v2와 해시는 그대로다.
+v5에서는 [V 체인](verification-chain.md)과 서버 소유 verification 응답을 추가했다.
+프롬프트는 바꾸지 않았고 사실 검증 완료나 신뢰도 보정을 주장하지 않는다.
 
 ## 실행·저장·추적
 

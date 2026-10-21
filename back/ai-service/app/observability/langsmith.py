@@ -5,6 +5,7 @@ from app.application.resilient_execution import ExecutionStats
 from app.chains.release import ACTIVE_RELEASE
 from app.core.config import Settings
 from app.providers.routing_policy import RouteDecision
+from app.schemas.jev import VerificationSummary
 
 
 class SafeTrace:
@@ -24,6 +25,7 @@ class SafeTrace:
         *,
         route: RouteDecision | None = None,
         execution: ExecutionStats | None = None,
+        verification: VerificationSummary | None = None,
     ) -> tuple[UUID | None, str]:
         if not self.config.langsmith_enabled:
             return None, "DISABLED"
@@ -31,6 +33,12 @@ class SafeTrace:
         try:
             from langsmith import Client
 
+            verification_metadata = {}
+            if success and verification is not None:
+                checked = VerificationSummary.model_validate(verification)
+                verification_metadata = {
+                    f"verification_{key}": value for key, value in checked.model_dump().items()
+                }
             client = Client(
                 api_key=self.config.langsmith_api_key.get_secret_value(),
                 api_url=self.config.langsmith_endpoint,
@@ -57,6 +65,7 @@ class SafeTrace:
                         "output_tokens": output_tokens,
                         **(route.metadata() if route else {}),
                         **(execution.metadata() if execution else {}),
+                        **verification_metadata,
                     }
                 },
             )

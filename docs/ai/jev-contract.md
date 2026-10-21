@@ -59,6 +59,9 @@ JEV_ALLOW_STUB=true가 필요하며 기본값은 false다. 운영 환경에서�
 - 개발용 provider=stub/model=stub-v1 결과는 실제 판정이 아니라 모두 확인 불가인 연결 확인용 결과다.
 - trace_id: 기록 성공 시 UUID, 미설정 또는 전송 실패 시 null.
 - trace_status: RECORDED / DISABLED / FAILED.
+- verification: method=STRUCTURAL, factual_consistency=NOT_VERIFIED,
+  confidence_basis=MODEL_SELF_ASSESSMENT(stub은 OFFLINE_STUB), human_review=REQUIRED.
+  새 성공 응답의 필수 서버 메타데이터다. [V 체인과 배포·과거 저장 결과 호환 정책](verification-chain.md)을 따른다.
 - AI 결과는 별도 jev_analyses에 저장하며 기존 청구 상태/최종 결정을 변경하지 않는다.
 
 ## 원문 저장 금지의 범위
@@ -66,6 +69,7 @@ LangSmith 자동 추적을 비활성화하고, 명시적 허용 목록만 수동
 PDF, 추출 텍스트, 프롬프트, 판정 내용, 근거, 파일명, 사용자/케이스 ID, 예외 원문을 전송하지 않는다.
 공급자/모델, 프롬프트 버전·해시와 체인 버전, 토큰 수, 실행 시작/종료 시각,
 별도 허용된 실행·라우팅·비용 메타데이터와 일반화된 성공/실패만 기록한다.
+V 통과 성공 trace에는 검증 방식·한계의 고정 상수만 추가하며, 사유·근거 원문은 추가하지 않는다.
 실제 분석 시 PDF 원문은 선택한 공급자(Gemini 또는 선택적 로컬 OpenAI)로 전송된다.
 업무용 원본 파일과 분석 결과는 기존 스토리지/업무 DB에 보관된다.
 OpenAI의 저장 방지 옵션과 공급자 측 보존 한계는 [어댑터 안내](openai-adapter.md)를 따른다.

@@ -10,7 +10,8 @@ from app.main import app
 
 
 @pytest.mark.parametrize(
-    "failure", ["json", "duplicate_judgment", "duplicate_evidence", "unknown_page", "none"]
+    "failure",
+    ["json", "duplicate_judgment", "duplicate_evidence", "unknown_page", "blank_reason", "none"],
 )
 def test_parsing_failure_is_terminal_and_trace_never_contains_raw_output(
     monkeypatch, sample_request, catalog_entry, catalog_path, failure, caplog
@@ -41,6 +42,8 @@ def test_parsing_failure_is_terminal_and_trace_never_contains_raw_output(
         findings.items[0].evidence.append(findings.items[0].evidence[0].model_copy(deep=True))
     elif failure == "unknown_page":
         findings.items[0].evidence[0].page = 2
+    elif failure == "blank_reason":
+        findings.items[0].verification_reason = " "
     text = findings.model_dump_json()
     if failure == "json":
         text = text.replace('"page":1', '"page":2,"page":1')
@@ -69,10 +72,17 @@ def test_parsing_failure_is_terminal_and_trace_never_contains_raw_output(
         assert "SECRET" not in response.text
     else:
         assert response.json()["items"][0]["item"] == "SECRET_PATIENT"
+        assert response.json()["verification"]["factual_consistency"] == "NOT_VERIFIED"
+        assert response.json()["verification"]["human_review"] == "REQUIRED"
     payload = trace.create_run.call_args.kwargs
     assert payload["inputs"] == payload["outputs"] == {}
     assert payload["error"] == ("ANALYSIS_FAILED" if malformed else None)
     assert payload["extra"]["metadata"]["execution_attempts"] == 1
+    if malformed:
+        assert not any(key.startswith("verification_") for key in payload["extra"]["metadata"])
+    else:
+        for key, value in response.json()["verification"].items():
+            assert payload["extra"]["metadata"][f"verification_{key}"] == value
     for key, value in ACTIVE_RELEASE.metadata().items():
         assert payload["extra"]["metadata"][key] == value
     assert "SECRET_PATIENT" not in str(trace.mock_calls) + caplog.text

@@ -1,10 +1,11 @@
 from app.chains.evidence import EvidenceChain
 from app.chains.judgment import JudgmentChain
-from app.providers.base import Provider, ProviderDocument, ProviderRequest, ProviderResult
+from app.chains.verification import VerificationChain, VerifiedResult
+from app.providers.base import Provider, ProviderDocument, ProviderRequest
 from app.schemas.jev import JevRequest
 
 
-def run_workflow(request: JevRequest, provider: Provider) -> ProviderResult:
+def run_workflow(request: JevRequest, provider: Provider) -> VerifiedResult:
     model_request = ProviderRequest(
         request_id=request.request_id,
         documents=tuple(
@@ -12,4 +13,5 @@ def run_workflow(request: JevRequest, provider: Provider) -> ProviderResult:
         ),
     )
     draft = JudgmentChain(provider).run(model_request)
-    return EvidenceChain().run(request, draft)
+    grounded = EvidenceChain().run(request, draft)
+    return VerificationChain().run(grounded, offline_stub=provider.name == "stub")

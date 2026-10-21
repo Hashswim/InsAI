@@ -73,6 +73,7 @@ class JevService:
             result.input_tokens,
             result.output_tokens,
             route=self.route,
+            verification=result.verification,
         )
         try:
             return JevResponse.model_validate(
@@ -86,6 +87,7 @@ class JevService:
                     "trace_status": trace_status,
                     "input_tokens": result.input_tokens,
                     "output_tokens": result.output_tokens,
+                    "verification": result.verification,
                 }
             )
         except ValueError:

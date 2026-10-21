@@ -23,7 +23,13 @@
   "model": "synthetic-contract-model",
   "prompt_version": "jev-v2",
   "prompt_sha256": "8ae41a49b5bf062a781f102f0202cdc2ed6c89e26bf277fc1d218ee58d7fe08b",
-  "chain_version": "jev-chain-v4",
+  "chain_version": "jev-chain-v5",
+  "verification": {
+    "method": "STRUCTURAL",
+    "factual_consistency": "NOT_VERIFIED",
+    "confidence_basis": "MODEL_SELF_ASSESSMENT",
+    "human_review": "REQUIRED"
+  },
   "trace_id": "33333333-3333-4333-8333-333333333333",
   "trace_status": "RECORDED",
   "input_tokens": 10,

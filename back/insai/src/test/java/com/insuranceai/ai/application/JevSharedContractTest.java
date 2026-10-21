@@ -16,7 +16,11 @@ class JevSharedContractTest {
         assertEquals("ON_HOLD", result.submissionStatus());
         assertEquals("RECORDED", result.traceStatus());
         assertEquals("jev-v2",result.promptVersion());
-        assertEquals("jev-chain-v4",result.chainVersion());
+        assertEquals("jev-chain-v5",result.chainVersion());
+        assertEquals("STRUCTURAL",result.verification().method());
+        assertEquals("NOT_VERIFIED",result.verification().factualConsistency());
+        assertEquals("MODEL_SELF_ASSESSMENT",result.verification().confidenceBasis());
+        assertEquals("REQUIRED",result.verification().humanReview());
         assertTrue(result.promptSha256().matches("[0-9a-f]{64}"));
         assertEquals(1,result.items().getFirst().evidence().getFirst().page());
         assertEquals(mapper.readTree(json),mapper.readTree(mapper.writeValueAsString(result)));
@@ -28,5 +32,6 @@ class JevSharedContractTest {
         assertEquals("jev-v1",result.promptVersion());
         assertNull(result.promptSha256());
         assertNull(result.chainVersion());
+        assertNull(result.verification());
     }
 }
