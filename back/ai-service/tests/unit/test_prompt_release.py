@@ -16,7 +16,9 @@ def test_packaged_prompt_matches_immutable_release():
         ACTIVE_RELEASE.prompt_version = "changed"
 
 
-@pytest.mark.parametrize("version", ["", "jev-v2", "../jev", "/tmp/prompt", "https://example.com"])
+@pytest.mark.parametrize(
+    "version", ["", "jev-v1", "jev-v999", "../jev", "/tmp/prompt", "https://example.com"]
+)
 def test_unregistered_versions_never_resolve_a_resource(monkeypatch, version):
     resources = Mock()
     monkeypatch.setattr("app.core.resources.files", resources)
