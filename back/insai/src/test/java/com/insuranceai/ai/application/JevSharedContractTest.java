@@ -16,7 +16,7 @@ class JevSharedContractTest {
         assertEquals("ON_HOLD", result.submissionStatus());
         assertEquals("RECORDED", result.traceStatus());
         assertEquals("jev-v2",result.promptVersion());
-        assertEquals("jev-chain-v3",result.chainVersion());
+        assertEquals("jev-chain-v4",result.chainVersion());
         assertTrue(result.promptSha256().matches("[0-9a-f]{64}"));
         assertEquals(1,result.items().getFirst().evidence().getFirst().page());
         assertEquals(mapper.readTree(json),mapper.readTree(mapper.writeValueAsString(result)));

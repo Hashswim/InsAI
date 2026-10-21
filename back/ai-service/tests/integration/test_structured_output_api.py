@@ -9,7 +9,9 @@ from app.chains.release import ACTIVE_RELEASE
 from app.main import app
 
 
-@pytest.mark.parametrize("failure", ["json", "duplicate_judgment", "none"])
+@pytest.mark.parametrize(
+    "failure", ["json", "duplicate_judgment", "duplicate_evidence", "unknown_page", "none"]
+)
 def test_parsing_failure_is_terminal_and_trace_never_contains_raw_output(
     monkeypatch, sample_request, catalog_entry, catalog_path, failure, caplog
 ):
@@ -35,6 +37,10 @@ def test_parsing_failure_is_terminal_and_trace_never_contains_raw_output(
     malformed = failure != "none"
     if failure == "duplicate_judgment":
         findings.items.append(findings.items[0].model_copy(deep=True))
+    elif failure == "duplicate_evidence":
+        findings.items[0].evidence.append(findings.items[0].evidence[0].model_copy(deep=True))
+    elif failure == "unknown_page":
+        findings.items[0].evidence[0].page = 2
     text = findings.model_dump_json()
     if failure == "json":
         text = text.replace('"page":1', '"page":2,"page":1')

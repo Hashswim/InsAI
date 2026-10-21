@@ -26,6 +26,7 @@ Gemini를 선택하면 필수 설정이 없을 때 시작 시 실패한다.
 프롬프트·체인 변경과 배포는 [버전 관리 안내](../../docs/ai/prompt-chain-versions.md)를 따른다.
 모델 출력 수용·오류 처리는 [공통 파싱 정책](../../docs/ai/structured-output.md)을 따른다.
 항목별 잠정 판정과 단일 모델 호출은 [J 체인 안내](../../docs/ai/judgment-chain.md)를 따른다.
+근거 연결·페이지 참조·중복 검사는 [E 체인 안내](../../docs/ai/evidence-chain.md)를 따른다.
 
 ## 구성
 

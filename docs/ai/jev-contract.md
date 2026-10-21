@@ -50,6 +50,7 @@ JEV_ALLOW_STUB=true가 필요하며 기본값은 false다. 운영 환경에서�
 - evidence: document_id, page(1부터), description.
 - 판정 근거가 없으면 SUITABLE/NEEDS_SUPPLEMENT 불가. UNVERIFIABLE의 신뢰도는 0.
 - 존재하지 않는 문서/페이지 참조는 응답 실패 처리. 근거 내용의 사실성까지 서버가 보증하지 않는다.
+- [E 체인](evidence-chain.md)은 항목 내 중복 근거도 거절하며, 빈 근거를 자동 생성하지 않는다.
 - [구조화 출력 파싱 정책](structured-output.md)에 따라 숫자 문자열·bool 페이지/신뢰도,
   중복 JSON 키·빈 필수 설명·잘린 출력은 거절한다. 자동 수정·재호출은 하지 않는다.
 - provider, model, prompt_version, prompt_sha256, chain_version, input_tokens, output_tokens.
