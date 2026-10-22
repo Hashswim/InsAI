@@ -20,9 +20,9 @@ import java.util.UUID;
 		uniqueConstraints = @UniqueConstraint(name = "uk_stored_files_storage_key", columnNames = "storage_key"))
 public class StoredFile extends BaseEntity {
 
-	public static final long MAX_SIZE_BYTES = 20L * 1024 * 1024;
+	public static final long MAX_SIZE_BYTES = 10L * 1024 * 1024; // JEV 분석 한도와 같다
 	public static final Set<String> ALLOWED_EXTENSIONS =
-			Set.of("pdf", "jpg", "jpeg", "png", "heic", "heif", "tif", "tiff", "webp");
+			Set.of("pdf"); // 청구 서류는 PDF 만 받는다. JEV 가 PDF 텍스트에서 내용을 읽는다.
 
 	@Column(nullable = false)
 	private UUID caseId;

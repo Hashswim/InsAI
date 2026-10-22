@@ -80,16 +80,26 @@ async function onFile(e) {
         <span>첨부됨: {{ uploadedName || '기존 파일' }}</span>
         <label class="btn ghost small" style="cursor: pointer">
           다시 선택
-          <input type="file" hidden :disabled="uploading" @change="onFile" />
+          <input type="file" accept=".pdf,application/pdf" hidden :disabled="uploading" @change="onFile" />
         </label>
       </div>
       <label v-else class="btn ghost" style="cursor: pointer; align-self: flex-start">
         {{ uploading ? '업로드 중…' : '파일 선택' }}
-        <input type="file" hidden :disabled="uploading" @change="onFile" />
+        <input type="file" accept=".pdf,application/pdf" hidden :disabled="uploading" @change="onFile" />
       </label>
-      <p class="small muted">PDF 또는 이미지, 20MB 이하.</p>
+      <p class="small muted">PDF만, 10MB 이하.</p>
       <div v-if="uploadErr" class="alert err">{{ uploadErr }}</div>
     </div>
+
+    <textarea
+      v-else-if="field.type === 'TEXT' && (field.maxLength ?? 0) > 200"
+      class="input"
+      rows="4"
+      :maxlength="field.maxLength"
+      placeholder="손해사정사에게 묻고 싶은 점이 있으면 적어 주세요 (선택)"
+      :value="modelValue"
+      @input="on"
+    />
 
     <input
       v-else

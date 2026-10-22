@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 생명보험 청구 서류 템플릿을 부팅 시 1회 시드한다.
- * code 기준 멱등 — 이미 있으면 건너뛴다(버전 갱신은 CreateTemplateService 를 통해).
+ * code 기준 멱등 — 최신 버전의 필드가 카탈로그와 같으면 건너뛰고, 다르면 다음 버전을 만든다.
  */
 @Component
 @Order(1)
@@ -35,10 +35,13 @@ public class LifeInsuranceTemplateSeeder implements ApplicationRunner {
 	public int seed() {
 		int created = 0;
 		for (FormTemplate template : LifeInsuranceDocumentCatalog.allTemplates()) {
-			if (templates.findTopByCodeOrderByVersionDesc(template.getCode()).isEmpty()) {
-				templates.save(template);
-				created++;
+			var latest = templates.findTopByCodeOrderByVersionDesc(template.getCode());
+			if (latest.isPresent() && latest.get().getFields().equals(template.getFields())) {
+				continue;
 			}
+			int version = latest.map(t -> t.getVersion() + 1).orElse(1);
+			templates.save(FormTemplate.create(template.getCode(), template.getName(), template.getFields(), version));
+			created++;
 		}
 		if (created > 0) {
 			log.info("생명보험 청구 서류 템플릿 {}건 시드 완료", created);

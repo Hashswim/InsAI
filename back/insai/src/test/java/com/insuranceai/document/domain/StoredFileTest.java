@@ -35,6 +35,9 @@ class StoredFileTest {
 				"악성.exe", "application/octet-stream", 10, "k"))
 				.isInstanceOf(BusinessException.class)
 				.extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT);
+		assertThatThrownBy(() -> StoredFile.validateUploadable("진단서.jpg", 10))
+				.isInstanceOf(BusinessException.class)
+				.extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT);
 	}
 
 	@Test

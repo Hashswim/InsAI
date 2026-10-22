@@ -25,12 +25,12 @@ class StoredFileRepositoryJpaTest extends AbstractJpaTest {
 	void byCase() throws InterruptedException {
 		files.save(StoredFile.register(caseId, null, uploader, "first.pdf", "application/pdf", 10, caseId + "/1.pdf"));
 		Thread.sleep(5);
-		files.save(StoredFile.register(caseId, submissionId, uploader, "second.jpg", "image/jpeg", 20, caseId + "/2.jpg"));
+		files.save(StoredFile.register(caseId, submissionId, uploader, "second.pdf", "application/pdf", 20, caseId + "/2.pdf"));
 		files.save(StoredFile.register(UUID.randomUUID(), null, uploader, "other.pdf", "application/pdf", 30, "other/3.pdf"));
 
 		List<StoredFile> result = files.findByCaseIdOrderByCreatedAtAsc(caseId);
 
-		assertThat(result).extracting(StoredFile::getFilename).containsExactly("first.pdf", "second.jpg");
+		assertThat(result).extracting(StoredFile::getFilename).containsExactly("first.pdf", "second.pdf");
 	}
 
 	@Test

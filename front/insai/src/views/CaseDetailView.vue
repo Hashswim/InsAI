@@ -4,6 +4,9 @@ import { useAuthStore } from '@/stores/auth'
 import * as casesApi from '@/api/cases'
 import * as formsApi from '@/api/forms'
 import { openFile } from '@/api/files'
+
+// 제출물 data 의 key → 화면 표시 이름 (서류 양식: 첨부 파일 + 문의 사항)
+const FIELD_LABELS = { file: '첨부 서류', inquiry: '추가 문의 사항' }
 import { claimTypes, requiredDocuments } from '@/api/catalog'
 import { claimTypeLabel } from '@/lib/claimType'
 import { isRead, markRead } from '@/lib/readState'
@@ -594,7 +597,7 @@ const statusLabel = {
                 </div>
                 <dl class="kv" style="margin-top: 10px">
                   <template v-for="(v, k) in submissions[d.id].data" :key="k">
-                    <dt>{{ k }}</dt>
+                    <dt>{{ FIELD_LABELS[k] ?? k }}</dt>
                     <dd>
                       <button
                         v-if="isFileValue(v)"
