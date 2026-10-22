@@ -13,13 +13,20 @@ public interface AccessTokenIssuer {
 
 	IssuedToken issue(UUID accountId, Role role);
 
+	/** 한 청구(케이스)에만 쓸 수 있는 짧은 수명 토큰. case_id 클레임을 담는다. */
+	IssuedToken issueForClaim(UUID accountId, Role role, UUID caseId);
+
 	/** 유효하지 않거나 만료된 토큰이면 InvalidTokenException */
 	ParsedToken parse(String token);
 
 	record IssuedToken(String value, Instant expiresAt) {
 	}
 
-	record ParsedToken(UUID accountId, Set<String> roles) {
+	/** caseId는 청구 단위 토큰일 때만 있다. */
+	record ParsedToken(UUID accountId, Set<String> roles, UUID caseId) {
+		public ParsedToken(UUID accountId, Set<String> roles) {
+			this(accountId, roles, null);
+		}
 	}
 
 	class InvalidTokenException extends RuntimeException {

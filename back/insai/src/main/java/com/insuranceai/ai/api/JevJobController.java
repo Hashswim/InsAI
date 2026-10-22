@@ -18,6 +18,7 @@ public class JevJobController {
     public ResponseEntity<ApiResponse<JevJobService.JobView>> submit(@RequestAttribute("jevActor") Actor actor,
             @RequestAttribute("jevRequestId") UUID requestId, @RequestHeader("Idempotency-Key") String key,
             @Valid @RequestBody RunJevCommand command) {
+        actor.requireCase(command.caseId());
         UUID parsed;
         try {
             parsed=UUID.fromString(key);

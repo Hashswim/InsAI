@@ -25,10 +25,12 @@ import java.util.UUID;
 /**
  * RS256 JWT 액세스 토큰 발급/검증.
  *
- * 클레임: sub=accountId, roles=[ROLE_..], iss, iat, exp
- * 만료: 발급 시각(clock) + ttl
+ * 클레임: sub=accountId, roles=[ROLE_..], iss, iat, exp (청구 단위 토큰은 case_id 추가)
+ * 만료: 발급 시각(clock) + ttl, 청구 단위 토큰은 + CLAIM_TOKEN_TTL
  */
 public class JwtAccessTokenIssuer implements AccessTokenIssuer {
+
+	static final Duration CLAIM_TOKEN_TTL = Duration.ofMinutes(10);
 
 	private final RSAKey rsaKey;
 	private final String issuer;
@@ -44,17 +46,27 @@ public class JwtAccessTokenIssuer implements AccessTokenIssuer {
 
 	@Override
 	public IssuedToken issue(UUID accountId, Role role) {
+		return sign(accountId, role, null, ttl);
+	}
+
+	@Override
+	public IssuedToken issueForClaim(UUID accountId, Role role, UUID caseId) {
+		return sign(accountId, role, caseId, CLAIM_TOKEN_TTL);
+	}
+
+	private IssuedToken sign(UUID accountId, Role role, UUID caseId, Duration lifetime) {
 		Instant now = clock.instant();
-		Instant expiresAt = now.plus(ttl);
+		Instant expiresAt = now.plus(lifetime);
 		try {
 			JWSSigner signer = new RSASSASigner(rsaKey);
-			JWTClaimsSet claims = new JWTClaimsSet.Builder()
+			JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
 					.subject(accountId.toString())
 					.issuer(issuer)
 					.issueTime(Date.from(now))
 					.expirationTime(Date.from(expiresAt))
-					.claim("roles", List.of(role.authority()))
-					.build();
+					.claim("roles", List.of(role.authority()));
+			if (caseId != null) builder.claim("case_id", caseId.toString());
+			JWTClaimsSet claims = builder.build();
 			SignedJWT jwt = new SignedJWT(
 					new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(),
 					claims);
@@ -96,7 +108,10 @@ public class JwtAccessTokenIssuer implements AccessTokenIssuer {
 			}
 			UUID accountId = UUID.fromString(claims.getSubject());
 			if (!accountId.toString().equals(claims.getSubject())) throw new IllegalArgumentException();
-			return new ParsedToken(accountId, Set.copyOf(roles));
+			String caseClaim = claims.getStringClaim("case_id");
+			UUID caseId = caseClaim == null ? null : UUID.fromString(caseClaim);
+			if (caseId != null && !caseId.toString().equals(caseClaim)) throw new IllegalArgumentException();
+			return new ParsedToken(accountId, Set.copyOf(roles), caseId);
 		} catch (ParseException | JOSEException | IllegalArgumentException | NullPointerException e) {
 			throw new InvalidTokenException("토큰을 해석할 수 없습니다.");
 		}

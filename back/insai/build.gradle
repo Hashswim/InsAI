@@ -28,8 +28,9 @@ dependencies {
 	// --- Web / REST ---
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 
-	// --- AI (Anthropic Claude) — 기본 비활성, insai.ai.enabled=true + 키 주입 시 활성 ---
-	implementation 'com.anthropic:anthropic-java:2.34.0'
+	// --- AI (Spring AI ChatClient + OpenAI) — 기본 비활성, insai.ai.enabled=true + 키 주입 시 활성 ---
+	implementation 'org.springframework.ai:spring-ai-openai:1.1.8'
+	implementation 'org.springframework.ai:spring-ai-client-chat:1.1.8'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 
 	// --- Persistence ---
