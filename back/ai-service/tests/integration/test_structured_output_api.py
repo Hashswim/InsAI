@@ -5,7 +5,7 @@ from conftest import FakeProvider, root_run
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage
 
-from app.chains.release import ACTIVE_RELEASE
+from app.jev.release import ACTIVE_RELEASE
 from app.main import app
 
 

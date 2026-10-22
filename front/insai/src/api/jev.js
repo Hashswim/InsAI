@@ -37,7 +37,6 @@ export async function aiSupplementText(caseId) {
 
 export const runJev = (caseId, documents) =>
   api.post('/ai/jev', { caseId, documents }, { timeout: JEV_TIMEOUT })
-export const getJev = (analysisId) => api.get(`/ai/jev/${analysisId}`)
 // 청구 건의 가장 최근 분석 (누가 실행했든). 청구인에게는 손해사정사용 요약·의심사항이 빠진 채 온다.
 export const getLatestJev = (caseId) => api.get(`/ai/jev/cases/${caseId}/latest`)
 export const jevMetrics = (caseId, days = 7) =>

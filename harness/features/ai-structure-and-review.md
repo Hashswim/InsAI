@@ -9,26 +9,21 @@
 
 | AI 기능 | 상태 | 구현 |
 |---|---|---|
-| 의료 PDF JEV 분석 | 구현 골격·자동 테스트 있음; 실연결·문서 정확도 미검증 | Spring `JevController` → FastAPI → Gemini → Spring 결과 저장·조회 |
-| 양식 입력 구조화 | 기존 구현 있음 | `RuleBasedAiStructurePort` / 설정에 따른 `LlmAiStructurePort` |
-| 제출물 요약·하이라이트·누락 | 기존 구현 있음; 현재 컨트롤러는 빈 OCR 목록 전달 | `ReviewSummaryService` → Java `LlmClient` |
-| 사정 결과 평문화 | 기존 구현 있음; 실모델 품질 미검증 | `RegisterDecisionService` → `DecisionTranslator` → `Decision.plainText` |
-| 규정 기반 제출 판단·약관 RAG | 후속 기능 | 규정·약관을 임의로 채우지 않음 |
+| 의료 PDF JEV 분석 | 구현·실연결 검증 | Spring `JevController` → FastAPI(빠른 검사 → J 멀티 에이전트 → E → V) → Spring 결과 저장·조회 |
+| 양식 입력 구조화 | 규칙 기반 | `RuleBasedAiStructurePort` |
+| 제출물 요약·보완·의심사항 | JEV 결과에 포함 | FastAPI 요약 에이전트 |
+| 약관 RAG | 확인할 조항 설명까지 | FastAPI 약관 에이전트 + pgvector |
 
 ## JEV 연결
 
 JEV는 [실행 안내](../../docs/ai/jev-cycle-acceptance.md)에 따라 Gemini·FastAPI·LangSmith를 설정한다.
-기존 Java AI 활성화 설정과 별개다. 모델 키와 서비스 토큰을 저장소에 넣지 않는다.
-
-기존 양식·요약·평문화는 Java `LlmClient`의 스텁/Anthropic 경로가 남아 있다.
-이 기능을 FastAPI로 전환하는 작업은 별도 계약 검토 후 진행한다.
+모델 키와 서비스 토큰을 저장소에 넣지 않는다. Spring 은 LLM 을 직접 호출하지 않는다.
 
 ## 공개 API
 
 ```
 POST /ai/jev                 → 저장된 analysisId와 JEV 결과
 GET /ai/jev/{analysisId}      → 권한 확인 후 저장 결과
-POST /ai/review-summary      → { summary, highlights:[], issues:[], needsAttention:boolean }
 ```
 
 - JEV 상세 요청·응답은 [API 계약](../../docs/ai/jev-contract.md)을 따른다.

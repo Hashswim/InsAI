@@ -2,7 +2,7 @@
 
 PDF 원본은 어떤 경우에도 모델 API로 전송하지 않는다.
 AI 서비스가 pypdf로 텍스트 레이어에서 필요한 항목을 추출하고, 규칙으로 충분하면 모델을 호출하지 않는다.
-구현은 [precheck.py](../../back/ai-service/app/chains/precheck.py)에 있다.
+구현은 [precheck.py](../../back/ai-service/app/jev/precheck.py)에 있다.
 
 ## 처리 흐름
 

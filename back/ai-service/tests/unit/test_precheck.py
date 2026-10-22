@@ -9,8 +9,8 @@ from pydantic import ValidationError
 from pypdf import PdfWriter
 
 from app.application.jev_service import JevService
-from app.chains.jev_workflow import run_workflow
-from app.chains.precheck import precheck
+from app.jev.precheck import precheck
+from app.jev.workflow import run_workflow
 from app.schemas.jev import OUTPATIENT_DOCUMENT_KINDS, JevRequest
 from scripts.generate_medical_synthetic import sample
 

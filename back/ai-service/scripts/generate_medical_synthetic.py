@@ -5,6 +5,7 @@ import json
 import random
 from datetime import date, timedelta
 from pathlib import Path
+from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
 KINDS = ("ITEMIZED_BILL", "INITIAL_VISIT_RECORD", "MEDICAL_RECEIPT")
@@ -19,7 +20,7 @@ def sample(seed: int, scenario: str = "consistent") -> dict:
         + rng.choice(["하늘", "도윤", "지우", "서연"])
     )
     visit = date(2026, 9, 1) + timedelta(days=rng.randrange(30))
-    rows = []
+    rows: list[dict[str, Any]] = []
     for index, label in enumerate(["초진 진찰료", "검사료", "처치료", "비급여 검사"]):
         unit, quantity = rng.randrange(20, 180) * 100, rng.randrange(1, 4)
         total = unit * quantity

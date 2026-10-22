@@ -43,6 +43,7 @@ class JevWireResponseDecoderTest {
         var root = fixture();
         root.put("provider", "rules").put("model", "jev-rules-v1").put("input_tokens", 0).put("output_tokens", 0);
         root.putArray("risk_signals");
+        root.putArray("policy_refs");
         ((ObjectNode) root.get("verification")).put("confidence_basis", "RULE_PRESENCE_CHECK");
         return root;
     }
@@ -77,7 +78,8 @@ class JevWireResponseDecoderTest {
         "trace_unknown", "bad_uuid", "wrong_request", "duplicate_item", "duplicate_evidence", "empty_model",
         "null_item", "many_items", "many_evidence", "null_verification", "surrogate",
         "missing_summary", "blank_summary", "missing_signals", "signal_level", "signal_no_evidence",
-        "signal_foreign_document", "signal_page_large", "many_signals"})
+        "signal_foreign_document", "signal_page_large", "many_signals", "missing_refs", "ref_bad_id",
+        "ref_long_excerpt", "ref_duplicate", "ref_unknown_field"})
     void rejectsInvalidNestedWireData(String mutation) throws Exception {
         var root = fixture();
         var request = request(root);
@@ -129,6 +131,11 @@ class JevWireResponseDecoderTest {
             case "signal_foreign_document" -> ((ObjectNode) root.withArray("risk_signals").get(0).get("evidence").get(0))
                 .put("document_id", UUID.randomUUID().toString());
             case "signal_page_large" -> ((ObjectNode) root.withArray("risk_signals").get(0).get("evidence").get(0)).put("page", 31);
+            case "missing_refs" -> root.remove("policy_refs");
+            case "ref_bad_id" -> ((ObjectNode) root.withArray("policy_refs").get(0)).put("clause_id", "제7조");
+            case "ref_long_excerpt" -> ((ObjectNode) root.withArray("policy_refs").get(0)).put("excerpt", "x".repeat(401));
+            case "ref_duplicate" -> root.withArray("policy_refs").add(root.withArray("policy_refs").get(0).deepCopy());
+            case "ref_unknown_field" -> ((ObjectNode) root.withArray("policy_refs").get(0)).put("text", "SENTINEL");
             case "many_signals" -> { var signals = root.withArray("risk_signals");
                 for (int i=0; i<20; i++) signals.add(signals.get(0).deepCopy()); }
             default -> fail("unknown mutation");

@@ -34,11 +34,21 @@
     }
   ],
   "summary": "합성 예제: 진료일자는 확인되었고, 영수증 금액은 원본 확인이 필요합니다. 최종 판단은 손해사정사가 합니다.",
+  "policy_refs": [
+    {
+      "clause_id": "basic:a7:1",
+      "product": "기본형 실손의료보험(급여)",
+      "article": "제7조",
+      "title": "보험금의 청구",
+      "excerpt": "제7조(보험금의 청구) ① 보험수익자는 다음의 서류를 제출하고 보험금을 청구하여야 합니다.",
+      "reason": "합성 예제: 제출 서류 구성이 청구 서류 요건과 맞는지 확인할 조항"
+    }
+  ],
   "provider": "gemini",
   "model": "synthetic-contract-model",
-  "prompt_version": "jev-v5",
-  "prompt_sha256": "c6b1357d3dbcb7e071f942090af022422a87e49334e232998084f90a425d4a0f",
-  "chain_version": "jev-chain-v10",
+  "prompt_version": "jev-v7",
+  "prompt_sha256": "8f8e9b75a1247b62834adecdea39c9ae22e11a9a35d919d00df881563787d129",
+  "chain_version": "jev-chain-v12",
   "verification": {
     "method": "STRUCTURAL",
     "factual_consistency": "NOT_VERIFIED",

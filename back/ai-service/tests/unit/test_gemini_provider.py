@@ -7,7 +7,6 @@ from conftest import FakeProvider
 from google.genai.errors import ClientError, ServerError
 from langchain_core.messages import AIMessage
 
-from app.chains.precheck import precheck
 from app.core.config import Settings
 from app.core.errors import (
     InvalidProviderResponse,
@@ -15,7 +14,8 @@ from app.core.errors import (
     ProviderTimeout,
     TransientProviderFailure,
 )
-from app.core.resources import load_jev_prompt
+from app.core.resources import load_prompt_section
+from app.jev.precheck import precheck
 from app.providers.base import Provider, ProviderDocument, ProviderRequest
 from app.providers.gemini_provider import GeminiProvider
 
@@ -47,7 +47,7 @@ def test_text_form_and_schema_are_passed_to_langchain(monkeypatch, sample_reques
     )
     assert result.input_tokens == 12
     messages = structured.invoke.call_args.args[0]
-    assert messages[0].content == load_jev_prompt()
+    assert messages[0].content == load_prompt_section("SINGLE")
     # Only the extracted text form is sent; never a PDF.
     assert [block["type"] for block in messages[1].content] == ["text"]
     assert messages[1].content[0]["text"].startswith("JEV_TEXT_FORM=")

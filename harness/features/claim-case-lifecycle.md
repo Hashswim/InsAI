@@ -62,4 +62,3 @@ GET  /cases/{caseId}/timeline                 → [CASE_OPENED, ADJUSTER_ASSIGNE
 - **UNDER_REVIEW 로 가는 엔드포인트 없음** → `RegisterDecisionService` 가 UNDER_REVIEW 를 요구하므로 현재 결정 등록 불가. `POST /cases/{id}/review` (startReview) 필요.
 - `GET /cases`(목록)·`GET /cases/{id}`(상세) 없음.
 - 메시지 스레드 조회 API 없음 (작성만). 타임라인의 MESSAGE_POSTED 로 개수만 파악 가능 → `GET /cases/{id}/messages` 추가 필요.
-- Decision.plainText(AI 평문) 채우는 경로 없음.

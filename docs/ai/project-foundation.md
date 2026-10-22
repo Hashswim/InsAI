@@ -14,7 +14,7 @@
 - `.github/workflows/ai-service.yml`: Python 3.11/3.14 검사, 패키지 빌드 및 Docker 실행 검증 설정.
 - [서비스 README](../../back/ai-service/README.md): 설치·개발·컨테이너 명령 안내.
 
-기존 프로젝트의 계층은 api/core/schemas/application/chains/providers/observability로 유지했다.
+기존 프로젝트의 계층은 api/core/schemas/application/jev/providers/observability로 유지했다(초기 이름 `chains/`는 `jev/`로 바뀜).
 서비스 설정의 local/test/production 정책과 비밀정보 유효성 검사는 06번에서 보완한다.
 이번 단위에서 규정을 작성하거나 모델을 실제 호출하지 않았다.
 

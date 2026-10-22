@@ -6,10 +6,10 @@ import pytest
 from conftest import FakeProvider, root_run
 from pydantic import ValidationError
 
-from app.chains.jev_workflow import run_workflow
-from app.chains.structured_output import parse_findings
-from app.chains.verification import VerificationChain, VerifiedResult
 from app.core.config import Settings
+from app.jev.structured_output import parse_findings
+from app.jev.verification import VerificationChain, VerifiedResult
+from app.jev.workflow import run_workflow
 from app.observability.langsmith import SafeTrace
 from app.providers.base import ProviderResult
 from app.providers.stub_provider import StubProvider

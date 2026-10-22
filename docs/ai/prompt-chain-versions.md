@@ -2,12 +2,12 @@
 
 ## 현재 릴리스
 
-`back/ai-service/app/chains/release.py`의 변경 불가능한 `ACTIVE_RELEASE`가
+`back/ai-service/app/jev/release.py`의 변경 불가능한 `ACTIVE_RELEASE`가
 서버 릴리스를 지정한다. 요청·헤더·환경변수·LangSmith 원격 프롬프트로 교체하지 않는다.
 
 | 필드 | 현재 값 / 의미 |
 |---|---|
-| prompt_version | `jev-v2` — `chains/prompts/jev-v2.txt` |
+| prompt_version | `jev-v2` — `jev/prompts/jev-v2.txt` |
 | prompt_sha256 | 패키지에 포함된 UTF-8 파일 원본 바이트의 SHA-256, 줄바꿈 포함 |
 | chain_version | `jev-chain-v7` — 엄격한 HTTP/JSON·PDF 수용 정책과 PREPARE→J→E→V 실행 |
 
@@ -48,7 +48,7 @@ v7에서는 [입력 방어](input-defense.md)의 JSON/헤더·PDF 기능 수용 
 
 1. 프롬프트를 바꾸면 기존 버전 파일을 덮어쓰지 않고 새 파일을 추가한다.
    현재 로더는 활성 릴리스 하나만 지원하므로 과거 파일이 있어도 임의 선택할 수 없다.
-2. `shasum -a 256 app/chains/prompts/새버전.txt`로 파일 해시를 구한다.
+2. `shasum -a 256 app/jev/prompts/새버전.txt`로 파일 해시를 구한다.
    버전·해시·활성 릴리스를 코드 리뷰로 함께 변경한다. 런타임 자동 재계산으로 검증을 생략하지 않는다.
 3. 워크플로 입력·단계·검증 의미를 변경하면 chain_version도 올린다.
    프롬프트만 변경하면 prompt_version/hash를 올린다. 공유 응답 예제·문서도 갱신한다.

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "7ad05666-1ae2-41ac-bfeb-903b6daf9433",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/candidate.json",
+  "output": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.html",
+  "specification": {
+    "sha256": "0890de5961c01116a9f2467cb21a4b34d88fd4147002f096d13b2b9d68524efa",
+    "bytes": 6987
+  },
+  "artifact": {
+    "sha256": "a85d9718f71db4c6b6193d7e7aca1df6daa0a9bc8a302f9830bac0544f4ea708",
+    "bytes": 842554
+  }
+}

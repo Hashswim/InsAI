@@ -5,11 +5,11 @@ import pytest
 from conftest import FakeProvider
 from langsmith.run_helpers import get_tracing_context
 
-from app.chains.jev_workflow import run_workflow
-from app.chains.judgment import JudgmentChain
-from app.chains.precheck import precheck
 from app.core.errors import InvalidProviderResponse, ProviderTimeout, TransientProviderFailure
 from app.core.resources import load_jev_prompt
+from app.jev.judgment import JudgmentChain
+from app.jev.precheck import precheck
+from app.jev.workflow import run_workflow
 from app.providers.base import ProviderDocument, ProviderRequest, ProviderResult
 from app.schemas.jev import Findings
 

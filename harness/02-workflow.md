@@ -61,7 +61,7 @@ export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home
 ## 커밋·브랜치 규칙
 
 - 작업 브랜치: `dev`. `main`/`test` 는 배포/QA용.
-- 원격: `https://github.com/Hashswim/AI_FInancial_Challenge` (HTTPS).
+- 원격: `https://github.com/Hashswim/InsAI` (HTTPS).
 - 커밋 저자: `Hashswim <ss991117@naver.com>` (repo-local git config).
 - 메시지: `<type>(<scope>): <요약>` + 본문에 변경 요점·검증 결과. type = feat/fix/refactor/test/chore/docs.
 

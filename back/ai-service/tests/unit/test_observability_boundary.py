@@ -92,7 +92,7 @@ def captured_runs(monkeypatch):
 
 
 def test_trace_tree_shows_each_jev_stage_and_llm_usage_without_content(monkeypatch):
-    from app.chains.orchestrator import STAGES, WorkflowReport
+    from app.jev.orchestrator import STAGES, WorkflowReport
 
     trace, runs = captured_runs(monkeypatch)
     report = WorkflowReport(STAGES, None, (0.01, 4.2, 0.02, 0.01))

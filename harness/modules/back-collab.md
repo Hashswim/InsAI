@@ -19,7 +19,7 @@
 | `CaseStatus` | OPEN → DOCS_REQUESTED → DOCS_SUBMITTED → UNDER_REVIEW → DECISION_MADE → CLOSED |
 | `DocumentRequest` | `DocumentRequestStatus` PENDING → SUBMITTED → ACCEPTED/REJECTED (REJECTED 후 재제출) |
 | `Message` | senderId, senderRole(`Role`), body, aiMediated |
-| `Decision` | adjusterId, rawText(필수), plainText(AI 후처리, nullable) |
+| `Decision` | adjusterId, rawText(필수) |
 | `TimelineEvent` | `TimelineEventType` (CASE_OPENED, ADJUSTER_ASSIGNED, DOCS_REQUESTED, DOCS_SUBMITTED, REVIEW_STARTED, DECISION_MADE, CASE_CLOSED, MESSAGE_POSTED) |
 
 | 서비스 | 요약 |
@@ -72,5 +72,4 @@
 - [x] 도메인·애플리케이션·웹·persistence·통합 GREEN
 - [ ] `GET /cases`, `GET /cases/{id}` (프론트 블로커) — `ListCasesService`/`GetCaseService`
 - [ ] `startReview()` 를 트리거하는 엔드포인트(사정사가 검토 착수) — 현재 DOCS_SUBMITTED→UNDER_REVIEW 경로 노출 안 됨
-- [ ] Decision.plainText 채우는 ai 연동
 - [ ] 메시지 CLOSED 케이스 차단(통합 시나리오에 있으나 미구현)

@@ -29,7 +29,7 @@ final class JevWireResponseDecoder {
             .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
             .decode(java.nio.ByteBuffer.wrap(bytes)).toString();
         var root = mapper.readTree(json);
-        fields(root, "request_id", "submission_status", "regulations_status", "reason", "items", "risk_signals", "summary",
+        fields(root, "request_id", "submission_status", "regulations_status", "reason", "items", "risk_signals", "summary", "policy_refs",
             "provider", "model", "prompt_version", "prompt_sha256", "chain_version", "trace_id",
             "trace_status", "input_tokens", "output_tokens", "verification");
         require(uuid(root.get("request_id")).equals(request.requestId()));
@@ -88,6 +88,20 @@ final class JevWireResponseDecoder {
         require(signals != null && signals.isArray() && signals.size() <= 20);
         // Only a model analysis may raise risk signals; stub and rule-only results cannot.
         require(signals.isEmpty() || !Set.of("stub", "rules").contains(provider));
+        var refs = root.get("policy_refs");
+        require(refs != null && refs.isArray() && refs.size() <= 10);
+        require(refs.isEmpty() || !Set.of("stub", "rules").contains(provider));
+        var clauses = new HashSet<String>();
+        for (var ref : refs) {
+            fields(ref, "clause_id", "product", "article", "title", "excerpt", "reason");
+            require(clauses.add(text(ref, "clause_id", 64, false)));
+            require(ref.get("clause_id").textValue().matches("[a-z0-9]+:[a-z0-9_]+:[0-9]+"));
+            text(ref, "product", 60, false);
+            text(ref, "article", 40, false);
+            text(ref, "title", 120, false);
+            text(ref, "excerpt", 400, false);
+            text(ref, "reason", 500, false);
+        }
         for (var signal : signals) {
             fields(signal, "signal", "level", "reason", "evidence");
             text(signal, "signal", 200, false);

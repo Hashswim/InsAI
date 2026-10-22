@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "InsuranceAI 청구 서류 검토 아키텍처 (멀티 에이전트 · RAG · MCP)",
+    "locale": "ko",
+    "output": "docs/architecture/architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "claimant",
+      "type": "external",
+      "label": "청구인",
+      "sublabel": "브라우저",
+      "pos": [
+        40,
+        200
+      ],
+      "size": [
+        120,
+        64
+      ]
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Vue 웹",
+      "sublabel": ":5173 · /api 프록시",
+      "pos": [
+        260,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "adjuster",
+      "type": "external",
+      "label": "손해사정사",
+      "sublabel": "브라우저",
+      "pos": [
+        260,
+        380
+      ],
+      "size": [
+        140,
+        64
+      ]
+    },
+    {
+      "id": "spring",
+      "type": "backend",
+      "label": "Spring 업무 백엔드",
+      "sublabel": ":8080 · 권한·감사·저장",
+      "pos": [
+        500,
+        200
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "JWT RS256"
+    },
+    {
+      "id": "storage",
+      "type": "database",
+      "label": "파일 저장소",
+      "sublabel": "청구 서류 PDF",
+      "pos": [
+        510,
+        40
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": ":5433 · 케이스·분석·감사",
+      "pos": [
+        500,
+        380
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "precheck",
+      "type": "backend",
+      "label": "① 빠른 검사",
+      "sublabel": "pypdf 키워드 추출·누락 검사",
+      "pos": [
+        770,
+        200
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "LLM 없음"
+    },
+    {
+      "id": "agents",
+      "type": "backend",
+      "label": "J · 판단 (멀티 에이전트)",
+      "sublabel": "LangGraph · 검토·약관·의심·요약",
+      "pos": [
+        1040,
+        200
+      ],
+      "size": [
+        200,
+        64
+      ],
+      "tag": "LangChain"
+    },
+    {
+      "id": "ev",
+      "type": "backend",
+      "label": "E · V 검증",
+      "sublabel": "근거 문서·쪽 대조 · 구조 검증",
+      "pos": [
+        1340,
+        200
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "tag": "항상 판정 보류"
+    },
+    {
+      "id": "mcp",
+      "type": "backend",
+      "label": "MCP 서버 ×2",
+      "sublabel": "documents · policy (stdio)",
+      "pos": [
+        770,
+        380
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "pgvector",
+      "type": "database",
+      "label": "pgvector",
+      "sublabel": "표준약관 + 보험사 2곳 · 416조항",
+      "pos": [
+        1050,
+        380
+      ],
+      "size": [
+        180,
+        64
+      ]
+    },
+    {
+      "id": "langsmith",
+      "type": "cloud",
+      "label": "LangSmith",
+      "sublabel": "에이전트별 실행 기록",
+      "pos": [
+        1065,
+        40
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "LLM API",
+      "sublabel": "OpenAI gpt-6-luna",
+      "pos": [
+        1350,
+        380
+      ],
+      "size": [
+        150,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "JEV AI 서비스 · FastAPI :8085",
+      "wraps": [
+        "precheck",
+        "agents",
+        "ev"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "claimant-submits",
+      "from": "claimant",
+      "to": "web",
+      "label": "서류 제출",
+      "variant": "emphasis"
+    },
+    {
+      "id": "adjuster-reviews",
+      "from": "adjuster",
+      "to": "web",
+      "label": "AI 요약 보고 판단"
+    },
+    {
+      "id": "web-to-spring",
+      "from": "web",
+      "to": "spring",
+      "label": "REST · JWT",
+      "variant": "emphasis"
+    },
+    {
+      "id": "spring-reads-pdf",
+      "from": "spring",
+      "to": "storage",
+      "label": "PDF 읽기"
+    },
+    {
+      "id": "spring-persists",
+      "from": "spring",
+      "to": "postgres",
+      "label": "결과·감사 저장"
+    },
+    {
+      "id": "spring-to-precheck",
+      "from": "spring",
+      "to": "precheck",
+      "label": "PDF 3종",
+      "variant": "security"
+    },
+    {
+      "id": "gaps-to-claimant",
+      "from": "precheck",
+      "to": "spring",
+      "label": "누락 시 바로 보완 안내",
+      "fromSide": "top",
+      "toSide": "top"
+    },
+    {
+      "id": "complete-to-agents",
+      "from": "precheck",
+      "to": "agents",
+      "label": "서류 완비 시",
+      "variant": "emphasis"
+    },
+    {
+      "id": "j-to-ev",
+      "from": "agents",
+      "to": "ev",
+      "label": "근거 검문",
+      "variant": "emphasis"
+    },
+    {
+      "id": "agents-to-llm",
+      "from": "agents",
+      "to": "llm",
+      "label": "텍스트 폼만",
+      "variant": "security"
+    },
+    {
+      "id": "agents-rag",
+      "from": "agents",
+      "to": "pgvector",
+      "label": "RAG 약관 검색"
+    },
+    {
+      "id": "mcp-search",
+      "from": "mcp",
+      "to": "pgvector",
+      "label": "search_clauses"
+    },
+    {
+      "id": "mcp-extract",
+      "from": "mcp",
+      "to": "precheck",
+      "label": "같은 추출 로직",
+      "variant": "dashed"
+    },
+    {
+      "id": "agents-trace",
+      "from": "agents",
+      "to": "langsmith",
+      "label": "원문 없는 실행 기록",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "청구인 → AI 플랫폼(JEV) → 손해사정사",
+      "items": [
+        "① 누락·판독 불가·서류 종류 오류는 LLM 없이 청구인에게 바로 보완 안내",
+        "② 서류가 갖춰진 건만 J(멀티 에이전트 판단) → E(인용한 문서·쪽 대조) → V(근거 없는 판정 반려) 순서로 검토",
+        "③ 손해사정사가 요약·보완·의심사항·약관 조항을 보고 승인 · 보완 요청 · 반려"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "개인정보 경계",
+      "items": [
+        "PDF 원본은 LLM으로 보내지 않음, 환자명은 가명·주민번호는 앞 6자리만",
+        "약관 검색어는 진단·진료 정보만 사용",
+        "의심사항·약관 조항은 손해사정사 응답에만 포함"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "표준 인터페이스",
+      "items": [
+        "MCP insai-documents: extract_fields · check_missing",
+        "MCP insai-policy: search_clauses · 조항 원문 Resource",
+        "근거 조항 텍스트는 서버가 채우고, 검색되지 않은 조항 인용은 거부"
+      ]
+    }
+  ]
+}

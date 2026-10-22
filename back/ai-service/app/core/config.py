@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     langsmith_api_key: SecretStr = Field(default=SecretStr(""), repr=False)
     langsmith_project: str = Field(default="insai-jev", min_length=1, max_length=200)
     langsmith_endpoint: str = "https://api.smith.langchain.com"
+    # LangGraph supervisor + specialist agents for complete bundles (J stage); off = single call.
+    jev_multi_agent: bool = False
+    # Standard-terms RAG (pgvector). Empty URL disables retrieval; agents then cite no clauses.
+    jev_rag_database_url: SecretStr = Field(default=SecretStr(""), repr=False)
+    jev_embedding_model: str = Field(
+        default="text-embedding-3-small", pattern=r"^[A-Za-z0-9._/-]+$", max_length=200
+    )
+    jev_rag_top_k: int = Field(default=6, ge=1, le=12)
 
     @model_validator(mode="after")
     def validate_configuration(self) -> Self:
@@ -123,6 +131,14 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "Gemini requires service credentials and a routing model configuration"
                 )
+        if self.jev_multi_agent and self.jev_provider == "stub":
+            raise ValueError("Multi-agent analysis requires a real provider")
+        rag_url = self.jev_rag_database_url.get_secret_value()
+        if rag_url and (
+            urlsplit(rag_url).scheme not in {"postgresql", "postgres"}
+            or not self.openai_api_key.get_secret_value()
+        ):
+            raise ValueError("RAG requires a PostgreSQL URL and an OpenAI key for embeddings")
         if self.langsmith_enabled and not self.langsmith_api_key.get_secret_value().strip():
             raise ValueError("LANGSMITH_ENABLED requires LANGSMITH_API_KEY")
         if self.jev_provider == "openai" and (

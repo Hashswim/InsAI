@@ -2,7 +2,7 @@
 
 ## 구현 범위
 
-`app/chains/verification.py`의 `VerificationChain`을 J→E 다음에 연결했다.
+`app/jev/verification.py`의 `VerificationChain`을 J→E 다음에 연결했다.
 J의 모델 초안과 E의 참조 검사 결과를 대상으로 최종 구조 검사를 수행한다.
 독립 모델 재판정, OCR/문장 대조, 규정 적용이나 신뢰도 보정 모델은 구현하지 않는다.
 모델 호출은 기존처럼 한 번이며 E/V 때문에 모델 호출·비용을 추가하지 않는다.

@@ -11,7 +11,8 @@ dependencies = [
   "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pydantic-settings>=2.7,<3",
   "langchain-core>=1,<2", "langchain-google-genai>=4.4.2,<5", "google-genai>=2.31,<3",
   "langsmith>=0.4,<1", "pypdf>=6,<7",
-  "httpx>=0.28,<1"
+  "httpx>=0.28,<1",
+  "langgraph>=1.2,<2", "langchain-openai>=1.7,<2", "psycopg[binary]>=3.2,<4", "mcp>=2.3,<3"
 ]
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
@@ -20,7 +21,7 @@ synthetic = ["Pillow>=11,<13", "reportlab>=4,<5"]
 [tool.setuptools.packages.find]
 include = ["app*"]
 [tool.setuptools.package-data]
-app = ["chains/prompts/*.txt", "rules/*.yaml"]
+app = ["jev/prompts/*.txt", "rag/data/*.txt"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]

@@ -12,13 +12,11 @@ public record StoredFileView(
 		String filename,
 		String contentType,
 		long sizeBytes,
-		boolean hasOcrText,
 		Instant createdAt
 ) {
 
 	public static StoredFileView from(StoredFile f) {
 		return new StoredFileView(f.getId(), f.getCaseId(), f.getSubmissionId(),
-				f.getFilename(), f.getContentType(), f.getSizeBytes(),
-				f.getOcrText() != null && !f.getOcrText().isBlank(), f.getCreatedAt());
+				f.getFilename(), f.getContentType(), f.getSizeBytes(), f.getCreatedAt());
 	}
 }

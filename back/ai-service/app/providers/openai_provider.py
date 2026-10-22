@@ -4,11 +4,6 @@ from typing import Any
 
 import httpx
 
-from app.chains.structured_output import (
-    MAX_PROVIDER_RESPONSE_BYTES,
-    decode_json_object,
-    parse_findings,
-)
 from app.core.config import Settings
 from app.core.errors import (
     InvalidProviderResponse,
@@ -16,7 +11,12 @@ from app.core.errors import (
     ProviderTimeout,
     TransientProviderFailure,
 )
-from app.core.resources import load_jev_prompt
+from app.core.resources import load_prompt_section
+from app.jev.structured_output import (
+    MAX_PROVIDER_RESPONSE_BYTES,
+    decode_json_object,
+    parse_findings,
+)
 from app.providers.base import ProviderRequest, ProviderResult
 from app.providers.catalog import JEV_OUTPUT_TOKENS
 from app.providers.retry_after import retry_after_seconds
@@ -35,7 +35,7 @@ class OpenAIProvider:
         self._timeout = config.jev_attempt_timeout_seconds
         self._reasoning_effort = config.openai_reasoning_effort
         self._verbosity = config.openai_verbosity
-        self.prompt = load_jev_prompt()
+        self.prompt = load_prompt_section("SINGLE")
 
     def analyze(self, request: ProviderRequest) -> ProviderResult:
         content: list[dict[str, Any]] = [{"type": "input_text", "text": request.form}]

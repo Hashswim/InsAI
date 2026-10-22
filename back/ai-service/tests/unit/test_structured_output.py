@@ -4,8 +4,7 @@ from uuid import uuid4
 import pytest
 from conftest import FakeProvider
 
-from app.chains.jev_workflow import run_workflow
-from app.chains.structured_output import (
+from app.jev.structured_output import (
     INVALID_OUTPUT,
     MAX_FINDINGS_BYTES,
     MAX_JSON_DEPTH,
@@ -13,6 +12,7 @@ from app.chains.structured_output import (
     parse_findings,
     validate_findings,
 )
+from app.jev.workflow import run_workflow
 
 
 @pytest.fixture

@@ -10,6 +10,7 @@ public record JevResult(
     @JsonProperty("regulations_status") String regulationsStatus,
     String reason, List<Item> items,
     @JsonProperty("risk_signals") List<RiskSignal> riskSignals, String summary,
+    @JsonProperty("policy_refs") List<PolicyRef> policyRefs,
     String provider, String model,
     @JsonProperty("prompt_version") String promptVersion,
     @JsonProperty("prompt_sha256") String promptSha256,
@@ -25,7 +26,7 @@ public record JevResult(
     public JevResult forClaimant() {
         if ("rules".equals(provider)) return this;
         return new JevResult(requestId, submissionStatus, regulationsStatus, reason, List.of(), List.of(),
-            "서류가 모두 확인되어 담당 손해사정사에게 전달되었습니다.", provider, model, promptVersion, promptSha256,
+            "서류가 모두 확인되어 담당 손해사정사에게 전달되었습니다.", List.of(), provider, model, promptVersion, promptSha256,
             chainVersion, traceId, traceStatus, inputTokens, outputTokens, verification);
     }
     public record Verification(String method,
@@ -38,6 +39,11 @@ public record JevResult(
     /** A point the adjuster should verify (possible false/inflated claim), never a fraud finding. */
     public record RiskSignal(String signal, String level, String reason, List<Evidence> evidence) {
         @Override public String toString() { return "JevRiskSignal[REDACTED]"; }
+    }
+    /** A standard-terms clause found by RAG; text comes from the public corpus, reason from the agent. */
+    public record PolicyRef(@JsonProperty("clause_id") String clauseId, String product, String article, String title,
+                            String excerpt, String reason) {
+        @Override public String toString() { return "JevPolicyRef[REDACTED]"; }
     }
     public record Item(String item, String judgment, List<Evidence> evidence, double confidence,
                        @JsonProperty("verification_reason") String verificationReason, String supplement) {

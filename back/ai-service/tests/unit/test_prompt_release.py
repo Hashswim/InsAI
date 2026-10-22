@@ -4,8 +4,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.chains.release import ACTIVE_RELEASE
 from app.core.resources import load_jev_prompt
+from app.jev.release import ACTIVE_RELEASE
 
 
 def test_packaged_prompt_matches_immutable_release():

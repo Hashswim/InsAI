@@ -2,7 +2,7 @@
 
 ## 실행 경계
 
-`app/chains/orchestrator.py`의 무상태 `JevOrchestrator`가 시도 한 번을 조정한다.
+`app/jev/orchestrator.py`의 무상태 `JevOrchestrator`가 시도 한 번을 조정한다.
 기존 `run_workflow`는 이 오케스트레이터에 위임하므로 기본 서비스와 재시도 실행 경로가 같은 순서를 따른다.
 
 고정 순서: PREPARE → J → E → V → VerifiedResult 반환.

@@ -61,13 +61,12 @@ C01~C05는 문서상 가상 예제이고, 현재 claim_example.json은 실 PDF �
 | 기존 경로 | 확인한 상태 | 이번 결정 |
 |---|---|---|
 | RuleBasedAiStructurePort / LlmAiStructurePort | 양식 제출 시 구조화 포트, 설정에 따라 Java LLM 경로 사용 | 보존. UC01 의료 PDF 분석과 같은 기능으로 간주하지 않음 |
-| POST /ai/review-summary | ReviewSummaryService와 Java LlmClient 연결 코드 존재; 컨트롤러는 현재 제출 데이터와 빈 OCR 목록 전달 | UC04는 후속. PDF 요약이나 실모델 검증이 끝났다고 표시하지 않음 |
 | RegisterDecisionService / LlmDecisionTranslator | 사정사 결정 등록 시 평문화 연동 코드 존재 | UC05는 후속. JEV가 사정사 결정을 생성하는 경로로 바꾸지 않음 |
 | POST /ai/jev, GET /ai/jev/{analysisId} | FastAPI 연결·결과 저장·조회 코드 존재 | P0의 주 경로. 이후 작업에서 검증과 부족한 구현을 보강 |
 
 기존 Java AI 기능을 제거하거나 즉시 FastAPI로 이관하지 않는다.
 25번에서 전환할 때 각 기능의 계약과 실패 시 기존 업무가 유지되는 동작을 검토한다.
-새로운 의료 PDF 분석을 위해 기존 INSAI_AI_ENABLED를 활성화할 필요는 없다.
+Spring 의 옛 `insai.ai` LLM 경로(`/ai/review-summary`, 평문 번역)는 제거했고, 모든 LLM 호출은 FastAPI JEV 서비스로 모았다.
 JEV는 별도의 JEV 설정과 Gemini 설정을 사용한다.
 
 ## MVP 이후의 확장 조건

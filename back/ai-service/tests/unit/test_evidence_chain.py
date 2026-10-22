@@ -7,8 +7,8 @@ import pytest
 from conftest import FakeProvider
 from pypdf import PdfWriter
 
-from app.chains.evidence import EvidenceChain
-from app.chains.jev_workflow import run_workflow
+from app.jev.evidence import EvidenceChain
+from app.jev.workflow import run_workflow
 from app.providers.base import ProviderResult
 from app.schemas.jev import JevRequest
 

@@ -20,21 +20,18 @@ public class RegisterDecisionService {
 	private final CaseRepository cases;
 	private final DecisionRepository decisions;
 	private final TimelineEventRepository timeline;
-	private final DecisionTranslator decisionTranslator;
 
 	public RegisterDecisionService(CaseRepository cases,
 	                               DecisionRepository decisions,
-	                               TimelineEventRepository timeline,
-	                               DecisionTranslator decisionTranslator) {
+	                               TimelineEventRepository timeline) {
 		this.cases = cases;
 		this.decisions = decisions;
 		this.timeline = timeline;
-		this.decisionTranslator = decisionTranslator;
 	}
 
 	/**
 	 * 배정된 손해사정사만, 케이스가 UNDER_REVIEW 일 때만 결과를 등록할 수 있다.
-	 * 성공 시 케이스 상태를 DECISION_MADE 로 전이하고, 가능하면 AI 평문 번역을 붙인다.
+	 * 성공 시 케이스 상태를 DECISION_MADE 로 전이한다.
 	 *
 	 * @return 생성된 Decision id
 	 */
@@ -49,14 +46,6 @@ public class RegisterDecisionService {
 		caseAggregate.recordDecision();
 
 		Decision decision = Decision.of(caseAggregate.getId(), command.adjusterId(), command.rawText());
-		try {
-			String plain = decisionTranslator.toPlainText(command.rawText());
-			if (plain != null && !plain.isBlank()) {
-				decision.applyPlainText(plain);
-			}
-		} catch (RuntimeException ignored) {
-			// 평문 번역 실패는 결정 등록을 막지 않는다
-		}
 		Decision saved = decisions.save(decision);
 
 		cases.save(caseAggregate);

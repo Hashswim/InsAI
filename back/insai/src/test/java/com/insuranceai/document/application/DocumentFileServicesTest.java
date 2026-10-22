@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verify;
 class DocumentFileServicesTest {
 
 	@Mock StoragePort storage;
-	@Mock OcrPort ocr;
 	@Mock CaseParticipantGuard guard;
 	@Mock StoredFileRepository files;
 
@@ -73,9 +72,8 @@ class DocumentFileServicesTest {
 	}
 
 	@Test
-	@DisplayName("confirm: 메타데이터 저장 + OCR 텍스트 부착")
-	void confirmWithOcr() {
-		given(ocr.extractText("key")).willReturn("추출 텍스트");
+	@DisplayName("confirm: 참여자 확인 후 메타데이터 저장")
+	void confirm() {
 		given(files.save(any())).willAnswer(i -> i.getArgument(0));
 
 		UUID id = confirmUploadService.confirm(new ConfirmUploadCommand(
@@ -84,19 +82,6 @@ class DocumentFileServicesTest {
 		verify(guard).requireParticipant(caseId, uploader);
 		verify(files).save(any(StoredFile.class));
 		assertThat(id).isNotNull();
-	}
-
-	@Test
-	@DisplayName("confirm: OCR 실패해도 파일은 저장(텍스트 없이)")
-	void confirmOcrFailureSwallowed() {
-		given(ocr.extractText(any())).willThrow(new RuntimeException("ocr down"));
-		given(files.save(any())).willAnswer(i -> i.getArgument(0));
-
-		UUID id = confirmUploadService.confirm(new ConfirmUploadCommand(
-				caseId, null, uploader, "a.pdf", "application/pdf", 10, "key"));
-
-		assertThat(id).isNotNull();
-		verify(files).save(any(StoredFile.class));
 	}
 
 	@Test

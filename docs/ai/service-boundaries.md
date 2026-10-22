@@ -129,7 +129,6 @@ Spring이 작업 ID·상태·idempotency key의 원본을 관리한다.
 | ReadClaimPdfService | document 모듈 내부에서 저장소 접근. 현재 LocalDiskStorage 구체 구현에 결합 | 25번에서 읽기용 스토리지 포트 경계 정리; ai 모듈은 파일 엔티티를 직접 참조하지 않음 |
 | JevAnalysis + V6 마이그레이션 | Spring이 caseId·requestedBy·전체 결과 JSON을 소유 | 27번에서 버전·승인·수정·거절 감사 이력 검토 |
 | FastAPI provider/router | 현재 Gemini 하나만 지원 | 10~16번에서 공급자 추상화·카탈로그·라우팅 확장 |
-| 기존 Java LlmClient와 Anthropic 구현 | 구조화·결정문 평문화의 기존 직접 호출 경로가 남아 있음 | JEV와 구분. 04번에서 유스케이스 우선순위를 정하고 25번에서 전환 여부·계약 처리 |
 | harness 기존 아키텍처 | AI 전체가 Java 안에 있는 예정 구조 설명이 남아 있었음 | 이 결정으로 현재 JEV 분리 구조를 반영 |
 
 이 단위에서는 서비스 추가 분리, 기존 AI 기능 제거, 프론트 변경, 규정 추가를 수행하지 않는다.

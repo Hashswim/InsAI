@@ -85,6 +85,10 @@ def isolated_settings(monkeypatch, tmp_path):
         "JEV_DAILY_BUDGET_USD",
         "JEV_PRICING_MAX_AGE_DAYS",
         "LANGSMITH_ENDPOINT",
+        "JEV_MULTI_AGENT",
+        "JEV_RAG_DATABASE_URL",
+        "JEV_EMBEDDING_MODEL",
+        "JEV_RAG_TOP_K",
         "PYDANTIC_SETTINGS_DEBUG",
     ):
         monkeypatch.delenv(name, raising=False)

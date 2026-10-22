@@ -15,8 +15,8 @@ class JevSharedContractTest {
         assertEquals(UUID.fromString("11111111-1111-4111-8111-111111111111"), result.requestId());
         assertEquals("ON_HOLD", result.submissionStatus());
         assertEquals("RECORDED", result.traceStatus());
-        assertEquals("jev-v5",result.promptVersion());
-        assertEquals("jev-chain-v10",result.chainVersion());
+        assertEquals("jev-v7",result.promptVersion());
+        assertEquals("jev-chain-v12",result.chainVersion());
         assertEquals("STRUCTURAL",result.verification().method());
         assertEquals("NOT_VERIFIED",result.verification().factualConsistency());
         assertEquals("MODEL_SELF_ASSESSMENT",result.verification().confidenceBasis());

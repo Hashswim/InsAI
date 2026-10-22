@@ -16,8 +16,6 @@ export async function uploadFile({ caseId, submissionId = null, file }) {
 }
 
 export const listCaseFiles = (caseId) => api.get('/files', { params: { caseId } })
-export const listSubmissionFiles = (submissionId) =>
-  api.get('/files', { params: { submissionId } })
 export const getDownloadUrl = (fileId) => api.get(`/files/${fileId}/download-url`)
 
 // 브라우저에서 첨부 파일 열기 (다운로드 URL 발급 후 새 탭)

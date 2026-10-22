@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/candidate.json",
+    "sha256": "f3dfa50945caf96ba2cc585dfec44de6e34c77c51de7c85ea6730ac7ed44ac48",
+    "bytes": 5054
+  },
+  "artifact": {
+    "path": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.html",
+    "sha256": "378697f1714cd4dbb3f6e85f0ecbcc796fe885c93c452c025b3890e7b064eed3",
+    "bytes": 833716
+  },
+  "gates": {
+    "validate": "fail",
+    "deliver": "not-run",
+    "check": "not-run",
+    "browser-check": "not-run"
+  },
+  "failedStage": "validate",
+  "diagnostics": [
+    {
+      "code": "layout/boundary-encloses-non-member",
+      "severity": "error",
+      "message": "Component \"pgvector\" is not wrapped by boundary \"AI 서비스 · Python (FastAPI :8085)\" but sits inside its frame — move it outside the frame, place the wrapped members in one compact axis-aligned cluster (no empty bay for a non-member), or add it to wraps only when it truly belongs there.",
+      "subject": {
+        "diagramType": "architecture",
+        "boundary": {
+          "kind": "region",
+          "label": "AI 서비스 · Python (FastAPI :8085)",
+          "wraps": [
+            "precheck",
+            "agents",
+            "mcp"
+          ]
+        },
+        "component": "pgvector"
+      },
+      "evidence": {
+        "bounds": {
+          "x": 740,
+          "y": 170,
+          "width": 530,
+          "height": 294
+        },
+        "component": {
+          "id": "pgvector",
+          "type": "database",
+          "label": "pgvector",
+          "x": 1050,
+          "y": 380,
+          "width": 180,
+          "height": 64,
+          "pos": [
+            1050,
+            380
+          ]
+        }
+      },
+      "supportedFixes": [
+        "move \"pgvector\" outside the boundary frame",
+        "reposition the wrapped members into one compact axis-aligned cluster (no empty bay) that leaves non-members outside"
+      ]
+    }
+  ],
+  "diagnosticSummary": {
+    "total": 1,
+    "shown": 1,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/review-1/architecture.finalize.json",
+    "summaryReceipt": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/review-1/architecture.finalize-summary.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-21T07:50:46.552Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 164,
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "nextAction": {
+    "action": "edit-in-place",
+    "candidate": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/candidate.json",
+    "constraint": "Preserve unaffected semantics and geometry; apply each diagnostic's supportedFixes, or the fix its message names, and do not replace the whole candidate.",
+    "then": "finalize-once"
+  }
+}

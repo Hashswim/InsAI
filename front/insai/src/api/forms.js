@@ -3,10 +3,8 @@ import api from './client'
 export const getTemplate = (id) => api.get(`/templates/${id}`)
 export const getTemplateByCode = (code) => api.get('/templates', { params: { code } })
 
-export const getSubmission = (id) => api.get(`/submissions/${id}`)
 export const getSubmissionByDocRequest = (documentRequestId) =>
   api.get('/submissions', { params: { documentRequestId } })
 
 export const submitForm = (body) => api.post('/submissions', body)
 export const saveDraft = (body) => api.post('/submissions/draft', body)
-export const updateDraft = (id, data) => api.patch(`/submissions/${id}`, { data })

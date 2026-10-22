@@ -26,7 +26,6 @@ class StoredFileTest {
 		assertThat(f.getFilename()).isEqualTo("진단서.PDF");
 		assertThat(f.getSizeBytes()).isEqualTo(1234);
 		assertThat(f.isNew()).isTrue();
-		assertThat(f.getOcrText()).isNull();
 	}
 
 	@Test
@@ -55,14 +54,5 @@ class StoredFileTest {
 		assertThat(StoredFile.extensionOf("a.b.JPG")).isEqualTo("jpg");
 		assertThat(StoredFile.extensionOf("noext")).isEmpty();
 		assertThat(StoredFile.extensionOf(null)).isEmpty();
-	}
-
-	@Test
-	@DisplayName("attachOcrText: 텍스트 부착")
-	void attachOcr() {
-		StoredFile f = StoredFile.register(caseId, null, uploader,
-				"a.png", "image/png", 10, "k");
-		f.attachOcrText("추출된 텍스트");
-		assertThat(f.getOcrText()).isEqualTo("추출된 텍스트");
 	}
 }

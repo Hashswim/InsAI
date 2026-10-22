@@ -5,7 +5,6 @@ from google.genai.errors import APIError
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from app.chains.structured_output import parse_findings, validate_findings
 from app.core.config import Settings
 from app.core.errors import (
     InvalidProviderResponse,
@@ -13,7 +12,8 @@ from app.core.errors import (
     ProviderTimeout,
     TransientProviderFailure,
 )
-from app.core.resources import load_jev_prompt
+from app.core.resources import load_prompt_section
+from app.jev.structured_output import parse_findings, validate_findings
 from app.providers.base import ProviderRequest, ProviderResult
 from app.providers.catalog import JEV_OUTPUT_TOKENS
 from app.providers.retry_after import retry_after_seconds
@@ -39,7 +39,7 @@ class GeminiProvider:
             base_url="https://generativelanguage.googleapis.com",
             client_args={"trust_env": False, "follow_redirects": False},
         )
-        self.prompt = load_jev_prompt()
+        self.prompt = load_prompt_section("SINGLE")
 
     def analyze(self, request: ProviderRequest) -> ProviderResult:
         content: list[str | dict[str, Any]] = [{"type": "text", "text": request.form}]

@@ -4,7 +4,7 @@ import pytest
 from conftest import root_run
 from fastapi.testclient import TestClient
 
-from app.chains.release import ACTIVE_RELEASE
+from app.jev.release import ACTIVE_RELEASE
 from app.main import app
 
 

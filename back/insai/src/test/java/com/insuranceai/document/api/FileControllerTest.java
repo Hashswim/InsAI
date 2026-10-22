@@ -109,7 +109,7 @@ class FileControllerTest {
 	@DisplayName("GET /files?caseId= -> 200 리스트")
 	void listByCase() throws Exception {
 		given(listCaseFilesService.byCase(any())).willReturn(List.of(new StoredFileView(
-				UUID.randomUUID(), UUID.fromString(CASE), null, "a.pdf", "application/pdf", 10, false, Instant.now())));
+				UUID.randomUUID(), UUID.fromString(CASE), null, "a.pdf", "application/pdf", 10, Instant.now())));
 
 		mvc.perform(get("/files").param("caseId", CASE).header("X-User-Id", USER))
 				.andExpect(status().isOk())

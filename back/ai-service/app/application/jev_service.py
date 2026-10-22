@@ -2,10 +2,6 @@ from datetime import datetime, timezone
 
 from httpx import TimeoutException
 
-from app.chains.jev_workflow import run_workflow
-from app.chains.orchestrator import WorkflowProgress
-from app.chains.precheck import RULES_MODEL, precheck
-from app.chains.release import ACTIVE_RELEASE
 from app.core.errors import (
     CircuitOpen,
     InvalidProviderResponse,
@@ -14,6 +10,10 @@ from app.core.errors import (
     TransientProviderFailure,
 )
 from app.core.resources import load_jev_prompt
+from app.jev.orchestrator import WorkflowProgress
+from app.jev.precheck import RULES_MODEL, precheck
+from app.jev.release import ACTIVE_RELEASE
+from app.jev.workflow import run_workflow
 from app.observability.langsmith import SafeTrace
 from app.providers.base import Provider
 from app.providers.routing_policy import RouteDecision
@@ -134,6 +134,7 @@ class JevService:
             result.output_tokens,
             route=self.route,
             verification=result.verification,
+            agents=result.agent_runs,
             orchestration=progress.report(),
         )
         try:
@@ -143,6 +144,7 @@ class JevService:
                     "items": result.findings.items,
                     "risk_signals": result.findings.risk_signals,
                     "summary": result.findings.summary,
+                    "policy_refs": list(result.policy_refs),
                     "provider": self.provider.name,
                     "model": self.provider.model,
                     **ACTIVE_RELEASE.metadata(),

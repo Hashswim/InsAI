@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * 손해사정사의 사정 결과. rawText 는 사정사가 작성한 원문, plainText 는 AI 평문 번역(후처리).
+ * 손해사정사의 사정 결과. rawText 는 사정사가 작성한 원문.
  */
 @Entity
 @Table(name = "decisions")
@@ -24,9 +24,6 @@ public class Decision extends BaseEntity {
 	@Column(nullable = false, length = 8000)
 	private String rawText;
 
-	@Column(length = 8000)
-	private String plainText;
-
 	protected Decision() {
 	}
 
@@ -40,10 +37,6 @@ public class Decision extends BaseEntity {
 		return decision;
 	}
 
-	public void applyPlainText(String plainText) {
-		this.plainText = plainText;
-	}
-
 	public UUID getCaseId() {
 		return caseId;
 	}
@@ -54,9 +47,5 @@ public class Decision extends BaseEntity {
 
 	public String getRawText() {
 		return rawText;
-	}
-
-	public String getPlainText() {
-		return plainText;
 	}
 }

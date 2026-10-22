@@ -2,7 +2,7 @@
 
 ## 책임 경계
 
-`app/chains/structured_output.py`가 공급자 공통 JSON 디코딩과 Findings 검증을 맡는다.
+`app/jev/structured_output.py`가 공급자 공통 JSON 디코딩과 Findings 검증을 맡는다.
 어댑터는 정상 종료·거부·도구 호출 등 공급자 응답 봉투를 확인한 뒤 이 계층을 호출한다.
 현재 제공자 결과 재검증은 [J 체인](judgment-chain.md)에서 수행하며,
 그 다음 [E 체인](evidence-chain.md)이 실제 요청 PDF의 문서 ID·페이지 범위와 중복 근거를 검사한다.

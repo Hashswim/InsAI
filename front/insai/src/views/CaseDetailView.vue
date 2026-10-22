@@ -639,8 +639,7 @@ const statusLabel = {
                   {{ decision.adjusterName || '손해사정사' }} · {{ fmtDateTime(decision.decidedAt) }}
                 </span>
               </div>
-              <p v-if="decision.plainText" style="white-space: pre-wrap">{{ decision.plainText }}</p>
-              <p style="white-space: pre-wrap" :class="{ muted: !!decision.plainText, small: !!decision.plainText }">
+              <p style="white-space: pre-wrap">
                 {{ decision.rawText }}
               </p>
             </div>

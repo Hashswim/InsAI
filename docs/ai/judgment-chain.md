@@ -2,7 +2,7 @@
 
 ## 구현 범위
 
-`app/chains/judgment.py`의 `JudgmentChain`을 실제 `run_workflow` 경로에 연결했다.
+`app/jev/judgment.py`의 `JudgmentChain`을 실제 `run_workflow` 경로에 연결했다.
 J는 의료 PDF의 작성 상태에 대한 **잠정 추천**을 생성한다. 제출·지급 승인이나
 규정 충족 여부를 판단하지 않는다. 규정 파일은 비어 있으며 최종 응답은 계속 ON_HOLD다.
 

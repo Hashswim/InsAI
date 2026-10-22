@@ -61,7 +61,7 @@ class JevSecurityIntegrationTest {
             JevGateway.Request request=call.getArgument(0);
             return new JevResult(request.requestId(),"ON_HOLD","NOT_REGISTERED","rules missing",
                 List.of(new JevResult.Item("synthetic","UNVERIFIABLE",List.of(),0,"test only","review")),
-                List.of(),"synthetic summary","gemini","synthetic-model","jev-v1","a".repeat(64),"jev-chain-v1",null,"DISABLED",0,0,
+                List.of(),"synthetic summary",List.of(),"gemini","synthetic-model","jev-v1","a".repeat(64),"jev-chain-v1",null,"DISABLED",0,0,
                 new JevResult.Verification("STRUCTURAL","NOT_VERIFIED","MODEL_SELF_ASSESSMENT","REQUIRED"));
         });
     }

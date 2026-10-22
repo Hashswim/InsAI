@@ -32,7 +32,6 @@
 - [ ] `GlobalExceptionHandler`: `BusinessException` → `ErrorCode.status()` + `error.code=ErrorCode.name()`
 - [ ] `GlobalExceptionHandler`: `MethodArgumentNotValidException` → 400 + `error.code=INVALID_INPUT` + 필드 메시지 결합
 - [ ] `GlobalExceptionHandler`: 미처리 예외 → 500 + `INTERNAL_ERROR` (원인 메시지 노출 안 함)
-- [ ] `GET /api/ping` → 200 `{success:true,data:{service:"insai",time:...}}`
 - [ ] `GET /actuator/health` → 200 `{"status":"UP"}`
 
 ---
@@ -90,7 +89,6 @@
 - [ ] `createdAt`/`updatedAt` 자동 세팅 (JPA Auditing)
 
 ### 1.6 통합 — `AuthFlowIntegrationTest`
-- [ ] 가입 → 로그인 → accessToken 으로 `/api/ping`(보호 전환 후) 접근 → refresh → logout → refresh 재시도 401
 - [ ] 잘못된 비밀번호 로그인 → 401
 - [ ] ADJUSTER 가입 후 승인 전 로그인 → 403
 
@@ -110,7 +108,7 @@
 - [ ] `DocumentRequest.accept` / `reject(reason)`: `SUBMITTED`→`ACCEPTED`/`REJECTED`, reject 는 사유 필수
 - [ ] `DocumentRequest.reject` 후 재제출 → `SUBMITTED` 로 복귀 허용
 - [ ] `Message.of`: 발신자 역할 기록, `aiMediated` 플래그
-- [ ] `Decision.of`: rawText 필수(공백 불가), plainText 는 null 허용(AI 후처리 전)
+- [ ] `Decision.of`: rawText 필수(공백 불가), 원문 보관
 
 ### 2.2 Application
 - [ ] `OpenCaseService`: 청구인 요청 → `Case` 저장, id 반환
@@ -223,31 +221,14 @@
 
 ---
 
-## 5. ai (LLM 오케스트레이션)
+## 5. ai (JEV 연동)
 
-포트 `LlmClient` 는 테스트에서 `FakeLlmClient` 로 대체. 스텁 구현이라도 **응답 계약(스키마)** 은 테스트로 고정한다.
+Spring 은 LLM 을 직접 호출하지 않는다. 서류 검토는 FastAPI JEV 서비스가 하고, Spring 은 권한·감사·저장을 맡는다.
 
-### 5.1 Application
-- [ ] `StructureService`: 자유입력 + 템플릿 스키마 → `{fields:{key:value}, confidence:{key:0~1}, missingFields:[]}`
-- [ ] `StructureService`: 스키마의 모든 필수 key 가 결과 fields 또는 missingFields 중 하나에 존재
-- [ ] `ReviewSummaryService`: 제출 data + OCR 텍스트 → `{summary, highlights:[], issues:[], needsAttention:boolean}`
-- [ ] `ReviewSummaryService`: 누락/불일치 항목이 `issues` 에 반영
-- [ ] `LlmClient` 타임아웃 → `BusinessException(INTERNAL_ERROR)` 로 변환 (원문 예외 누출 안 함)
-- [ ] `LlmClient` 프로바이더 교체 가능 (FakeLlmClient 주입만으로 동작)
-
-### 5.2 Web — `@WebMvcTest`
-- [ ] `POST /ai/structure` 유효 → 200 계약 스키마 준수
-- [ ] `POST /ai/review-summary` 유효 → 200 계약 스키마 준수
-- [ ] 입력 누락 → 400
-- [ ] LLM 실패 → 502 + 에러 엔벨로프
-
-### 5.3 통합 — `AiOrchestrationIntegrationTest`
-- [ ] `FakeLlmClient` 주입 → `/ai/structure` end-to-end 응답 형태 보장
-- [ ] `/ai/review-summary` end-to-end 응답 형태 보장
-
-### 5.4 (2차)
-- [ ] `TranslateDecisionService`: 사정 결과 원문 + 약관 조항 → 평문 + 근거 인용
-- [ ] `AnswerService`: 질문 + 약관 검색결과 → 1차 응답 + `needsAdjusterReview` 플래그
+- [x] `JevSharedContractTest`: Python 과 같은 응답 계약 예제를 디코딩
+- [x] `JevSecurityIntegrationTest`: 청구인 응답에서 요약·의심사항·약관 조항 제외
+- [x] `JevJobIntegrationTest` / `JevPersistenceIntegrationTest`: 비동기 작업, 저장, 실행 감사 이력
+- [x] FastAPI 쪽 검사·에이전트·RAG·MCP 테스트는 `back/ai-service/tests`
 
 ---
 
@@ -283,11 +264,9 @@
 | **collab** | ✅ GREEN — domain · application · web · persistence · 통합 (+ `MarkDocumentRequestSubmittedService` form 연동점) |
 | **form** | ✅ GREEN — domain · application · web · persistence · 통합. 제출 성립 시 collab DOCS_SUBMITTED 전이 |
 | **form.catalog (생명보험)** | ✅ GREEN — 청구 서류 15종 FormTemplate 정의(공통 4 + 사망/장해/진단/입원·수술), 유형별 요구 서류 매트릭스, 부팅 시 멱등 시드, `GET /catalog/life/*` |
-| document | ✅ GREEN — `StoredFile` + 2단계 업로드(upload-url→PUT→confirm) + 참여자 제한 다운로드 + `LocalDiskStorage`/`StubOcrPort` + `V4__document.sql` + 프론트 FILE 필드 실동작 |
-| ai | ✅ GREEN — `LlmClient` 포트(+`StubLlmClient`/`AnthropicLlmClient`), `ReviewSummaryService`, `LlmAiStructurePort`(@Primary), `LlmDecisionTranslator`. `insai.ai.enabled` 로 스텁↔실 Claude 토글 |
+| document | ✅ GREEN — `StoredFile` + 2단계 업로드(upload-url→PUT→confirm) + 참여자 제한 다운로드 + `LocalDiskStorage` + `V4__document.sql` + 프론트 FILE 필드 실동작 |
 | policy | ✅ GREEN — `Policy` + `ListMyPoliciesService` + `SeedDemoPoliciesService` + `V5__policy.sql` + `GET /policies`. 홈 "내 보험 조회하기" → `PoliciesView` |
 
 ### 다음 순서
 1. 실제 OCR / 오브젝트 스토리지 presigner (현재 로컬 디스크)
-2. `INSAI_AI_API_KEY` 수령 후 `AnthropicLlmClient` 실호출 검증
 3. policy: 보험사 연동 또는 청구인 직접 등록 · 청구 케이스에서 증권 선택

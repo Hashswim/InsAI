@@ -8,9 +8,9 @@ from fastapi.testclient import TestClient
 
 from app.application.resilient_execution import ResilientExecutor
 from app.application.resilient_service import ResilientJevService
-from app.chains.release import ACTIVE_RELEASE
 from app.core.config import Settings
 from app.core.errors import TransientProviderFailure
+from app.jev.release import ACTIVE_RELEASE
 from app.main import app
 from app.providers.routing_policy import route_candidates
 from app.schemas.jev import JevRequest

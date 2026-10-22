@@ -92,7 +92,7 @@ def test_local_stage_failure_cannot_replay_a_paid_j_call(
 ):
     local = Mock()
     local.run.side_effect = TransientProviderFailure(retry_after=0)
-    monkeypatch.setattr(f"app.chains.orchestrator.{stage}", Mock(return_value=local))
+    monkeypatch.setattr(f"app.jev.orchestrator.{stage}", Mock(return_value=local))
     executor, providers, factory, _ = harness(
         jev_max_attempts=3, jev_retry_attempts=3, jev_fallback_enabled=True
     )

@@ -200,6 +200,22 @@ async function run() {
         </p>
       </div>
 
+      <div class="card stack">
+        <h3>확인할 약관 조항 {{ result.policy_refs?.length ?? 0 }}건</h3>
+        <p v-if="!result.policy_refs?.length" class="small muted">약관 검색 결과가 없습니다.</p>
+        <div v-for="r in result.policy_refs" :key="r.clause_id" class="signal stack">
+          <div class="between">
+            <b>{{ r.article }}({{ r.title }})</b>
+            <span class="badge b-muted">{{ r.product }}</span>
+          </div>
+          <p class="small">{{ r.reason }}</p>
+          <p class="small muted">“{{ r.excerpt }}…”</p>
+        </div>
+        <p v-if="result.policy_refs?.length" class="small muted">
+          금융감독원 실손의료보험 표준약관 기준입니다. 가입한 상품의 약관과 다를 수 있으며, 보상 여부를 판단한 것이 아닙니다.
+        </p>
+      </div>
+
       <h3>항목별 점검</h3>
       <div v-for="(it, i) in result.items" :key="i" class="card stack">
         <div class="between">

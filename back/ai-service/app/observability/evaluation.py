@@ -7,9 +7,9 @@ from uuid import UUID
 
 from pypdf import PdfWriter
 
-from app.chains.jev_workflow import run_workflow
-from app.chains.orchestrator import WorkflowProgress, WorkflowStage
-from app.chains.release import ACTIVE_RELEASE
+from app.jev.orchestrator import WorkflowProgress, WorkflowStage
+from app.jev.release import ACTIVE_RELEASE
+from app.jev.workflow import run_workflow
 from app.providers.base import ProviderRequest, ProviderResult
 from app.schemas.jev import LEGACY_DOCUMENT_KINDS, Findings, JevRequest
 

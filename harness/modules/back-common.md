@@ -14,7 +14,6 @@
 | 타입 | 역할 |
 |---|---|
 | `common.web.ApiResponse<T>` | 응답 봉투. `ok(data)` / `ok()` / `fail(code,msg)` + 중첩 `ErrorBody` |
-| `common.web.PingController` | `GET /api/ping` (헬스 스켈레톤) |
 | `common.error.ErrorCode` | enum: INVALID_INPUT..INTERNAL_ERROR, 각자 `HttpStatus` |
 | `common.error.BusinessException` | `ErrorCode` 를 감싼 런타임 예외 |
 | `common.error.GlobalExceptionHandler` | `@RestControllerAdvice` — 예외 → HTTP + 봉투 |

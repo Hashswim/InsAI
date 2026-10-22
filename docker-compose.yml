@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16   # PostgreSQL 16 + pgvector (약관 RAG 벡터 검색)
     container_name: insai-postgres
     environment:
       POSTGRES_DB: insai

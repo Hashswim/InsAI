@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 업로드된 파일의 메타데이터. 실제 바이트는 storageKey 로 스토리지에, OCR 텍스트는 추출 후 부착.
+ * 업로드된 파일의 메타데이터. 실제 바이트는 storageKey 로 스토리지에.
  */
 @Entity
 @Table(name = "stored_files",
@@ -45,9 +45,6 @@ public class StoredFile extends BaseEntity {
 	@Column(name = "storage_key", nullable = false)
 	private String storageKey;
 
-	@Column(length = 20000)
-	private String ocrText;
-
 	protected StoredFile() {
 	}
 
@@ -76,10 +73,6 @@ public class StoredFile extends BaseEntity {
 			throw new BusinessException(ErrorCode.INVALID_INPUT,
 					"파일 크기는 1B 이상 " + (MAX_SIZE_BYTES / 1024 / 1024) + "MB 이하여야 합니다.");
 		}
-	}
-
-	public void attachOcrText(String text) {
-		this.ocrText = text;
 	}
 
 	public static String extensionOf(String filename) {
@@ -116,9 +109,5 @@ public class StoredFile extends BaseEntity {
 
 	public String getStorageKey() {
 		return storageKey;
-	}
-
-	public String getOcrText() {
-		return ocrText;
 	}
 }

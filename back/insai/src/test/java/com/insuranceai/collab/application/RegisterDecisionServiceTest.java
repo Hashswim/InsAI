@@ -38,9 +38,6 @@ class RegisterDecisionServiceTest {
 	@Mock
 	TimelineEventRepository timeline;
 
-	@Mock
-	DecisionTranslator decisionTranslator;
-
 	@InjectMocks
 	RegisterDecisionService service;
 

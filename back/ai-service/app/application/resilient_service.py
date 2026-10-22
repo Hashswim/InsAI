@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 
 from app.application.jev_service import JevService
 from app.application.resilient_execution import ExecutionFailure, ResilientExecutor
-from app.chains.release import ACTIVE_RELEASE
 from app.core.errors import InvalidProviderResponse
+from app.jev.release import ACTIVE_RELEASE
 from app.observability.langsmith import SafeTrace
 from app.providers.base import Provider
 from app.providers.routing_policy import RouteDecision
@@ -52,6 +52,7 @@ class ResilientJevService(JevService):
             route=route,
             execution=outcome.stats,
             verification=result.verification,
+            agents=result.agent_runs,
         )
         try:
             return JevResponse.model_validate(
@@ -60,6 +61,7 @@ class ResilientJevService(JevService):
                     "items": result.findings.items,
                     "risk_signals": result.findings.risk_signals,
                     "summary": result.findings.summary,
+                    "policy_refs": list(result.policy_refs),
                     "provider": route.profile.provider,
                     "model": route.profile.model,
                     **ACTIVE_RELEASE.metadata(),

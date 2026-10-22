@@ -16,12 +16,11 @@ class DecisionTest {
 	private final UUID adjusterId = UUID.randomUUID();
 
 	@Test
-	@DisplayName("of: rawText 를 보관하고 plainText 는 아직 없다")
+	@DisplayName("of: rawText 를 보관한다")
 	void of() {
 		Decision decision = Decision.of(caseId, adjusterId, "지급 승인. 총 320만원.");
 
 		assertThat(decision.getRawText()).contains("지급 승인");
-		assertThat(decision.getPlainText()).isNull();
 	}
 
 	@Test
@@ -30,15 +29,5 @@ class DecisionTest {
 		assertThatThrownBy(() -> Decision.of(caseId, adjusterId, "   "))
 				.isInstanceOf(BusinessException.class)
 				.extracting("errorCode").isEqualTo(ErrorCode.INVALID_INPUT);
-	}
-
-	@Test
-	@DisplayName("applyPlainText: 평문 번역을 설정한다")
-	void applyPlainText() {
-		Decision decision = Decision.of(caseId, adjusterId, "원문");
-
-		decision.applyPlainText("고객님의 청구가 승인되었습니다.");
-
-		assertThat(decision.getPlainText()).isEqualTo("고객님의 청구가 승인되었습니다.");
 	}
 }

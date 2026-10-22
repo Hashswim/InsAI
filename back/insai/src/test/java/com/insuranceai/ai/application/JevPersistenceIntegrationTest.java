@@ -36,7 +36,7 @@ class JevPersistenceIntegrationTest {
                 List.of(new JevResult.Item("date","SUITABLE",
                     List.of(new JevResult.Evidence(refs.getFirst().fileId(),1,"date present")),
                     0.8,"readable","")),
-                List.of(),"synthetic summary","gemini","fake-model","jev-v1","a".repeat(64),"jev-chain-v1",traceId,"RECORDED",10,20,
+                List.of(),"synthetic summary",List.of(),"gemini","fake-model","jev-v1","a".repeat(64),"jev-chain-v1",traceId,"RECORDED",10,20,
                 new JevResult.Verification("STRUCTURAL","NOT_VERIFIED","MODEL_SELF_ASSESSMENT","REQUIRED"));
         });
         var saved=service.run(account.getId(),new RunJevCommand(claim.getId(),refs));

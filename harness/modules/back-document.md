@@ -14,7 +14,7 @@
 
 | 도메인 | |
 |---|---|
-| `StoredFile` (BaseEntity) | caseId, submissionId?, uploaderId, filename, contentType, sizeBytes, storageKey(unique), ocrText? |
+| `StoredFile` (BaseEntity) | caseId, submissionId?, uploaderId, filename, contentType, sizeBytes, storageKey(unique) |
 | `StoredFile.register(...)` | 허용 확장자(pdf/jpg/png/heic/tif/webp) 외 → INVALID_INPUT, 용량 상한(20MB) 초과 → INVALID_INPUT |
 | `StoredFile.validateUploadable(filename, size)` | 업로드 전 검증에도 재사용 |
 | `StoredFile.attachOcrText(text)` | |
@@ -24,10 +24,9 @@
 | `IssueUploadUrlService` | `StoragePort.uploadUrl(key)` → `{url, storageKey}`. key = `caseId/uuid.ext` |
 | `ConfirmUploadService` | `StoredFile.register` + 저장 |
 | `IssueDownloadUrlService` | 파일 NOT_FOUND → `CaseParticipantGuard.requireParticipant(caseId, userId)` (collab) → `StoragePort.downloadUrl` |
-| `ConfirmUploadService` | 참여자 확인 + `StoredFile.register` + (best-effort) `OcrPort.extractText` → `attachOcrText` |
+| `ConfirmUploadService` | 참여자 확인 + `StoredFile.register` |
 | `ListCaseFilesService` | `byCase` / `bySubmission` → `List<StoredFileView>` |
 | `StoragePort` (포트) | `uploadUrl(key)` / `downloadUrl(key)` — 구현: `LocalDiskStorage` (`insai.storage.local-dir`, URL `/local-storage/{key}`). 이후 MinIO/S3 presigner |
-| `OcrPort` (포트) | `extractText(storageKey)` — 구현: `StubOcrPort`(빈 문자열). 이후 Tesseract/클라우드 비전 또는 ai 위임 |
 | `CaseParticipantGuard` (포트) | 구현 `CollabCaseParticipantGuard` → `collab.application.CaseAccessService` |
 
 | API | |
@@ -56,7 +55,7 @@
 - [x] 전 계층 (GREEN) — `+28` tests (총 217/217)
 - [x] `V4__document.sql`
 - [x] collab `CaseAccessService`
-- [x] `LocalDiskStorage` + `LocalStorageController` + `StubOcrPort`
+- [x] `LocalDiskStorage` + `LocalStorageController`
 - [x] 프론트 `api/files.js` + `FormFieldInput` FILE 업로드 + 사정사 다운로드
 - [ ] 실제 OCR / 오브젝트 스토리지 presigner
 - [ ] 첨부 파일 접근 로그 + 만료 URL

@@ -145,6 +145,22 @@ class RiskSignal(StrictModel):
         return valid_text(value)
 
 
+class PolicyRef(StrictModel):
+    """A standard-terms clause retrieved by RAG. Text fields come from the corpus, not the model."""
+
+    clause_id: str = Field(pattern=r"^[a-z0-9]+:[a-z0-9_]+:[0-9]+$", max_length=64)
+    product: str = Field(min_length=1, max_length=60)
+    article: str = Field(min_length=1, max_length=40)
+    title: str = Field(min_length=1, max_length=120)
+    excerpt: str = Field(min_length=1, max_length=400)
+    reason: str = Field(min_length=1, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def nonblank_reason(cls, value: str) -> str:
+        return valid_text(value)
+
+
 class Findings(StrictModel):
     # Field order is the model's generation order: details first, summary of them last.
     items: list[Item] = Field(min_length=1, max_length=100, strict=True)
@@ -175,6 +191,7 @@ class JevResponse(StrictModel):
     items: list[Item] = Field(min_length=1, max_length=100)
     risk_signals: list[RiskSignal] = Field(max_length=20)
     summary: str = Field(min_length=1, max_length=2000)
+    policy_refs: list[PolicyRef] = Field(default_factory=list, max_length=10)
     provider: Literal["gemini", "stub", "openai", "rules"]
     model: str = Field(min_length=1, max_length=200)
     prompt_version: str = Field(min_length=1, max_length=100)
@@ -204,8 +221,8 @@ class JevResponse(StrictModel):
             item.judgment != "UNVERIFIABLE" or item.evidence for item in self.items
         ):
             raise ValueError("Offline stub cannot make grounded recommendations")
-        if self.provider in {"stub", "rules"} and self.risk_signals:
-            raise ValueError("Only a model analysis can raise risk signals")
+        if self.provider in {"stub", "rules"} and (self.risk_signals or self.policy_refs):
+            raise ValueError("Only a model analysis can raise risk signals or cite clauses")
         if self.provider == "rules" and (self.input_tokens or self.output_tokens):
             raise ValueError("Rule-only results cannot report model token usage")
         return self

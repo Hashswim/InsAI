@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="archify 3.2.0">
   <meta name="archify-reader-contract" content="declared-wide-v1">
-  <title>InsuranceAI 청구 서류 검토 아키텍처 다이어그램</title>
+  <title>InsuranceAI 청구 서류 검토 아키텍처 (멀티 에이전트 · RAG · MCP) 다이어그램</title>
   <script>
     // Resolve the theme before first paint so light-preference users don't
     // see a dark flash. The toolbar script below re-applies with UI state.
@@ -5193,7 +5193,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
            data-preset-badge-blueprint="블루프린트 / 개정 01"
            data-preset-badge-editorial="에디토리얼 / 현장 노트">
         <div class="pulse-dot"></div>
-        <h1>InsuranceAI 청구 서류 검토 아키텍처</h1>
+        <h1>InsuranceAI 청구 서류 검토 아키텍처 (멀티 에이전트 · RAG · MCP)</h1>
       </div>
     </div>
 
@@ -5202,8 +5202,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / 도판 04">
-      <svg viewBox="0 0 1270 512" role="img" lang="ko" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase" data-node-ui="" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
-        <title id="archify-diagram-title">InsuranceAI 청구 서류 검토 아키텍처</title>
+      <svg viewBox="0 0 1580 512" role="img" lang="ko" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase" data-node-ui="" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
+        <title id="archify-diagram-title">InsuranceAI 청구 서류 검토 아키텍처 (멀티 에이전트 · RAG · MCP)</title>
         <desc id="archify-diagram-description">Archify로 생성한 아키텍처 다이어그램입니다.</desc>
         <!-- Definitions -->
         <defs>
@@ -5249,7 +5249,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <rect width="100%" height="100%" fill="url(#grid)" />
 
         <!-- Boundaries (behind everything) -->
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="JEV AI 서비스 · FastAPI :8085" x="740" y="170" width="490" height="114" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="0" data-composition-frame-label="JEV AI 서비스 · FastAPI :8085" x="740" y="170" width="800" height="114" rx="12" class="c-region" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
         <g data-graph-role="automatic-crossover" style="--step:0">
@@ -5282,15 +5282,31 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </g>
         <g data-graph-role="automatic-crossover" style="--step:7">
           <path data-graph-role="automatic-crossover-underlay" d="M 940 232 L 1040 232" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="precheck" data-edge-to="jev" data-edge-label="서류 완비 시" data-edge-key="7" data-edge-id="complete-to-jev" data-composition-points="940,232;1040,232" data-composition-crossover="halo" data-composition-independent="true" d="M 940 232 L 1040 232" class="a-emphasis" data-animate="edge" style="--step:7" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+          <path data-edge-from="precheck" data-edge-to="agents" data-edge-label="서류 완비 시" data-edge-key="7" data-edge-id="complete-to-agents" data-composition-points="940,232;1040,232" data-composition-crossover="halo" data-composition-independent="true" d="M 940 232 L 1040 232" class="a-emphasis" data-animate="edge" style="--step:7" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:8">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1120 264 L 1120 380" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="jev" data-edge-to="llm" data-edge-label="텍스트 폼만 · 1회" data-edge-key="8" data-edge-id="jev-to-llm" data-composition-points="1120,264;1120,380" data-composition-crossover="halo" data-composition-independent="true" d="M 1120 264 L 1120 380" class="a-security" data-animate="edge" style="--step:8" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 1240 223.95 L 1340 223.95" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="agents" data-edge-to="ev" data-edge-label="근거 검문" data-edge-key="8" data-edge-id="j-to-ev" data-composition-points="1240,223.95;1340,223.95" data-composition-crossover="halo" data-composition-independent="true" d="M 1240 223.95 L 1340 223.95" class="a-emphasis" data-animate="edge" style="--step:8" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:9">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1120 200 L 1120 100" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="jev" data-edge-to="langsmith" data-edge-label="원문 없는 실행 기록" data-edge-key="9" data-edge-id="jev-trace" data-composition-points="1120,200;1120,100" data-composition-crossover="halo" data-composition-independent="true" d="M 1120 200 L 1120 100" class="a-dashed" data-animate="edge" style="--step:9" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 1240 239 L 1287 239 Q 1295 239 1295 247 L 1295 404 Q 1295 412 1303 412 L 1350 412" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="agents" data-edge-to="llm" data-edge-label="텍스트 폼만" data-edge-key="9" data-edge-id="agents-to-llm" data-composition-points="1240,239;1295,239;1295,412;1350,412" data-composition-crossover="halo" data-composition-independent="true" d="M 1240 239 L 1287 239 Q 1295 239 1295 247 L 1295 404 Q 1295 412 1303 412 L 1350 412" class="a-security" data-animate="edge" style="--step:9" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:10">
+          <path data-graph-role="automatic-crossover-underlay" d="M 1140 264 L 1140 380" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="agents" data-edge-to="pgvector" data-edge-label="RAG 약관 검색" data-edge-key="10" data-edge-id="agents-rag" data-composition-points="1140,264;1140,380" data-composition-crossover="halo" data-composition-independent="true" d="M 1140 264 L 1140 380" class="a-default" data-animate="edge" style="--step:10" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:11">
+          <path data-graph-role="automatic-crossover-underlay" d="M 940 412 L 1050 412" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="mcp" data-edge-to="pgvector" data-edge-label="search_clauses" data-edge-key="11" data-edge-id="mcp-search" data-composition-points="940,412;1050,412" data-composition-crossover="halo" data-composition-independent="true" d="M 940 412 L 1050 412" class="a-default" data-animate="edge" style="--step:11" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:12">
+          <path data-graph-role="automatic-crossover-underlay" d="M 855 380 L 855 264" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="mcp" data-edge-to="precheck" data-edge-label="같은 추출 로직" data-edge-key="12" data-edge-id="mcp-extract" data-composition-points="855,380;855,264" data-composition-crossover="halo" data-composition-independent="true" d="M 855 380 L 855 264" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:13">
+          <path data-graph-role="automatic-crossover-underlay" d="M 1140 200 L 1140 100" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="agents" data-edge-to="langsmith" data-edge-label="원문 없는 실행 기록" data-edge-key="13" data-edge-id="agents-trace" data-composition-points="1140,200;1140,100" data-composition-crossover="halo" data-composition-independent="true" d="M 1140 200 L 1140 100" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
 
         <!-- Components -->
@@ -5380,38 +5396,74 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="fine" x="855" y="256" class="t-backend" font-size="7" text-anchor="middle">LLM 없음</text>
         </g>
 
-        <g id="node-jev" data-node-id="jev" data-node-label="② J·E·V 정리" tabindex="0" role="button" aria-label="② J·E·V 정리 포커스, 요약·보완사항·의심사항, JEV AI 서비스 · FastAPI :8085" aria-pressed="false" data-node-kind="backend" data-node-sublabel="요약·보완사항·의심사항" data-node-context="JEV AI 서비스 · FastAPI :8085">
-          <title>② J·E·V 정리 · 요약·보완사항·의심사항 · JEV AI 서비스 · FastAPI :8085</title>
-          <rect x="1040" y="200" width="160" height="64" rx="8" class="c-mask"/>
-          <rect x="1040" y="200" width="160" height="64" rx="8" class="c-backend" data-animate="node" style="--step:8" stroke-width="1.5"/>
+        <g id="node-agents" data-node-id="agents" data-node-label="J · 판단 (멀티 에이전트)" tabindex="0" role="button" aria-label="J · 판단 (멀티 에이전트) 포커스, LangGraph · 검토·약관·의심·요약, JEV AI 서비스 · FastAPI :8085" aria-pressed="false" data-node-kind="backend" data-node-sublabel="LangGraph · 검토·약관·의심·요약" data-node-tag="LangChain" data-node-context="JEV AI 서비스 · FastAPI :8085">
+          <title>J · 판단 (멀티 에이전트) · LangGraph · 검토·약관·의심·요약 · JEV AI 서비스 · FastAPI :8085 · LangChain</title>
+          <rect x="1040" y="200" width="200" height="64" rx="8" class="c-mask"/>
+          <rect x="1040" y="200" width="200" height="64" rx="8" class="c-backend" data-animate="node" style="--step:8" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1046 206) scale(0.6875)">
             <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1120" y="230" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">② J·E·V 정리</text>
-        <text data-detail="context" x="1120" y="246" class="t-muted" font-size="9" text-anchor="middle">요약·보완사항·의심사항</text>
+          <text data-node-label="" data-detail-anchor="" x="1140" y="230" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">J · 판단 (멀티 에이전트)</text>
+        <text data-detail="context" x="1140" y="246" class="t-muted" font-size="9" text-anchor="middle">LangGraph · 검토·약관·의심·요약</text>
+        <text data-detail="fine" x="1140" y="256" class="t-backend" font-size="7" text-anchor="middle">LangChain</text>
         </g>
 
-        <g id="node-langsmith" data-node-id="langsmith" data-node-label="LangSmith" tabindex="0" role="button" aria-label="LangSmith 포커스, 메타데이터만 기록, 아키텍처 구성요소" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="메타데이터만 기록" data-node-context="아키텍처 구성요소">
-          <title>LangSmith · 메타데이터만 기록 · 아키텍처 구성요소</title>
-          <rect x="1045" y="40" width="150" height="60" rx="8" class="c-mask"/>
-          <rect x="1045" y="40" width="150" height="60" rx="8" class="c-cloud" data-animate="node" style="--step:10" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(1051 46) scale(0.6875)">
+        <g id="node-ev" data-node-id="ev" data-node-label="E · V 검증" tabindex="0" role="button" aria-label="E · V 검증 포커스, 근거 문서·쪽 대조 · 구조 검증, JEV AI 서비스 · FastAPI :8085" aria-pressed="false" data-node-kind="backend" data-node-sublabel="근거 문서·쪽 대조 · 구조 검증" data-node-tag="항상 판정 보류" data-node-context="JEV AI 서비스 · FastAPI :8085">
+          <title>E · V 검증 · 근거 문서·쪽 대조 · 구조 검증 · JEV AI 서비스 · FastAPI :8085 · 항상 판정 보류</title>
+          <rect x="1340" y="200" width="170" height="64" rx="8" class="c-mask"/>
+          <rect x="1340" y="200" width="170" height="64" rx="8" class="c-backend" data-animate="node" style="--step:9" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(1346 206) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1425" y="230" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">E · V 검증</text>
+        <text data-detail="context" x="1425" y="246" class="t-muted" font-size="9" text-anchor="middle">근거 문서·쪽 대조 · 구조 검증</text>
+        <text data-detail="fine" x="1425" y="256" class="t-backend" font-size="7" text-anchor="middle">항상 판정 보류</text>
+        </g>
+
+        <g id="node-mcp" data-node-id="mcp" data-node-label="MCP 서버 ×2" tabindex="0" role="button" aria-label="MCP 서버 ×2 포커스, documents · policy (stdio), 아키텍처 구성요소" aria-pressed="false" data-node-kind="backend" data-node-sublabel="documents · policy (stdio)" data-node-context="아키텍처 구성요소">
+          <title>MCP 서버 ×2 · documents · policy (stdio) · 아키텍처 구성요소</title>
+          <rect x="770" y="380" width="170" height="64" rx="8" class="c-mask"/>
+          <rect x="770" y="380" width="170" height="64" rx="8" class="c-backend" data-animate="node" style="--step:11" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(776 386) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="855" y="410" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">MCP 서버 ×2</text>
+        <text data-detail="context" x="855" y="426" class="t-muted" font-size="9" text-anchor="middle">documents · policy (stdio)</text>
+        </g>
+
+        <g id="node-pgvector" data-node-id="pgvector" data-node-label="pgvector" tabindex="0" role="button" aria-label="pgvector 포커스, 표준약관 + 보험사 2곳 · 416조항, 아키텍처 구성요소" aria-pressed="false" data-node-kind="database" data-node-sublabel="표준약관 + 보험사 2곳 · 416조항" data-node-context="아키텍처 구성요소">
+          <title>pgvector · 표준약관 + 보험사 2곳 · 416조항 · 아키텍처 구성요소</title>
+          <rect x="1050" y="380" width="180" height="64" rx="8" class="c-mask"/>
+          <rect x="1050" y="380" width="180" height="64" rx="8" class="c-database" data-animate="node" style="--step:11" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1056 386) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1140" y="410" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">pgvector</text>
+        <text data-detail="context" x="1140" y="426" class="t-muted" font-size="9" text-anchor="middle">표준약관 + 보험사 2곳 · 416조항</text>
+        </g>
+
+        <g id="node-langsmith" data-node-id="langsmith" data-node-label="LangSmith" tabindex="0" role="button" aria-label="LangSmith 포커스, 에이전트별 실행 기록, 아키텍처 구성요소" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="에이전트별 실행 기록" data-node-context="아키텍처 구성요소">
+          <title>LangSmith · 에이전트별 실행 기록 · 아키텍처 구성요소</title>
+          <rect x="1065" y="40" width="150" height="60" rx="8" class="c-mask"/>
+          <rect x="1065" y="40" width="150" height="60" rx="8" class="c-cloud" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(1071 46) scale(0.6875)">
             <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1120" y="68" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">LangSmith</text>
-        <text data-detail="context" x="1120" y="84" class="t-muted" font-size="9" text-anchor="middle">메타데이터만 기록</text>
+          <text data-node-label="" data-detail-anchor="" x="1140" y="68" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">LangSmith</text>
+        <text data-detail="context" x="1140" y="84" class="t-muted" font-size="9" text-anchor="middle">에이전트별 실행 기록</text>
         </g>
 
         <g id="node-llm" data-node-id="llm" data-node-label="LLM API" tabindex="0" role="button" aria-label="LLM API 포커스, OpenAI gpt-6-luna, 아키텍처 구성요소" aria-pressed="false" data-node-kind="external" data-node-sublabel="OpenAI gpt-6-luna" data-node-context="아키텍처 구성요소">
           <title>LLM API · OpenAI gpt-6-luna · 아키텍처 구성요소</title>
-          <rect x="1045" y="380" width="150" height="64" rx="8" class="c-mask"/>
-          <rect x="1045" y="380" width="150" height="64" rx="8" class="c-external" data-animate="node" style="--step:9" stroke-width="1.5"/>
-          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1051 386) scale(0.6875)">
+          <rect x="1350" y="380" width="150" height="64" rx="8" class="c-mask"/>
+          <rect x="1350" y="380" width="150" height="64" rx="8" class="c-external" data-animate="node" style="--step:10" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1356 386) scale(0.6875)">
             <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
             <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
           </g>
-          <text data-node-label="" data-detail-anchor="" x="1120" y="410" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">LLM API</text>
-        <text data-detail="context" x="1120" y="426" class="t-muted" font-size="9" text-anchor="middle">OpenAI gpt-6-luna</text>
+          <text data-node-label="" data-detail-anchor="" x="1425" y="410" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">LLM API</text>
+        <text data-detail="context" x="1425" y="426" class="t-muted" font-size="9" text-anchor="middle">OpenAI gpt-6-luna</text>
         </g>
 
         <!-- Connection labels -->
@@ -5443,23 +5495,39 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <rect x="665.7" y="156" width="115.6" height="14" rx="3" class="c-mask"/>
           <text x="723.5" y="166" class="t-edge-default" font-size="8" text-anchor="middle">누락 시 바로 보완 안내</text>
         </g>
-        <g data-detail="context" data-edge-from="precheck" data-edge-to="jev" data-edge-label="서류 완비 시" data-edge-key="7" data-edge-id="complete-to-jev">
+        <g data-detail="context" data-edge-from="precheck" data-edge-to="agents" data-edge-label="서류 완비 시" data-edge-key="7" data-edge-id="complete-to-agents">
           <rect x="956.2" y="212" width="67.6" height="14" rx="3" class="c-mask"/>
           <text x="990" y="222" class="t-edge-emphasis" font-size="8" text-anchor="middle">서류 완비 시</text>
         </g>
-        <g data-detail="context" data-edge-from="jev" data-edge-to="llm" data-edge-label="텍스트 폼만 · 1회" data-edge-key="8" data-edge-id="jev-to-llm">
-          <rect x="1022.4000000000001" y="315" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="1068.2" y="325" class="t-edge-security" font-size="8" text-anchor="middle">텍스트 폼만 · 1회</text>
+        <g data-detail="context" data-edge-from="agents" data-edge-to="ev" data-edge-label="근거 검문" data-edge-key="8" data-edge-id="j-to-ev">
+          <rect x="1263.4" y="203.95" width="53.199999999999996" height="14" rx="3" class="c-mask"/>
+          <text x="1290" y="213.95" class="t-edge-emphasis" font-size="8" text-anchor="middle">근거 검문</text>
         </g>
-        <g data-detail="context" data-edge-from="jev" data-edge-to="langsmith" data-edge-label="원문 없는 실행 기록" data-edge-key="9" data-edge-id="jev-trace">
-          <rect x="1069.4" y="180" width="101.2" height="14" rx="3" class="c-mask"/>
-          <text x="1120" y="190" class="t-edge-dashed" font-size="8" text-anchor="middle">원문 없는 실행 기록</text>
+        <g data-detail="context" data-edge-from="agents" data-edge-to="llm" data-edge-label="텍스트 폼만" data-edge-key="9" data-edge-id="agents-to-llm">
+          <rect x="1263.6" y="305.5" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="1295" y="315.5" class="t-edge-security" font-size="8" text-anchor="middle">텍스트 폼만</text>
+        </g>
+        <g data-detail="context" data-edge-from="agents" data-edge-to="pgvector" data-edge-label="RAG 약관 검색" data-edge-key="10" data-edge-id="agents-rag">
+          <rect x="1061.6" y="315" width="72.4" height="14" rx="3" class="c-mask"/>
+          <text x="1097.8" y="325" class="t-edge-default" font-size="8" text-anchor="middle">RAG 약관 검색</text>
+        </g>
+        <g data-detail="context" data-edge-from="mcp" data-edge-to="pgvector" data-edge-label="search_clauses" data-edge-key="11" data-edge-id="mcp-search">
+          <rect x="956.4" y="392" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="995" y="402" class="t-edge-default" font-size="8" text-anchor="middle">search_clauses</text>
+        </g>
+        <g data-detail="context" data-edge-from="mcp" data-edge-to="precheck" data-edge-label="같은 추출 로직" data-edge-key="12" data-edge-id="mcp-extract">
+          <rect x="816.4" y="360" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="855" y="370" class="t-edge-dashed" font-size="8" text-anchor="middle">같은 추출 로직</text>
+        </g>
+        <g data-detail="context" data-edge-from="agents" data-edge-to="langsmith" data-edge-label="원문 없는 실행 기록" data-edge-key="13" data-edge-id="agents-trace">
+          <rect x="1089.4" y="180" width="101.2" height="14" rx="3" class="c-mask"/>
+          <text x="1140" y="190" class="t-edge-dashed" font-size="8" text-anchor="middle">원문 없는 실행 기록</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
         <g data-graph-role="structural-frame-label" data-composition-frame-id="0" data-composition-frame-kind="region" data-composition-frame-label="JEV AI 서비스 · FastAPI :8085">
-          <rect data-graph-role="structural-frame-label-mask" x="863" y="180" width="166.6" height="16" rx="3" class="c-mask"/>
-          <text data-boundary-label="" x="867" y="193" class="t-cloud" font-size="9" font-weight="600">JEV AI 서비스 · FastAPI :8085</text>
+          <rect data-graph-role="structural-frame-label-mask" x="863" y="178" width="187.36775933548387" height="18" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="867" y="192.19354938709677" class="t-cloud" font-size="10.193549387096773" font-weight="600">JEV AI 서비스 · FastAPI :8085</text>
         </g>
 
         <!-- Legend -->
@@ -5666,12 +5734,12 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       <div class="card">
         <div class="card-header">
           <div class="card-dot emerald"></div>
-          <h3>청구인 → AI 플랫폼 → 손해사정사</h3>
+          <h3>청구인 → AI 플랫폼(JEV) → 손해사정사</h3>
         </div>
         <ul>
           <li>① 누락·판독 불가·서류 종류 오류는 LLM 없이 청구인에게 바로 보완 안내</li>
-          <li>② 서류가 갖춰진 건만 추출한 키워드를 LLM에 1회 보내 요약·보완·의심사항 정리</li>
-          <li>③ 손해사정사가 결과를 보고 승인 · 보완 요청 · 반려, 청구인은 수정 후 재제출</li>
+          <li>② 서류가 갖춰진 건만 J(멀티 에이전트 판단) → E(인용한 문서·쪽 대조) → V(근거 없는 판정 반려) 순서로 검토</li>
+          <li>③ 손해사정사가 요약·보완·의심사항·약관 조항을 보고 승인 · 보완 요청 · 반려</li>
         </ul>
       </div>
 
@@ -5681,22 +5749,21 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <h3>개인정보 경계</h3>
         </div>
         <ul>
-          <li>PDF 원본은 LLM으로 보내지 않음</li>
-          <li>환자명은 가명, 주민번호는 앞 6자리만 전송</li>
-          <li>의심사항·요약은 손해사정사 응답에만 포함</li>
-          <li>Spring↔FastAPI는 별도 서비스 토큰으로 인증</li>
+          <li>PDF 원본은 LLM으로 보내지 않음, 환자명은 가명·주민번호는 앞 6자리만</li>
+          <li>약관 검색어는 진단·진료 정보만 사용</li>
+          <li>의심사항·약관 조항은 손해사정사 응답에만 포함</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
           <div class="card-dot slate"></div>
-          <h3>현재 범위</h3>
+          <h3>표준 인터페이스</h3>
         </div>
         <ul>
-          <li>AI는 최종 판정을 하지 않음: 결과는 항상 판정 보류</li>
-          <li>OCR 없음: 스캔 PDF는 보완 안내로 처리</li>
-          <li>Redis는 compose에만 있고 코드는 인메모리 저장소 사용</li>
+          <li>MCP insai-documents: extract_fields · check_missing</li>
+          <li>MCP insai-policy: search_clauses · 조항 원문 Resource</li>
+          <li>근거 조항 텍스트는 서버가 채우고, 검색되지 않은 조항 인용은 거부</li>
         </ul>
       </div>
     </div>

@@ -90,7 +90,7 @@ class CaseQueryControllerTest {
 	@DisplayName("GET /cases/{id}/decision -> 200")
 	void getDecision() throws Exception {
 		given(getCaseDecisionService.get(any())).willReturn(new DecisionView(
-				"지급 승인", null, UUID.fromString(USER), "김사정", Instant.now()));
+				"지급 승인", UUID.fromString(USER), "김사정", Instant.now()));
 
 		mvc.perform(get("/cases/{id}/decision", CASE))
 				.andExpect(status().isOk())

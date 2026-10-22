@@ -5,9 +5,9 @@ import pytest
 from conftest import FakeProvider
 
 from app.application.jev_service import JevService
-from app.chains.jev_workflow import run_workflow
 from app.core.config import Settings
 from app.core.errors import InvalidProviderResponse, ProviderFailure, ProviderTimeout
+from app.jev.workflow import run_workflow
 from app.providers.base import Provider, ProviderRequest, ProviderResult
 from app.providers.router import build_provider
 

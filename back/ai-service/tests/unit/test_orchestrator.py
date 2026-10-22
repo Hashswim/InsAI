@@ -7,14 +7,14 @@ from uuid import uuid4
 import pytest
 from conftest import FakeProvider
 
-from app.chains.orchestrator import (
+from app.jev.orchestrator import (
     STAGES,
     JevOrchestrator,
     WorkflowProgress,
     WorkflowReport,
     WorkflowStage,
 )
-from app.chains.verification import VerificationChain
+from app.jev.verification import VerificationChain
 from app.providers.base import ProviderRequest
 
 
@@ -36,7 +36,7 @@ def stages(monkeypatch, sample_request):
 
         stage.run.side_effect = action
         mocks[name] = stage
-        monkeypatch.setattr(f"app.chains.orchestrator.{name}", Mock(return_value=stage))
+        monkeypatch.setattr(f"app.jev.orchestrator.{name}", Mock(return_value=stage))
     return mocks, events, draft, verified
 
 

@@ -44,10 +44,12 @@ Spring의 결과 출처·실행 이력·원자적 감사 저장은 [결과·감�
 | app/core | 설정·내부 인증·오류 |
 | app/schemas | 입력·출력 스키마 |
 | app/application | 분석 실행과 응답 조립 |
-| app/chains | JEV 워크플로·프롬프트 |
+| app/jev | JEV 파이프라인: 빠른 검사(PREPARE)·J·E·V·오케스트레이터·프롬프트 |
+| app/agents | LangGraph Supervisor와 전문 에이전트 (J 단계) |
+| app/rag | 약관 조항 분할·pgvector 검색 |
+| app/mcp_servers | MCP 서버 (insai-documents, insai-policy) |
 | app/providers | 공급자 인터페이스·선택·Gemini/OpenAI/스텁 어댑터 |
 | app/observability | 원문 없는 LangSmith 추적 |
-| app/rules/medical.yaml | 비워 둔 규정 자리; 현재 로딩하지 않음 |
 | tests/unit, tests/integration | 가짜 모델 기반 테스트 |
 
 ## 개발 검사

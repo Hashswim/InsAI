@@ -4,7 +4,7 @@ import re
 from collections.abc import Mapping
 from decimal import Decimal
 
-from app.chains.release import ACTIVE_RELEASE
+from app.jev.release import ACTIVE_RELEASE
 
 CONSTANTS = {
     **{key: {value} for key, value in ACTIVE_RELEASE.metadata().items()},
@@ -33,6 +33,7 @@ CONSTANTS = {
     # Child-run metadata (trace tree): fixed step names and LangSmith's model fields.
     "stage": {"PRECHECK", "PREPARE", "J", "E", "V"},
     "ls_provider": {"openai", "google_genai"},
+    "agent": {"reviewer", "policy", "policy_recheck", "retriever", "risk", "summary"},
 }
 COUNTS = {
     "input_tokens",

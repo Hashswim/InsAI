@@ -25,6 +25,13 @@ def build_adapter(config: Settings, route: RouteDecision) -> Provider:
         selected = config.model_copy(update={field: route.profile.model})
     if config.jev_provider == "stub":
         return StubProvider()
+    if config.jev_multi_agent:
+        from app.agents.provider import MultiAgentProvider
+        from app.rag.store import configured_retriever
+
+        return MultiAgentProvider(
+            selected, route.profile.model, retriever=configured_retriever(config)
+        )
     if config.jev_provider == "openai":
         return OpenAIProvider(selected)
     return GeminiProvider(selected)

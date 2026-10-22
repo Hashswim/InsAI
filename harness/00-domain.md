@@ -25,7 +25,7 @@
 | DocumentRequest | 사정사가 "이 서류 주세요"라고 만드는 요청. 템플릿을 지정 | collab |
 | FormTemplate / FormField | 서류의 칸 구조. code + version | form |
 | FormSubmission | 청구인이 채운 값 + AI 구조화 결과 + 누락/검증 결과 | form |
-| Decision | 사정사의 판단(rawText) → AI 평문(plainText) | collab |
+| Decision | 사정사의 판단(rawText) | collab |
 | TimelineEvent | 케이스 활동 로그 (감사 + UI 피드) | collab |
 | StoredFile | 첨부 파일 메타 + OCR 텍스트 | document (예정) |
 

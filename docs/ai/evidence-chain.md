@@ -2,7 +2,7 @@
 
 ## 구현과 경계
 
-`app/chains/evidence.py`의 `EvidenceChain`을 J 다음 실행 경로에 연결했다.
+`app/jev/evidence.py`의 `EvidenceChain`을 J 다음 실행 경로에 연결했다.
 입력은 검증된 의료 PDF 요청과 J의 모델 초안 ProviderResult다.
 모델이 제안한 evidence를 실제 요청 문서에 연결해 검사한 후 새 ProviderResult를 반환한다.
 초안·근거·항목 순서·판정·설명·사용량을 임의로 변경하지 않는다.

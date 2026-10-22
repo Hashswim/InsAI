@@ -124,7 +124,3 @@ def load_catalog(path: Path | None = None) -> ModelCatalog:
         return ModelCatalog((STUB_PROFILE, *data.models))
     except Exception:
         raise CatalogError("Invalid model catalog configuration") from None
-
-
-def selected_profile(catalog: ModelCatalog, provider: ProviderName, model: str) -> ModelProfile:
-    return catalog.require(provider, "stub-v1" if provider == "stub" else model)
