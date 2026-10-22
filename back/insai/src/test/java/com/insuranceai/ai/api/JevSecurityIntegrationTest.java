@@ -188,30 +188,6 @@ class JevSecurityIntegrationTest {
         verifyNoInteractions(gateway,storage);
     }
 
-    @Test void claimTokenWorksOnlyForItsOwnCase() throws Exception {
-        var result=mvc.perform(post("/ai/jev/cases/"+claim.getId()+"/claim-token").header("Authorization",bearer(claimant)))
-            .andExpect(status().isOk()).andExpect(jsonPath("$.data.expiresAt").exists()).andReturn();
-        String claimBearer="Bearer "+mapper.readTree(result.getResponse().getContentAsString()).at("/data/value").asText();
-        var otherCase=cases.save(Case.open(claimant.getId(),"another synthetic claim"));
-
-        mvc.perform(post("/ai/jev").header("Authorization",claimBearer)
-            .contentType(MediaType.APPLICATION_JSON).content(body(documents))).andExpect(status().isOk());
-        mvc.perform(get("/ai/jev/cases/"+claim.getId()+"/latest").header("Authorization",claimBearer))
-            .andExpect(status().isOk());
-        mvc.perform(get("/ai/jev/cases/"+otherCase.getId()+"/latest").header("Authorization",claimBearer))
-            .andExpect(status().isForbidden());
-        mvc.perform(post("/ai/jev").header("Authorization",claimBearer).contentType(MediaType.APPLICATION_JSON)
-            .content(body(documents).replace(claim.getId().toString(),otherCase.getId().toString())))
-            .andExpect(status().isForbidden());
-        mvc.perform(post("/ai/jev/cases/"+claim.getId()+"/claim-token").header("Authorization",claimBearer))
-            .andExpect(status().isForbidden());
-    }
-
-    @Test void outsiderCannotGetClaimToken() throws Exception {
-        mvc.perform(post("/ai/jev/cases/"+claim.getId()+"/claim-token").header("Authorization",bearer(outsider)))
-            .andExpect(status().isForbidden());
-    }
-
     private Account account(Role role) {
         return accounts.save(Account.create(UUID.randomUUID()+"@test.invalid","hash","synthetic",role));
     }

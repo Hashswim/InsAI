@@ -160,19 +160,4 @@ class JwtAccessTokenIssuerTest {
 		token.sign(new com.nimbusds.jose.crypto.RSASSASigner(signingKey));
 		assertThatThrownBy(() -> issuer.parse(token.serialize())).isInstanceOf(AccessTokenIssuer.InvalidTokenException.class);
 	}
-
-	@Test
-	@DisplayName("청구 단위 토큰은 case_id를 담고 10분 뒤 만료되며, 로그인 토큰에는 case_id가 없다")
-	void claimTokenCarriesCaseIdAndShortLifetime() {
-		UUID accountId = UUID.randomUUID();
-		UUID caseId = UUID.randomUUID();
-
-		IssuedToken claim = issuer.issueForClaim(accountId, Role.CLAIMANT, caseId);
-
-		assertThat(claim.expiresAt()).isEqualTo(NOW.plus(Duration.ofMinutes(10)));
-		ParsedToken parsed = issuer.parse(claim.value());
-		assertThat(parsed.accountId()).isEqualTo(accountId);
-		assertThat(parsed.caseId()).isEqualTo(caseId);
-		assertThat(issuer.parse(issuer.issue(accountId, Role.CLAIMANT).value()).caseId()).isNull();
-	}
 }

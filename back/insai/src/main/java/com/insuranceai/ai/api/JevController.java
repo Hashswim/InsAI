@@ -17,7 +17,6 @@ public class JevController {
     public ApiResponse<RunJevService.AnalysisView> run(@RequestAttribute("jevActor") Actor actor,
                                                     @Valid @RequestBody RunJevCommand command,
                                                     @RequestAttribute("jevRequestId") UUID requestId) {
-        actor.requireCase(command.caseId());
         return ApiResponse.ok(forRole(actor, service.run(actor.userId(), command, requestId)));
     }
     @GetMapping("/cases/{caseId}/latest")

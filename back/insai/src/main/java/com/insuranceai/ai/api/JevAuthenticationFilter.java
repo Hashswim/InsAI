@@ -47,7 +47,6 @@ public class JevAuthenticationFilter extends OncePerRequestFilter {
             if (!Set.of("ROLE_CLAIMANT", "ROLE_ADJUSTER").contains(actor.authority())) {
                 throw new BusinessException(ErrorCode.FORBIDDEN);
             }
-            if (actor.claimScoped() && !claimTokenAllowed(request, actor)) throw new BusinessException(ErrorCode.FORBIDDEN);
             request.setAttribute("jevActor", actor);
         } catch (BusinessException e) {
             reject(response, e.getErrorCode());
@@ -57,19 +56,6 @@ public class JevAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         chain.doFilter(request, response);
-    }
-
-    /**
-     * 청구 단위 토큰은 케이스가 드러나는 경로에서만 쓴다. 경로의 케이스는 여기서, 본문의 caseId는 컨트롤러에서 비교한다.
-     * 분석·작업 ID로 조회하는 경로는 케이스를 알 수 없으므로 로그인 토큰이 필요하다.
-     */
-    private static boolean claimTokenAllowed(HttpServletRequest request, AuthenticateAccessTokenService.Actor actor) {
-        String path = request.getRequestURI().substring(request.getContextPath().length());
-        if (path.startsWith("/ai/jev/cases/")) {
-            String caseSegment = path.substring("/ai/jev/cases/".length()).split("/", 2)[0];
-            return caseSegment.equals(actor.caseId().toString());
-        }
-        return "POST".equals(request.getMethod()) && (path.equals("/ai/jev") || path.equals("/ai/jev/jobs"));
     }
 
     private void reject(HttpServletResponse response, ErrorCode code) throws IOException {

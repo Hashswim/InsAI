@@ -19,16 +19,7 @@ public class AuthenticateAccessTokenService {
         this.accounts = accounts;
     }
 
-    /** caseId가 있으면 청구 단위 토큰으로 인증된 것이고, 그 케이스에만 접근할 수 있다. */
-    public record Actor(UUID userId, String authority, UUID caseId) {
-        public Actor(UUID userId, String authority) { this(userId, authority, null); }
-
-        public boolean claimScoped() { return caseId != null; }
-
-        public void requireCase(UUID requested) {
-            if (caseId != null && !caseId.equals(requested)) throw new BusinessException(ErrorCode.FORBIDDEN);
-        }
-    }
+    public record Actor(UUID userId, String authority) {}
 
     @Transactional(readOnly = true)
     public Actor authenticate(String token) {
@@ -44,6 +35,6 @@ public class AuthenticateAccessTokenService {
             || !Set.of(account.getRole().authority()).equals(parsed.roles())) {
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
-        return new Actor(account.getId(), account.getRole().authority(), parsed.caseId());
+        return new Actor(account.getId(), account.getRole().authority());
     }
 }

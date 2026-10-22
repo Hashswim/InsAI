@@ -39,7 +39,6 @@ class FileControllerTest {
 	@MockitoBean ConfirmUploadService confirmUploadService;
 	@MockitoBean IssueDownloadUrlService issueDownloadUrlService;
 	@MockitoBean ListCaseFilesService listCaseFilesService;
-	@MockitoBean com.insuranceai.auth.application.AuthenticateAccessTokenService authentication;
 
 	private static final String USER = "aaaa1111-1111-1111-1111-111111111111";
 	private static final String CASE = "6b65e463-5907-425e-aed1-1cc6249ae2ba";
