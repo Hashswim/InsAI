@@ -21,7 +21,10 @@ const result = ref(null)
 
 onMounted(async () => {
   try {
-    template.value = await formsApi.getTemplate(templateId)
+    const requested = await formsApi.getTemplate(templateId)
+    // 요청 뒤에 서류 양식이 바뀌었으면(예: 입력 칸 → 첨부 전용) 최신 버전으로 받는다.
+    const latest = await formsApi.getTemplateByCode(requested.code).catch(() => requested)
+    template.value = latest.version > requested.version ? latest : requested
     for (const f of template.value.fields) data[f.key] = ''
     try {
       const prev = await formsApi.getSubmissionByDocRequest(props.docRequestId)
@@ -48,7 +51,7 @@ const missingRequired = computed(() => requiredFields.value.filter((f) => !isFil
 function payload() {
   const clean = {}
   for (const [k, v] of Object.entries(data)) if (v !== '' && v != null) clean[k] = v
-  return { documentRequestId: props.docRequestId, caseId: props.id, templateId, data: clean }
+  return { documentRequestId: props.docRequestId, caseId: props.id, templateId: template.value.id, data: clean }
 }
 
 async function onSaveDraft() {
@@ -101,7 +104,7 @@ async function onSubmit() {
       <template v-if="step === 'fill'">
         <div class="card stack" style="gap: 4px">
           <div class="between small">
-            <span class="muted">필수 항목 작성</span>
+            <span class="muted">필수 서류 첨부</span>
             <span :class="filledRequired === requiredFields.length ? 'ok-text' : 'muted'">
               {{ filledRequired }} / {{ requiredFields.length }}
             </span>
@@ -115,7 +118,7 @@ async function onSubmit() {
         </div>
 
         <p class="muted small">
-          서류의 각 칸을 아래에서 채워주세요. 필수 항목이 비어 있어도 제출은 되며, “미입력”으로 표시됩니다.
+          서류 PDF 파일만 올려 주세요. 질병코드·날짜·금액 같은 내용은 AI가 파일에서 직접 읽습니다. 궁금한 점은 문의 사항에 적어 주세요.
         </p>
 
         <form class="card stack" @submit.prevent="toConfirm">
