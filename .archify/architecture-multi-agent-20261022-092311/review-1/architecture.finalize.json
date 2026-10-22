@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "ok": false,
+  "command": "finalize",
+  "status": "fail",
+  "type": "architecture",
+  "quality": "showcase",
+  "startedAt": "2026-10-22T00:23:34.255Z",
+  "specification": {
+    "path": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/candidate.json",
+    "sha256": "f3dfa50945caf96ba2cc585dfec44de6e34c77c51de7c85ea6730ac7ed44ac48",
+    "bytes": 5054
+  },
+  "artifact": {
+    "path": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.html",
+    "sha256": "378697f1714cd4dbb3f6e85f0ecbcc796fe885c93c452c025b3890e7b064eed3",
+    "bytes": 833716
+  },
+  "stages": {
+    "validate": {
+      "status": "fail",
+      "exitCode": 1,
+      "durationMs": null,
+      "command": [
+        "/opt/homebrew/Cellar/node/26.5.1/bin/node",
+        "/Users/suyoung/.agents/skills/archify/bin/archify.mjs",
+        "deliver",
+        "architecture",
+        "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/candidate.json",
+        "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.html",
+        "--quality",
+        "showcase",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": false,
+        "command": "deliver",
+        "receiptId": "2bfe3285-51e1-4821-97a1-63683aad438f",
+        "stage": "render",
+        "type": "architecture",
+        "input": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/candidate.json",
+        "output": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.html",
+        "error": "Architecture layout validation failed:\n- Component \"pgvector\" is not wrapped by boundary \"AI 서비스 · Python (FastAPI :8085)\" but sits inside its frame — move it outside the frame, place the wrapped members in one compact axis-aligned cluster (no empty bay for a non-member), or add it to wraps only when it truly belongs there.",
+        "diagnostics": [
+          {
+            "code": "layout/boundary-encloses-non-member",
+            "severity": "error",
+            "message": "Component \"pgvector\" is not wrapped by boundary \"AI 서비스 · Python (FastAPI :8085)\" but sits inside its frame — move it outside the frame, place the wrapped members in one compact axis-aligned cluster (no empty bay for a non-member), or add it to wraps only when it truly belongs there.",
+            "subject": {
+              "diagramType": "architecture",
+              "boundary": {
+                "kind": "region",
+                "label": "AI 서비스 · Python (FastAPI :8085)",
+                "wraps": [
+                  "precheck",
+                  "agents",
+                  "mcp"
+                ]
+              },
+              "component": "pgvector"
+            },
+            "evidence": {
+              "bounds": {
+                "x": 740,
+                "y": 170,
+                "width": 530,
+                "height": 294
+              },
+              "component": {
+                "id": "pgvector",
+                "type": "database",
+                "label": "pgvector",
+                "x": 1050,
+                "y": 380,
+                "width": 180,
+                "height": 64,
+                "pos": [
+                  1050,
+                  380
+                ]
+              }
+            },
+            "supportedFixes": [
+              "move \"pgvector\" outside the boundary frame",
+              "reposition the wrapped members into one compact axis-aligned cluster (no empty bay) that leaves non-members outside"
+            ]
+          }
+        ],
+        "provenance": "failed",
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      },
+      "execution": "embedded-in-deliver"
+    },
+    "deliver": {
+      "status": "not-run",
+      "execution": "blocked-by-validate"
+    }
+  },
+  "browserCheck": {
+    "requested": true,
+    "ran": false
+  },
+  "diagnostics": [
+    {
+      "code": "layout/boundary-encloses-non-member",
+      "severity": "error",
+      "message": "Component \"pgvector\" is not wrapped by boundary \"AI 서비스 · Python (FastAPI :8085)\" but sits inside its frame — move it outside the frame, place the wrapped members in one compact axis-aligned cluster (no empty bay for a non-member), or add it to wraps only when it truly belongs there.",
+      "subject": {
+        "diagramType": "architecture",
+        "boundary": {
+          "kind": "region",
+          "label": "AI 서비스 · Python (FastAPI :8085)",
+          "wraps": [
+            "precheck",
+            "agents",
+            "mcp"
+          ]
+        },
+        "component": "pgvector"
+      },
+      "evidence": {
+        "bounds": {
+          "x": 740,
+          "y": 170,
+          "width": 530,
+          "height": 294
+        },
+        "component": {
+          "id": "pgvector",
+          "type": "database",
+          "label": "pgvector",
+          "x": 1050,
+          "y": 380,
+          "width": 180,
+          "height": 64,
+          "pos": [
+            1050,
+            380
+          ]
+        }
+      },
+      "supportedFixes": [
+        "move \"pgvector\" outside the boundary frame",
+        "reposition the wrapped members into one compact axis-aligned cluster (no empty bay) that leaves non-members outside"
+      ]
+    }
+  ],
+  "evidence": {
+    "receipt": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/review-1/architecture.finalize.json",
+    "summaryReceipt": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/review-1/architecture.finalize-summary.json"
+  },
+  "visualReview": "not-requested",
+  "failedStage": "validate",
+  "finishedAt": "2026-10-22T00:23:34.420Z",
+  "durationMs": 164,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-21T07:50:46.552Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

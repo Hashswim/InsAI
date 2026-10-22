@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "models": [
+    {
+      "provider": "openai",
+      "model": "gpt-6-luna",
+      "enabled": true,
+      "capabilities": ["pdf_input", "structured_output", "token_usage"],
+      "max_pdf_documents": 3,
+      "max_output_tokens": 128000,
+      "context_window_tokens": 1050000,
+      "source": "Reviewed 2026-10-21: https://developers.openai.com/api/docs/models/gpt-6-luna and https://developers.openai.com/api/docs/guides/file-inputs . Three PDFs remain subject to the app's 10MiB/file limit and API aggregate limits. Account access and medical accuracy are not verified."
+    }
+  ]
+}

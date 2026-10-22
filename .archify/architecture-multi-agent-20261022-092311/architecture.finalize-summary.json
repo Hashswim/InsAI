@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/Users/suyoung/Documents/InsuranceAI/.archify/architecture-multi-agent-20261022-092311/candidate.json",
+    "sha256": "0890de5961c01116a9f2467cb21a4b34d88fd4147002f096d13b2b9d68524efa",
+    "bytes": 6987
+  },
+  "artifact": {
+    "path": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.html",
+    "sha256": "a85d9718f71db4c6b6193d7e7aca1df6daa0a9bc8a302f9830bac0544f4ea708",
+    "bytes": 842554
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.finalize.json",
+    "summaryReceipt": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.finalize-summary.json",
+    "browserCheckReceipt": "/Users/suyoung/Documents/InsuranceAI/docs/architecture/architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-21T07:50:46.552Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3150,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

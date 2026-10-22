@@ -18,6 +18,12 @@ Thumbs.db
 **/out/
 **/bin/
 *.class
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/*.egg-info/
 *.log
 *.jar
 !**/gradle-wrapper.jar
@@ -46,3 +52,6 @@ application-secret*.yml
 
 # ---- Docker ----
 **/.docker-data/
+
+# ---- Local file storage (document module dev) ----
+**/.local-storage/

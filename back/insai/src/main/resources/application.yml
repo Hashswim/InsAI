@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: insai
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# AI(LLM) — 기본 비활성. 키 받으면 INSAI_AI_ENABLED=true + INSAI_AI_API_KEY 로 활성화.
+insai:
+  jev:
+    base-url: ${JEV_BASE_URL:http://localhost:8085}
+    service-token: ${JEV_SERVICE_TOKEN:}
+    timeout-seconds: ${JEV_TIMEOUT_SECONDS:120}
+    allow-stub: ${JEV_ALLOW_STUB:false}
+    jobs:
+      worker-enabled: ${JEV_JOB_WORKER_ENABLED:false}
+  storage:
+    # 로컬 디스크 스토리지 — 운영에서는 오브젝트 스토리지 presigned URL 로 교체
+    local-dir: ${INSAI_STORAGE_DIR:./.local-storage}
+    public-base-url: ${INSAI_STORAGE_BASE_URL:/local-storage}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized

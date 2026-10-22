@@ -1,0 +1,12 @@
+package com.insuranceai.collab.domain;
+
+public enum TimelineEventType {
+	CASE_OPENED,
+	ADJUSTER_ASSIGNED,
+	DOCS_REQUESTED,
+	DOCS_SUBMITTED,
+	REVIEW_STARTED,
+	DECISION_MADE,
+	CASE_CLOSED,
+	MESSAGE_POSTED
+}
